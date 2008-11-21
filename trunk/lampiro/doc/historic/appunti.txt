@@ -1,0 +1,55 @@
+PUNTI DA VEDERE
+
+- Aggiungere per ogni UIItem di lista un oggetto popup menu; se c'e' ed ha piu' di
+  una voce metto a sn un tasto "opzioni" altrimenti metto come valore il nome
+  della voce del popup.
+
+- sincronizzare gli accessi alla screenList in UICanvas.
+
+- UILabel <-> UILabelPicture: merge?
+- Si possono unire UILayout/UIVLaout/UIHLayout?
+- itemAction: vuota -> UIScreen classe astratta?
+- sicuro che TUTTO deve avere il suo screen?
+- menu title
+- allineare testo bottoni al centro e prevedere "overflow" su pi� righe
+- ? UISeparator -> riga di separazione
+- UIScreen: il paint impone di controllare il "changed". Bisogna vedere se 
+  qualunque delle operazioni di paint comporta il change...
+- allineamento orizzontale e verticale degli item + impostazione del Font/colore
+  da usare sulle label.
+- UILabel/UILabelPicture: a capo automatico sul testo e impostazione del Font
+  allineamento testo
+- UIGauge: blinking cursor/ticker/what the hell...
+- Menu: UIMenuItem non � pi� visibile, quindi vedere come costruire i menu con 
+  solo testo: accettare eventualmente String (rimappata su una UILabel) e UIItem
+  Magari per ragioni di semplicit� di API, il menu comunque � meglio realizzarlo
+  che accetta solo Stringhe, UILabelPicture, con opzionale la possibilit� di
+  enable/disable (UICheckBox) ed aggiunta di un submenu a tutti (tranne che a 
+  UICheckBox)
+  La selezione di un Menu � quindi un Object/UIItem
+- UICombo: come recuperare la selezione? Per nome o per testo?
+- UICombo: selezione multipla
+- mostrare alert? UICanvas -> finestra modale...
+- item visible?
+- caching height negli item: mettere comunque a disposizione una propriet�
+  da lasciare... oppure ricordarsi che h e w possono variare a seconda del 
+  riquadro in cui debbo inserire i dati
+- RosterScreen: VLayout che occupa tutto schermo + scrollbar
+- UIText per linee di conversazione: testo che si fa vedere tutto per esteso 
+  andando a capo; deve "scrollare" in maniera intelligente (magari conoscendo la
+  intera dimensione del canvas pu� sapere quanto spazio massimo occupare e 
+  eventualmente fare un "finto" scroll interno a s� stesso).
+  Questa stessa cosa, editabile, � utile per la composizione del messaggio: devo 
+  potere vedere tutto il testo che ho scritto.
+- Alert: generico con immagine, testo e bottoni. Oppure uno screen (UIAlert)
+  che occupi tutto lo schermo, scrollabile, con titolo, ma che abbia la possibilit�
+  di indicare quali tasti visualizzare (2 max).
+- Io aggiungerei nel paint0 un setClip prima di chiamare il paint e poi l'unset subito dopo
+	(eventualmente salvando lo stato del clip e poi rimettendolo a posto prima di ritornare
+	dal paint0) così siamo automaticamente sicuri che gli oggetti non sforino mai 
+
+- LOW PRIORITY: i popup sarebbero da non far diminuire di dimensione ma da 
+  mantenere della stessa larghezza, come un mazzo di carte.
+  
+  
+  

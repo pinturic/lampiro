@@ -1,0 +1,247 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+<meta name="robots" content="index,nofollow">
+
+<title>TrasportoHTTP - Wiki del Coso</title>
+<script type="text/javascript" src="/coso/wiki/htdocs/common/js/common.js"></script>
+
+<script type="text/javascript">
+<!--// common functions
+
+// We keep here the state of the search box
+searchIsDisabled = false;
+
+function searchChange(e) {
+    // Update search buttons status according to search box content.
+    // Ignore empty or whitespace search term.
+    var value = e.value.replace(/\s+/, '');
+    if (value == '' || searchIsDisabled) { 
+        searchSetDisabled(true);
+    } else {
+        searchSetDisabled(false);
+    }
+}
+
+function searchSetDisabled(flag) {
+    // Enable or disable search
+    document.getElementById('fullsearch').disabled = flag;
+    document.getElementById('titlesearch').disabled = flag;
+}
+
+function searchFocus(e) {
+    // Update search input content on focus
+    if (e.value == 'Search') {
+        e.value = '';
+        e.className = '';
+        searchIsDisabled = false;
+    }
+}
+
+function searchBlur(e) {
+    // Update search input content on blur
+    if (e.value == '') {
+        e.value = 'Search';
+        e.className = 'disabled';
+        searchIsDisabled = true;
+    }
+}
+
+function actionsMenuInit(title) {
+    // Initialize action menu
+    for (i = 0; i < document.forms.length; i++) {
+        var form = document.forms[i];
+        if (form.className == 'actionsmenu') {
+            // Check if this form needs update
+            var div = form.getElementsByTagName('div')[0];
+            var label = div.getElementsByTagName('label')[0];
+            if (label) {
+                // This is the first time: remove label and do buton.
+                div.removeChild(label);
+                var dobutton = div.getElementsByTagName('input')[0];
+                div.removeChild(dobutton);
+                // and add menu title
+                var select = div.getElementsByTagName('select')[0];
+                var item = document.createElement('option');
+                item.appendChild(document.createTextNode(title));
+                item.value = 'show';
+                select.insertBefore(item, select.options[0]);
+                select.selectedIndex = 0;
+            }
+        }
+    }
+}
+//-->
+</script>
+
+<script type="text/javascript">
+var gui_editor_link_href = "/coso/wiki/moin.cgi/TrasportoHTTP?action=edit&editor=gui";
+var gui_editor_link_text = "Edit (GUI)";
+</script>        
+
+<link rel="stylesheet" type="text/css" charset="utf-8" media="all" href="/coso/wiki/htdocs/classic/css/common.css">
+<link rel="stylesheet" type="text/css" charset="utf-8" media="screen" href="/coso/wiki/htdocs/classic/css/screen.css">
+<link rel="stylesheet" type="text/css" charset="utf-8" media="print" href="/coso/wiki/htdocs/classic/css/print.css">
+<link rel="stylesheet" type="text/css" charset="utf-8" media="projection" href="/coso/wiki/htdocs/classic/css/projection.css">
+
+
+<link rel="Start" href="/coso/wiki/moin.cgi/HelpOnLanguages">
+<link rel="Alternate" title="Formattazione Wiki" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=raw">
+<link rel="Alternate" media="print" title="Versione stampabile" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=print">
+<link rel="Search" href="/coso/wiki/moin.cgi/CercaPagina">
+<link rel="Index" href="/coso/wiki/moin.cgi/IndiceDeiTitoli">
+<link rel="Glossary" href="/coso/wiki/moin.cgi/IndicePerParola">
+<link rel="Help" href="/coso/wiki/moin.cgi/AiutoSuFormattazione">
+</head>
+
+<body  lang="it" dir="ltr">
+
+
+
+<div id="header">
+<div id="logo"><a href="/coso/wiki/moin.cgi/HelpOnLanguages">Wiki del Coso</a></div>
+
+<form id="searchform" method="get" action="">
+<div>
+<input type="hidden" name="action" value="fullsearch">
+<input type="hidden" name="context" value="180">
+<label for="searchinput">Cerca:</label>
+<input id="searchinput" type="text" name="value" value="" size="20"
+    onfocus="searchFocus(this)" onblur="searchBlur(this)"
+    onkeyup="searchChange(this)" onchange="searchChange(this)" alt="Search">
+<input id="titlesearch" name="titlesearch" type="submit"
+    value="Titoli" alt="Search Titles">
+<input id="fullsearch" name="fullsearch" type="submit"
+    value="Testo" alt="Search Full Text">
+</div>
+</form>
+<script type="text/javascript">
+<!--// Initialize search form
+var f = document.getElementById('searchform');
+f.getElementsByTagName('label')[0].style.display = 'none';
+var e = document.getElementById('searchinput');
+searchChange(e);
+searchBlur(e);
+//-->
+</script>
+
+<ul id="username"><li><a class="nonexistent nonexistent" href="/coso/wiki/moin.cgi/LucianoMollea" title="LucianoMollea @ Self">LucianoMollea</a></li><li><a href="/coso/wiki/moin.cgi/PreferenzeUtente">PreferenzeUtente</a></li><li><form action="" method="POST">
+<input type="hidden" name="action" value="userform">
+<input type="submit" name="logout" value="Logout">
+</form>
+</li></ul>
+<div id="locationline">
+
+
+<ul id="pagelocation">
+<li><a class="backlink" title="Clicca qui per effettuare una ricerca full-text per questo titolo" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=fullsearch&amp;value=linkto%3A%22TrasportoHTTP%22&amp;context=180">TrasportoHTTP</a></li>
+</ul>
+
+</div>
+
+<ul id="pagetrail">
+<li><a href="/coso/wiki/moin.cgi/BookMark">BookMark</a></li><li><a href="/coso/wiki/moin.cgi/ParserXMLJ2Me">ParserXMLJ2Me</a></li><li><a href="/coso/wiki/moin.cgi/ProtocolloBluetooth">ProtocolloBluetooth</a></li><li><a href="/coso/wiki/moin.cgi/FrontPage">FrontPage</a></li><li><a href="/coso/wiki/moin.cgi/TrasportoHTTP">TrasportoHTTP</a></li>
+</ul>
+<ul id="iconbar">
+<li><a title="Modifica" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=edit"><img alt="Modifica" height="12" src="/coso/wiki/htdocs/classic/img/moin-edit.png" title="Modifica" width="12" /></a></li>
+<li><a title="mostra" href="/coso/wiki/moin.cgi/TrasportoHTTP"><img alt="mostra" height="13" src="/coso/wiki/htdocs/classic/img/moin-show.png" title="mostra" width="12" /></a></li>
+<li><a title="differenze" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=diff"><img alt="differenze" height="11" src="/coso/wiki/htdocs/classic/img/moin-diff.png" title="differenze" width="15" /></a></li>
+<li><a title="Informazioni" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=info"><img alt="Informazioni" height="11" src="/coso/wiki/htdocs/classic/img/moin-info.png" title="Informazioni" width="12" /></a></li>
+<li><a title="Sottoscrivi" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=subscribe"><img alt="Sottoscrivi" height="10" src="/coso/wiki/htdocs/classic/img/moin-subscribe.png" title="Sottoscrivi" width="14" /></a></li>
+<li><a title="Non formattato" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=raw"><img alt="Non formattato" height="13" src="/coso/wiki/htdocs/classic/img/moin-raw.png" title="Non formattato" width="12" /></a></li>
+<li><a title="Versione stampabile" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=print"><img alt="Versione stampabile" height="14" src="/coso/wiki/htdocs/classic/img/moin-print.png" title="Versione stampabile" width="16" /></a></li>
+</ul>
+
+
+<ul id="navibar">
+<li class="wikilink"><a href="/coso/wiki/moin.cgi/HelpOnLanguages">HelpOnLanguages</a></li><li class="wikilink"><a href="/coso/wiki/moin.cgi/ModificheRecenti">ModificheRecenti</a></li><li class="wikilink"><a href="/coso/wiki/moin.cgi/CercaPagina">CercaPagina</a></li><li class="wikilink"><a href="/coso/wiki/moin.cgi/AiutoContenuti">AiutoContenuti</a></li><li class="current"><a href="/coso/wiki/moin.cgi/TrasportoHTTP">TrasportoHTTP</a></li>
+</ul>
+
+
+</div>
+
+
+
+<div id="page" lang="en" dir="ltr">
+
+<div dir="ltr" id="content" lang="en"><span class="anchor" id="top"></span>
+<span class="anchor" id="line-1"></span>
+<h1 id="head-ebe04055c6c563983148d0c0664f7f0849ec8a9d">Trasporto HTTP</h1>
+<span class="anchor" id="line-2"></span><p class="line879">Obiettivo: riciclare il più possibile questo: <a class="http" href="http://www.jabber.org/jeps/jep-0124.html">http://www.jabber.org/jeps/jep-0124.html</a> <span class="anchor" id="line-3"></span></p><span class="anchor" id="line-4"></span>
+<h2 id="head-8ee5585c582731d25a37aaa850bcd80aee7d1f75">Client -&gt; Server</h2>
+<span class="anchor" id="line-5"></span><span class="anchor" id="line-6"></span><p class="line886">Per i messaggi dal cellulare al server la verifica di ricezione è semplice, siccome il client fa una POST e, se non riceve il risultato, lo reinvia tale e quale. Nel caso arrivi doppio il server può scartarlo grazie al rid (unico in una sessione) <span class="anchor" id="line-7"></span></p><span class="anchor" id="line-8"></span><p class="line886">(notare che posso inviare più di un messaggio per POST) <span class="anchor" id="line-9"></span></p><span class="anchor" id="line-10"></span><span class="anchor" id="line-11"></span><pre>POST /webclient HTTP/1.1
+<span class="anchor" id="line-12"></span>Host: httpcm.jabber.org
+<span class="anchor" id="line-13"></span>Accept-Encoding: gzip, deflate
+<span class="anchor" id="line-14"></span>Content-Type: text/xml; charset=utf-8
+<span class="anchor" id="line-15"></span>Content-Length: 188
+<span class="anchor" id="line-16"></span>
+<span class="anchor" id="line-17"></span>&lt;body rid='2842791422'
+<span class="anchor" id="line-18"></span>      sid='SomeSID'
+<span class="anchor" id="line-19"></span>      xmlns='http://jabber.org/protocol/httpbind'&gt;
+<span class="anchor" id="line-20"></span>  &lt;message to='contact@example.com'
+<span class="anchor" id="line-21"></span>           xmlns='jabber:client'&gt;
+<span class="anchor" id="line-22"></span>    &lt;body&gt;Hi there!&lt;/body&gt;
+<span class="anchor" id="line-23"></span>  &lt;/message&gt;
+<span class="anchor" id="line-24"></span>  &lt;message to='friend@example.com'
+<span class="anchor" id="line-25"></span>           xmlns='jabber:client'&gt;
+<span class="anchor" id="line-26"></span>    &lt;body&gt;Hi there!&lt;/body&gt;
+<span class="anchor" id="line-27"></span>  &lt;/message&gt;
+<span class="anchor" id="line-28"></span>&lt;/body&gt;
+<span class="anchor" id="line-29"></span></pre><span class="anchor" id="line-30"></span><span class="anchor" id="line-31"></span><span class="anchor" id="line-32"></span><pre>HTTP/1.1 200 OK
+<span class="anchor" id="line-33"></span>Content-Type: text/xml; charset=utf-8
+<span class="anchor" id="line-34"></span>Content-Length: 64
+<span class="anchor" id="line-35"></span>
+<span class="anchor" id="line-36"></span>&lt;body xmlns='http://jabber.org/protocol/httpbind'/&gt;
+<span class="anchor" id="line-37"></span></pre><span class="anchor" id="line-38"></span><span class="anchor" id="line-39"></span>
+<h2 id="head-3c23f2bad90247ca35260bd1ff8489d1ec870a62">Server -&gt; Client</h2>
+<span class="anchor" id="line-40"></span><span class="anchor" id="line-41"></span><p class="line886">Il server può inviare messaggi solo tramite "pull" da parte del client, quindi o come payload in una risposta come quella sopra: <span class="anchor" id="line-42"></span></p><span class="anchor" id="line-43"></span><span class="anchor" id="line-44"></span><pre>HTTP/1.1 200 OK
+<span class="anchor" id="line-45"></span>Content-Type: text/xml; charset=utf-8
+<span class="anchor" id="line-46"></span>Content-Length: 185
+<span class="anchor" id="line-47"></span>
+<span class="anchor" id="line-48"></span>&lt;body xmlns='http://jabber.org/protocol/httpbind'&gt;
+<span class="anchor" id="line-49"></span>  &lt;message from='contact@example.com'
+<span class="anchor" id="line-50"></span>           to='user@example.com'
+<span class="anchor" id="line-51"></span>           xmlns='jabber:client'&gt;
+<span class="anchor" id="line-52"></span>    &lt;body&gt;Hi yourself!&lt;/body&gt;
+<span class="anchor" id="line-53"></span>  &lt;/message&gt;
+<span class="anchor" id="line-54"></span>  &lt;message from='friend@example.com'
+<span class="anchor" id="line-55"></span>           to='user@example.com'
+<span class="anchor" id="line-56"></span>           xmlns='jabber:client'&gt;
+<span class="anchor" id="line-57"></span>    &lt;body&gt;Hi yourself!&lt;/body&gt;
+<span class="anchor" id="line-58"></span>  &lt;/message&gt;
+<span class="anchor" id="line-59"></span>&lt;/body&gt;
+<span class="anchor" id="line-60"></span></pre><span class="anchor" id="line-61"></span><span class="anchor" id="line-62"></span><p class="line886">o come risposta ad un pull vuoto (il client quando si connette fa una pull): <span class="anchor" id="line-63"></span></p><span class="anchor" id="line-64"></span><span class="anchor" id="line-65"></span><pre>POST /webclient HTTP/1.1
+<span class="anchor" id="line-66"></span>Host: httpcm.jabber.org
+<span class="anchor" id="line-67"></span>Accept-Encoding: gzip, deflate
+<span class="anchor" id="line-68"></span>Content-Type: text/xml; charset=utf-8
+<span class="anchor" id="line-69"></span>Content-Length: 88
+<span class="anchor" id="line-70"></span>
+<span class="anchor" id="line-71"></span>&lt;body rid='2842791423'
+<span class="anchor" id="line-72"></span>      sid='SomeSID'
+<span class="anchor" id="line-73"></span>      xmlns='http://jabber.org/protocol/httpbind'/&gt;
+<span class="anchor" id="line-74"></span></pre><span class="anchor" id="line-75"></span><span class="anchor" id="line-76"></span><p class="line886">Sia in un caso che nell'altro il client non può dare un ACK, quindi il server non sa se i messaggi sono stati recpitati.  <span class="anchor" id="line-77"></span></p><span class="anchor" id="line-78"></span><p class="line879">La sezione 12 di <a class="http" href="http://www.jabber.org/jeps/jep-0124.html#rids">HTTPBind</a> non è di molto aiuto, siccome non dice nulla del caso in cui si perdano le risposte. <span class="anchor" id="line-79"></span></p><span class="anchor" id="line-80"></span><p class="line886">Il client, quindi, appena riveuti dei messaggi dovrebbe fare un'altra POST dove inserisce un ACK. Non dovesse ricevere la risposta (errore di connessione) comunque non dovrebbere reinviare l'ACK, in quanto: <span class="anchor" id="line-81"></span></p><ol type="1"><li><p class="line886">se il server ha ricevuto l'ACK può essere sicuro che i messaggi siano consegnato, non è necessario che il client sia ulteriormente notificato <span class="anchor" id="line-82"></span></p></li><li><p class="line886">se il server non ha ricevuto l'ACK, può reinviare i messaggi, che il client scarterà, reinviando l'ACK.  <span class="anchor" id="line-83"></span></p><span class="anchor" id="line-84"></span></li></ol><p class="line879">Di cosa però si fa l'ACK? Il &lt;body/&gt; che invia server non contiene rid e nient'atro (il rid server solo per rispondere alle richieste in ordine). Si potrebbe usare anche un rid nel verso opposto, siccome lo standard non dice nulla possiamo fare quello che vogliamo. Alternativamente possiamo fare tutto con header HTTP... Sono aperte considerazioni <span class="anchor" id="line-85"></span></p><span class="anchor" id="line-86"></span><span class="anchor" id="line-87"></span>
+<h2 id="head-480f1d4f159e83f5ceceb5235cc06051dd46b76c">Differenze tra Bluetooth e GPRS</h2>
+<span class="anchor" id="line-88"></span><p class="line886">... <span class="anchor" id="line-89"></span></p><span class="anchor" id="bottom"></span></div><p id="pageinfo" class="info" lang="it" dir="ltr">TrasportoHTTP  (l'ultima modifica è del 2005-12-10 00:08:00, fatta da <span title="SciaSbat @ 217.201.215.104[217.201.215.104]"><a class="nonexistent nonexistent" href="/coso/wiki/moin.cgi/SciaSbat" title="SciaSbat @ 217.201.215.104[217.201.215.104]">SciaSbat</a></span>)</p>
+
+<div id="pagebottom"></div>
+</div>
+
+
+<div id="footer"><ul class="editbar"><li><a name="texteditlink" href="/coso/wiki/moin.cgi/TrasportoHTTP?action=edit&amp;editor=text">Edit (Text)</a></li></ul><p><a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=refresh">CancellaFileTemporanei</a> (2006-03-19 18:16:03 in cache)</p><p>Oppure prova una di queste azioni: <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=AttachFile">Attach File</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=DeletePage">Cancella Pagina</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=Despam">Despam</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=LikePages">Like Pages</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=LocalSiteMap">Local Site Map</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=MyPages">My Pages</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=PackagePages">Package Pages</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=RenamePage">Rinomina Pagina</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=RenderAsDocbook">Render As Docbook</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=SpellCheck">Spell Check</a>, <a href="/coso/wiki/moin.cgi/TrasportoHTTP?action=SubscribeUser">Subscribe User</a></p>
+</div>
+<ul id="credits">
+<li><a href="http://moinmoin.wikiwikiweb.de/">MoinMoin Powered</a></li><li><a href="http://www.python.org/">Python Powered</a></li><li><a href="http://validator.w3.org/check?uri=referer">Valid HTML 4.01</a></li>
+</ul>
+
+
+<ul id="timings">
+<li>getACL = 0.004s</li>
+<li>run = 0.218s</li>
+<li>send_page = 0.206s</li>
+<li>send_page_content = 0.004s</li>
+<li>total = 0.254s</li>
+</ul>
+</body>
+</html>
+
