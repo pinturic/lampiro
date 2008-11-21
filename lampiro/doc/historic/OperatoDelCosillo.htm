@@ -1,0 +1,210 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+<meta name="robots" content="index,nofollow">
+
+<title>OperatoDelCosillo - Wiki del Coso</title>
+<script type="text/javascript" src="/coso/wiki/htdocs/common/js/common.js"></script>
+
+<script type="text/javascript">
+<!--// common functions
+
+// We keep here the state of the search box
+searchIsDisabled = false;
+
+function searchChange(e) {
+    // Update search buttons status according to search box content.
+    // Ignore empty or whitespace search term.
+    var value = e.value.replace(/\s+/, '');
+    if (value == '' || searchIsDisabled) { 
+        searchSetDisabled(true);
+    } else {
+        searchSetDisabled(false);
+    }
+}
+
+function searchSetDisabled(flag) {
+    // Enable or disable search
+    document.getElementById('fullsearch').disabled = flag;
+    document.getElementById('titlesearch').disabled = flag;
+}
+
+function searchFocus(e) {
+    // Update search input content on focus
+    if (e.value == 'Search') {
+        e.value = '';
+        e.className = '';
+        searchIsDisabled = false;
+    }
+}
+
+function searchBlur(e) {
+    // Update search input content on blur
+    if (e.value == '') {
+        e.value = 'Search';
+        e.className = 'disabled';
+        searchIsDisabled = true;
+    }
+}
+
+function actionsMenuInit(title) {
+    // Initialize action menu
+    for (i = 0; i < document.forms.length; i++) {
+        var form = document.forms[i];
+        if (form.className == 'actionsmenu') {
+            // Check if this form needs update
+            var div = form.getElementsByTagName('div')[0];
+            var label = div.getElementsByTagName('label')[0];
+            if (label) {
+                // This is the first time: remove label and do buton.
+                div.removeChild(label);
+                var dobutton = div.getElementsByTagName('input')[0];
+                div.removeChild(dobutton);
+                // and add menu title
+                var select = div.getElementsByTagName('select')[0];
+                var item = document.createElement('option');
+                item.appendChild(document.createTextNode(title));
+                item.value = 'show';
+                select.insertBefore(item, select.options[0]);
+                select.selectedIndex = 0;
+            }
+        }
+    }
+}
+//-->
+</script>
+
+<script type="text/javascript">
+var gui_editor_link_href = "/coso/wiki/moin.cgi/OperatoDelCosillo?action=edit&editor=gui";
+var gui_editor_link_text = "Edit (GUI)";
+</script>        
+
+<link rel="stylesheet" type="text/css" charset="utf-8" media="all" href="/coso/wiki/htdocs/classic/css/common.css">
+<link rel="stylesheet" type="text/css" charset="utf-8" media="screen" href="/coso/wiki/htdocs/classic/css/screen.css">
+<link rel="stylesheet" type="text/css" charset="utf-8" media="print" href="/coso/wiki/htdocs/classic/css/print.css">
+<link rel="stylesheet" type="text/css" charset="utf-8" media="projection" href="/coso/wiki/htdocs/classic/css/projection.css">
+
+
+<link rel="Start" href="/coso/wiki/moin.cgi/HelpOnLanguages">
+<link rel="Alternate" title="Formattazione Wiki" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=raw">
+<link rel="Alternate" media="print" title="Versione stampabile" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=print">
+<link rel="Appendix" title="cosillo.pdf" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=AttachFile&amp;do=view&amp;target=cosillo.pdf">
+<link rel="Search" href="/coso/wiki/moin.cgi/CercaPagina">
+<link rel="Index" href="/coso/wiki/moin.cgi/IndiceDeiTitoli">
+<link rel="Glossary" href="/coso/wiki/moin.cgi/IndicePerParola">
+<link rel="Help" href="/coso/wiki/moin.cgi/AiutoSuFormattazione">
+</head>
+
+<body  lang="it" dir="ltr">
+
+
+
+<div id="header">
+<div id="logo"><a href="/coso/wiki/moin.cgi/HelpOnLanguages">Wiki del Coso</a></div>
+
+<form id="searchform" method="get" action="">
+<div>
+<input type="hidden" name="action" value="fullsearch">
+<input type="hidden" name="context" value="180">
+<label for="searchinput">Cerca:</label>
+<input id="searchinput" type="text" name="value" value="" size="20"
+    onfocus="searchFocus(this)" onblur="searchBlur(this)"
+    onkeyup="searchChange(this)" onchange="searchChange(this)" alt="Search">
+<input id="titlesearch" name="titlesearch" type="submit"
+    value="Titoli" alt="Search Titles">
+<input id="fullsearch" name="fullsearch" type="submit"
+    value="Testo" alt="Search Full Text">
+</div>
+</form>
+<script type="text/javascript">
+<!--// Initialize search form
+var f = document.getElementById('searchform');
+f.getElementsByTagName('label')[0].style.display = 'none';
+var e = document.getElementById('searchinput');
+searchChange(e);
+searchBlur(e);
+//-->
+</script>
+
+<ul id="username"><li><a class="nonexistent nonexistent" href="/coso/wiki/moin.cgi/LucianoMollea" title="LucianoMollea @ Self">LucianoMollea</a></li><li><a href="/coso/wiki/moin.cgi/PreferenzeUtente">PreferenzeUtente</a></li><li><form action="" method="POST">
+<input type="hidden" name="action" value="userform">
+<input type="submit" name="logout" value="Logout">
+</form>
+</li></ul>
+<div id="locationline">
+
+
+<ul id="pagelocation">
+<li><a class="backlink" title="Clicca qui per effettuare una ricerca full-text per questo titolo" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=fullsearch&amp;value=linkto%3A%22OperatoDelCosillo%22&amp;context=180">OperatoDelCosillo</a></li>
+</ul>
+
+</div>
+
+<ul id="pagetrail">
+<li><a href="/coso/wiki/moin.cgi/ParserXMLJ2Me">ParserXMLJ2Me</a></li><li><a href="/coso/wiki/moin.cgi/ProtocolloBluetooth">ProtocolloBluetooth</a></li><li><a href="/coso/wiki/moin.cgi/TrasportoHTTP">TrasportoHTTP</a></li><li><a href="/coso/wiki/moin.cgi/FrontPage">FrontPage</a></li><li><a href="/coso/wiki/moin.cgi/OperatoDelCosillo">OperatoDelCosillo</a></li>
+</ul>
+<ul id="iconbar">
+<li><a title="Modifica" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=edit"><img alt="Modifica" height="12" src="/coso/wiki/htdocs/classic/img/moin-edit.png" title="Modifica" width="12" /></a></li>
+<li><a title="mostra" href="/coso/wiki/moin.cgi/OperatoDelCosillo"><img alt="mostra" height="13" src="/coso/wiki/htdocs/classic/img/moin-show.png" title="mostra" width="12" /></a></li>
+<li><a title="differenze" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=diff"><img alt="differenze" height="11" src="/coso/wiki/htdocs/classic/img/moin-diff.png" title="differenze" width="15" /></a></li>
+<li><a title="Informazioni" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=info"><img alt="Informazioni" height="11" src="/coso/wiki/htdocs/classic/img/moin-info.png" title="Informazioni" width="12" /></a></li>
+<li><a title="Sottoscrivi" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=subscribe"><img alt="Sottoscrivi" height="10" src="/coso/wiki/htdocs/classic/img/moin-subscribe.png" title="Sottoscrivi" width="14" /></a></li>
+<li><a title="Non formattato" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=raw"><img alt="Non formattato" height="13" src="/coso/wiki/htdocs/classic/img/moin-raw.png" title="Non formattato" width="12" /></a></li>
+<li><a title="Versione stampabile" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=print"><img alt="Versione stampabile" height="14" src="/coso/wiki/htdocs/classic/img/moin-print.png" title="Versione stampabile" width="16" /></a></li>
+</ul>
+
+
+<ul id="navibar">
+<li class="wikilink"><a href="/coso/wiki/moin.cgi/HelpOnLanguages">HelpOnLanguages</a></li><li class="wikilink"><a href="/coso/wiki/moin.cgi/ModificheRecenti">ModificheRecenti</a></li><li class="wikilink"><a href="/coso/wiki/moin.cgi/CercaPagina">CercaPagina</a></li><li class="wikilink"><a href="/coso/wiki/moin.cgi/AiutoContenuti">AiutoContenuti</a></li><li class="current"><a href="/coso/wiki/moin.cgi/OperatoDelCosillo">OperatoDelCosillo</a></li>
+</ul>
+
+
+</div>
+
+
+
+<div id="page" lang="en" dir="ltr">
+
+<div dir="ltr" id="content" lang="en"><span class="anchor" id="top"></span>
+<span class="anchor" id="line-1"></span>
+<h2 id="head-86d14595a4f7f0969e891e440ab4557f934faf4c">Schema Gateway</h2>
+<span class="anchor" id="line-2"></span><span class="anchor" id="line-3"></span><p class="line886">Il cosillo ha due chiavette Bluetooth. Una viene usata esclusivamente per le inquiry di dispostivi con il client Jabber. Il client non fa inquiry, a meno che non sia un client che non è discoverable. In quest'ultimo caso occorre capire quale strategia seguire, ma dipende dal cellulare (prima dobbiamo trovarne uno che si comporta in questo modo) <span class="anchor" id="line-4"></span></p><span class="anchor" id="line-5"></span>
+<h3 id="head-bd24399ac7d3aa27b9da52936b4e5e442eadfc73">Inquiry</h3>
+<span class="anchor" id="line-6"></span><p class="line886">Codice associato alla chiavetta che fa inquiry: <span class="anchor" id="line-7"></span></p><span class="anchor" id="line-8"></span><span class="anchor" id="line-9"></span><pre>function gotDevice(device):
+<span class="anchor" id="line-10"></span>    if(device is new):
+<span class="anchor" id="line-11"></span>        if device has YupClient: # sdp query
+<span class="anchor" id="line-12"></span>            startConnection # with the second device
+<span class="anchor" id="line-13"></span>    
+<span class="anchor" id="line-14"></span>while 1:
+<span class="anchor" id="line-15"></span>    doInquiry(cb=gotDevice)
+<span class="anchor" id="line-16"></span></pre><span class="anchor" id="line-17"></span><span class="anchor" id="line-18"></span><span class="anchor" id="line-19"></span><p class="line879">La gotDevice viene chiamata asincronamente non appena viene identificato un dispositivo BT. Se il dispositivo è nuovo (non ce l'ho nella mia cache locale) faccio una query SDP per capire se ha lo <a class="nonexistent nonexistent" href="/coso/wiki/moin.cgi/YupInstallato">YupInstallato</a>[1]. Con questa operazione l'inquiry verrà interrotta e riprenderà non appena la query SDP sarà terminata. <span class="anchor" id="line-20"></span></p><span class="anchor" id="line-21"></span><p class="line886">Nota: il client se non è online non pubblica via SDP il servizio Yupper, quindi il cosillo non prova a connettersi. Quando invece un client vuole andare online, semplicemente pubblica via SDP il servizio e si appresta a ricevere connessioni (in pratica ciò avviene quando creo la BTConnection)[2] <span class="anchor" id="line-22"></span></p><span class="anchor" id="line-23"></span>
+<h2 id="head-6faf9d1bbb49c270de6ac5acd16eaac6a19320e9">Connessione</h2>
+<span class="anchor" id="line-24"></span><span class="anchor" id="line-25"></span><p class="line879">La prima connessione viene sempre iniziata dal cosillo verso ogni client appena identificato.Il protocollo utilizzato è quello descritto nella JEP-124, senza modifiche. Utilizzando in maniera corretta i Request ID (RID) è infatti possibile dare degli ACK impliciti, senza dover fare delle POST apposite. In questi <a class="attachment" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=AttachFile&amp;do=get&amp;target=cosillo.pdf" title="attachment:cosillo.pdf">diagrammi a traliccio</a> viene spiegato il meccanismo base.  <span class="anchor" id="line-26"></span></p><span class="anchor" id="line-27"></span><p class="line879">Premessa: ogni entità tiene un buffer d'uscita in cui mantiene l'ultima POST inviata o l'ultimo risultato inviato (l'ultima stanza &lt;body/&gt; scambiata). Gli ack vengono dati da: <span class="anchor" id="line-28"></span></p><ul><li><p class="line879">(lato server): la ricezione di un &lt;body/&gt; con rid successivo <span class="anchor" id="line-29"></span></p></li><li><p class="line879">(lato client): la risposta all'ultimo &lt;body/&gt; inviato. <span class="anchor" id="line-30"></span></p><span class="anchor" id="line-31"></span></li></ul>
+<h3 id="head-5ac4a8442b305c690fc47d9712e898a883cfbe50">Schema yupper &lt;-&gt; cosillo &lt;-&gt; server</h3>
+<span class="anchor" id="line-32"></span><span class="anchor" id="line-33"></span><p class="line903"><em>(slide 1, in alto)</em> <span class="anchor" id="line-34"></span></p><span class="anchor" id="line-35"></span><ol type="1"><li><p class="line886">un cosillo trova un client, apre una connessione RFCOMM <span class="anchor" id="line-36"></span></p></li><li><p class="line886">il client fa una POST HTTP con RID 1 (sia che abbia un messaggio da inviarem che non abbia nulla) <span class="anchor" id="line-37"></span></p></li><li><p class="line886">il server risponde (es. c'è un messaggio in coda da consegnare) <span class="anchor" id="line-38"></span></p></li><li><p class="line886">il client invia un POST HTTP con RID 2 <span class="anchor" id="line-39"></span></p></li><li><p class="line886">il server non risponde e, dopo un periodo di inattività (deciso dal cosillo, secondo il carico attuale), la connessione RFCOMM viene chiusa <span class="anchor" id="line-40"></span></p></li><li><p class="line886">il cosillo mantiene la connessione HTTP aperta con il server <span class="anchor" id="line-41"></span></p><span class="anchor" id="line-42"></span></li></ol><p class="line903"><em>(slide 1, in basso)</em> <span class="anchor" id="line-43"></span></p><span class="anchor" id="line-44"></span><p class="line886">A questo punto il cosillo non fa nulla finché non c'è un messaggio pronto per il client, che verrà in risposta alla POST precedente rimasta in in sospeso (RID 2). Quando ciò avviene: <span class="anchor" id="line-45"></span></p><span class="anchor" id="line-46"></span><ol type="1"><li><p class="line886">il cosillo apre una conessione RFCOMM verso il client <span class="anchor" id="line-47"></span></p></li><li><p class="line886">il client, non avendo ancora ricevuto una risposta x RID 2, reinvia una POST con RID 2 <span class="anchor" id="line-48"></span></p></li><li><p class="line886">il cosillo risponde direttamente, perché ha il risultato già pronto <span class="anchor" id="line-49"></span></p></li><li><p class="line886">il client fa una nuova POST con RID 3, che viene girata al server. <span class="anchor" id="line-50"></span></p></li><li><p class="line886">si va avanti come prima e il canale RFCOMM viene chiuso <span class="anchor" id="line-51"></span></p><span class="anchor" id="line-52"></span></li></ol><p class="line879">Recupero errori: la situazione d'errore comune si verifica quando il cosillo rivece un messaggio per il client come risposta ad un POST in sospeso (RID 2 ad esempio), ma nel frattempo il client è uscito dal raggio d'azione e non torna più. In questo caso il messaggio non viene perso, in quanto il server non butta via un RIDi finché non riceve un RIDi+1. Se il client entra nel raggio di un altro cosillo, farà la sua prima richiesta usando sempre RIDi e riceverà come risposta immediata il messaggio in sospeso. Se successivamente rientrerà nel raggio d'azione del primo cosillo e questo ha ancora il messaggio bufferizzato, il cosillo riceverà una POST con RID&gt;RIDi e potrà scartare il messaggio.  <span class="anchor" id="line-53"></span></p><span class="anchor" id="line-54"></span><p class="line886">Per evitare di tenere troppe connessioni aperte verso il server ogni cosillo prova cmq a contattare il client a intervali regolari, in modo da verificare che si trovi ancora nel raggio d'azione. <span class="anchor" id="line-55"></span></p><span class="anchor" id="line-56"></span><p class="line903"><em>(slide 2, in basso)</em> <span class="anchor" id="line-57"></span></p><span class="anchor" id="line-58"></span><p class="line886">Il client può voler inviare un messaggio quando la risposta a RID 2 non è ancora pronta. Questo viene viene inerito in un nuovo body con RID 3. <span class="anchor" id="line-59"></span></p><ol type="1"><li><p class="line886">il client apre una connessione <span class="anchor" id="line-60"></span></p></li><li><p class="line886">invia una POST HTTP con RID 2 (quella ancora in sospeso) <span class="anchor" id="line-61"></span></p></li><li><p class="line886">invia di seguito, senza attendere risposta una POST con il messaggio e RID 3 <span class="anchor" id="line-62"></span></p></li><li><p class="line886">il server deve rispondere subito alla RID 2 <span class="anchor" id="line-63"></span></p></li></ol><p class="line886">1. se non vi sono risposte per il client prima che scada il timeout la connessione RFCOMM viene chiusa dal cosillo (in questo caso il timeout deve essere breve, anche inferiore ad 1-2 secondi, in quanto la chiavetta può servire solo una connessione per volta quando vengono iniziate dai client) <span class="anchor" id="line-64"></span></p><span class="anchor" id="line-65"></span><p class="line886">Possibili errori: <span class="anchor" id="line-66"></span></p><ul><li><p class="line886">il client esce dal raggio d'azione e non trova più il cosillo. Riprova un po' di volte e poi aspetta di venire di nuovo contatto da un cosillo se non riesce a connettersi <span class="anchor" id="line-67"></span></p></li><li><p class="line886">il client non riceve la risposta a RID 2 per problemi di connessione. Al prossimo tentativo il server rivecerà di nuovo entrambi, rimaderà la risposa RID 2 e ignorerà RID 3 (ergo il serve deve cmq tenere l'ultima risposta bufferizzata, anche se ha già ricevuto il RID successivo) <span class="anchor" id="line-68"></span></p><span class="anchor" id="line-69"></span></li></ul><p class="line903"><em>(slide 3, in basso)</em> <span class="anchor" id="line-70"></span>Il client entra nel raggio d'azione di un nuovo cosillo.  <span class="anchor" id="line-71"></span></p><span class="anchor" id="line-72"></span><ol type="1"><li><p class="line886">il cosillo apre la connessione <span class="anchor" id="line-73"></span></p></li><li><p class="line886">il client reinvia l'ultimo RID inviato senza aver ottenuto risposta <span class="anchor" id="line-74"></span></p></li><li><p class="line886">se ci sono messaggi (magari già recapitati su un altro cosillo), il client riceve la risposta immediata <span class="anchor" id="line-75"></span></p></li><li><p class="line886">altrimenti dopo un timeout il cosillo 2 chiude il canale e si procede come al solito <span class="anchor" id="line-76"></span></p><span class="anchor" id="line-77"></span><span class="anchor" id="line-78"></span></li></ol>
+<h2 id="head-277e7f1d51203c1007453964e87ae4893fbd1db0">Note</h2>
+<span class="anchor" id="line-79"></span><span class="anchor" id="line-80"></span><ol type="1"><li><p class="line886">Vedere se è il caso di fare spam, coordinandosi con il server, per proporre il push del client <span class="anchor" id="line-81"></span></p></li><li><p class="line886">Occorre capire come gestire la presenza. Se via Bluetooth ci dovrebebro essere troppi problemi anche contact list lunghe, via GPRS potrebbe richiedere parecchia banda. <span class="anchor" id="line-82"></span></p></li></ol><span class="anchor" id="bottom"></span></div><p id="pageinfo" class="info" lang="it" dir="ltr">OperatoDelCosillo  (l'ultima modifica è del 2006-01-02 22:09:30, fatta da <span title="SciaSbat @ ppp-120-132.25-151.libero.it[151.25.132.120]"><a class="nonexistent nonexistent" href="/coso/wiki/moin.cgi/SciaSbat" title="SciaSbat @ ppp-120-132.25-151.libero.it[151.25.132.120]">SciaSbat</a></span>)</p>
+
+<div id="pagebottom"></div>
+</div>
+
+
+<div id="footer"><ul class="editbar"><li><a name="texteditlink" href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=edit&amp;editor=text">Edit (Text)</a></li></ul><p><a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=refresh">CancellaFileTemporanei</a> (2006-03-19 21:13:32 in cache)</p><p>Oppure prova una di queste azioni: <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=AttachFile">Attach File</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=DeletePage">Cancella Pagina</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=Despam">Despam</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=LikePages">Like Pages</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=LocalSiteMap">Local Site Map</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=MyPages">My Pages</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=PackagePages">Package Pages</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=RenamePage">Rinomina Pagina</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=RenderAsDocbook">Render As Docbook</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=SpellCheck">Spell Check</a>, <a href="/coso/wiki/moin.cgi/OperatoDelCosillo?action=SubscribeUser">Subscribe User</a></p>
+</div>
+<ul id="credits">
+<li><a href="http://moinmoin.wikiwikiweb.de/">MoinMoin Powered</a></li><li><a href="http://www.python.org/">Python Powered</a></li><li><a href="http://validator.w3.org/check?uri=referer">Valid HTML 4.01</a></li>
+</ul>
+
+
+<ul id="timings">
+<li>compile_huge_and_ugly = 0.442s</li>
+<li>getACL = 0.005s</li>
+<li>run = 0.780s</li>
+<li>send_page = 0.768s</li>
+<li>send_page_content = 0.544s</li>
+<li>total = 0.815s</li>
+</ul>
+</body>
+</html>
+
