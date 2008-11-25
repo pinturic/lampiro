@@ -56,7 +56,7 @@ public class TaskListScreen extends UIScreen {
 		for (int i = 0; i < tasks.length; i++) {
 			if (tasks[i].getLabel().equals(tname)) {
 				// #ifdef UI
-//@				tasks[i].display();
+				tasks[i].display();
 				// #endif
 			}
 		}

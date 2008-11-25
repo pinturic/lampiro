@@ -745,7 +745,7 @@ public class RosterScreen extends Canvas implements CommandListener {
 			Task tasks[] = usr.getTasks();
 			if (tasks.length == 1) {
 				// #ifndef UI 
-								tasks[0].display(disp, this);
+//@								tasks[0].display(disp, this);
 				// #endif
 			} else if (tasks.length > 1) {
 				TaskListScreen taskListScreen = new TaskListScreen(tasks);

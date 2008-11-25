@@ -7,16 +7,16 @@
 package it.yup.xmpp;
 
 // #ifdef UI 
-//@import it.yup.ui.UICanvas;
-//@import lampiro.screens.RegisterScreen;
-//@import lampiro.screens.RosterScreen;
-//@
+import it.yup.ui.UICanvas;
+import lampiro.screens.RegisterScreen;
+import lampiro.screens.RosterScreen;
+
 // #endif
 // #ifndef UI
-
-import lampiro.LampiroMidlet;
-import it.yup.screens.RosterScreen;
-
+//@
+//@import lampiro.LampiroMidlet;
+//@import it.yup.screens.RosterScreen;
+//@
 // #endif
 
 // #debug
@@ -189,11 +189,11 @@ public class Roster implements PacketListener {
 					subscribeContact(c);
 				}
 				// #ifdef UI 
-//@				UICanvas.getInstance().open(RosterScreen.getInstance(), true);
-//@				UICanvas.getInstance().close(RegisterScreen.getInstance());
+				UICanvas.getInstance().open(RosterScreen.getInstance(), true);
+				UICanvas.getInstance().close(RegisterScreen.getInstance());
 				// #endif
 // #ifndef UI
-												LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());
+				//@								LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());
 				// #endif
 			}
 		});

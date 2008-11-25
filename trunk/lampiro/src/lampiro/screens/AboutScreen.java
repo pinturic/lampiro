@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AboutScreen.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: AboutScreen.java 1015 2008-11-25 09:48:49Z luca $
 */
 
 package lampiro.screens;
@@ -19,7 +19,9 @@ public class AboutScreen extends UIScreen {
 
 	Image logo;
 
-	private static String[] lines = { "Mobile Messaging", "", "(c) 2007-2008 Bluendo srl", "http://www.bluendo.com", "", "version 1.0", };
+	private static String[] lines = { "Mobile Messaging", "",
+			"(c) 2007-2008 Bluendo srl", "http://www.bluendo.com", "",
+			"version 0.9.0", };
 
 	private static UILabel cmd_ok = new UILabel("OK");
 

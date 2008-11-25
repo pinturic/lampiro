@@ -51,8 +51,8 @@ public class TaskListScreen extends List implements CommandListener {
 		//		if(cmd == cmd_select) {
 		if (cmd == List.SELECT_COMMAND) {
 			// #ifndef UI 
-			tasks[getSelectedIndex()].display(LampiroMidlet.disp, RosterScreen
-					.getInstance());
+//@			tasks[getSelectedIndex()].display(LampiroMidlet.disp, RosterScreen
+//@					.getInstance());
 			// #endif
 		}
 	}

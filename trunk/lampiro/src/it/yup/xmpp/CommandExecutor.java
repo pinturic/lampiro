@@ -10,24 +10,24 @@ import java.util.Date;
 import javax.microedition.lcdui.AlertType;
 
 // #ifdef UI 
-//@import it.yup.ui.UICanvas;
-//@import it.yup.ui.UIScreen;
-//@import lampiro.screens.DataFormScreen;
-//@import lampiro.screens.DataResultScreen;
-//@import lampiro.screens.RosterScreen;
-//@import lampiro.screens.DataFormScreen.DataFormListener;
-//@
+import it.yup.ui.UICanvas;
+import it.yup.ui.UIScreen;
+import lampiro.screens.DataFormScreen;
+import lampiro.screens.DataResultScreen;
+import lampiro.screens.RosterScreen;
+import lampiro.screens.DataFormScreen.DataFormListener;
+
 // #endif
 // #ifndef UI
-import lampiro.LampiroMidlet;
-import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Screen;
-
-import it.yup.screens.DataFormScreen;
-import it.yup.screens.DataResultScreen;
-import it.yup.screens.DataFormScreen.DataFormListener;
-
+//@import lampiro.LampiroMidlet;
+//@import javax.microedition.lcdui.Display;
+//@import javax.microedition.lcdui.Displayable;
+//@import javax.microedition.lcdui.Screen;
+//@
+//@import it.yup.screens.DataFormScreen;
+//@import it.yup.screens.DataResultScreen;
+//@import it.yup.screens.DataFormScreen.DataFormListener;
+//@
 // #endif
 
 import it.yup.xmlstream.Element;
@@ -60,11 +60,11 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	private Element current_element = null;
 
 	// #ifdef UI 
-//@	/** the screen assocated (if shown) to this command */
-//@	private UIScreen screen;
+	/** the screen assocated (if shown) to this command */
+	private UIScreen screen;
 	// #endif
 // #ifndef UI
-		private Displayable next_screen;
+//@		private Displayable next_screen;
 	// #endif
 
 	private String note = null;
@@ -192,16 +192,16 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		// update commad status
 		XMPPClient.getInstance().updateTask(this);
 		// #ifdef UI 
-//@		if (screen != null) {
-//@			/* close the screen */
-//@			UICanvas.getInstance().close(screen);
-//@			screen = null;
-//@		} else {
-//@			UICanvas.getInstance().show(RosterScreen.getInstance());
-//@		}
+		if (screen != null) {
+			/* close the screen */
+			UICanvas.getInstance().close(screen);
+			screen = null;
+		} else {
+			UICanvas.getInstance().show(RosterScreen.getInstance());
+		}
 		// #endif
 // #ifndef UI
-				LampiroMidlet.disp.setCurrent(next_screen);
+//@				LampiroMidlet.disp.setCurrent(next_screen);
 		// #endif
 
 	}
@@ -229,13 +229,13 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	}
 
 	// #ifdef UI 
-//@	public void display() {
-//@		UIScreen screen = null;
+	public void display() {
+		UIScreen screen = null;
 		// #endif
 // #ifndef UI
-			public void display(Display disp, Displayable next_screen) {
-				this.next_screen = next_screen;
-				Screen screen = null;
+//@			public void display(Display disp, Displayable next_screen) {
+//@				this.next_screen = next_screen;
+//@				Screen screen = null;
 		// #endif
 
 		XMPPClient client = XMPPClient.getInstance();
@@ -300,22 +300,22 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		}
 
 		// #ifdef UI 
-//@		if (note != null) {
-//@			client.showAlert(AlertType.INFO, "Note", note, null);
-//@		}
-//@		if (screen != null) {
-//@			UICanvas.getInstance().open(screen, true);
-//@		}
+		if (note != null) {
+			client.showAlert(AlertType.INFO, "Note", note, null);
+		}
+		if (screen != null) {
+			UICanvas.getInstance().open(screen, true);
+		}
 		// #endif
 // #ifndef UI
-				if (screen != null) {
-					if (note != null) {
-						client.showAlert(AlertType.INFO, "Note", note, screen);
-		
-					} else {
-						LampiroMidlet.disp.setCurrent(screen);
-					}
-				}
+//@				if (screen != null) {
+//@					if (note != null) {
+//@						client.showAlert(AlertType.INFO, "Note", note, screen);
+//@		
+//@					} else {
+//@						LampiroMidlet.disp.setCurrent(screen);
+//@					}
+//@				}
 		// #endif 
 
 	}

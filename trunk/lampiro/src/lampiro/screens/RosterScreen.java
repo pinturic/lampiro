@@ -828,7 +828,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			Task tasks[] = usr.getTasks();
 			if (tasks.length == 1) {
 				// #ifdef UI
-//@				tasks[0].display();
+				tasks[0].display();
 				// #endif
 			} else if (tasks.length > 1) {
 				TaskListScreen taskListScreen = new TaskListScreen(tasks);

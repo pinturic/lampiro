@@ -48,26 +48,26 @@ import javax.microedition.media.Manager;
 import javax.microedition.media.MediaException;
 
 // #ifdef UI 
-//@import it.yup.ui.UICanvas;
-//@import it.yup.ui.UIScreen;
-//@import lampiro.screens.CommandListScreen;
-//@import lampiro.screens.DataFormScreen;
-//@import lampiro.screens.DataResultScreen;
-//@import lampiro.screens.RegisterScreen;
-//@import lampiro.screens.RosterScreen;
-//@import lampiro.screens.SubscriptionConfirmScreen;
-//@
+import it.yup.ui.UICanvas;
+import it.yup.ui.UIScreen;
+import lampiro.screens.CommandListScreen;
+import lampiro.screens.DataFormScreen;
+import lampiro.screens.DataResultScreen;
+import lampiro.screens.RegisterScreen;
+import lampiro.screens.RosterScreen;
+import lampiro.screens.SubscriptionConfirmScreen;
+
 // #endif
 // #ifndef UI
-
-import it.yup.screens.CommandListScreen;
-import it.yup.screens.DataFormScreen;
-import it.yup.screens.DataResultScreen;
-import it.yup.screens.RegisterScreen;
-import it.yup.screens.RosterScreen;
-import it.yup.screens.SubscriptionConfirmAlert;
-import javax.microedition.lcdui.Display;
-
+//@
+//@import it.yup.screens.CommandListScreen;
+//@import it.yup.screens.DataFormScreen;
+//@import it.yup.screens.DataResultScreen;
+//@import it.yup.screens.RegisterScreen;
+//@import it.yup.screens.RosterScreen;
+//@import it.yup.screens.SubscriptionConfirmAlert;
+//@import javax.microedition.lcdui.Display;
+//@
 // #endif
 
 public class XMPPClient {
@@ -192,7 +192,7 @@ public class XMPPClient {
 
 	public void startClient() {
 		// #ifndef UI 
-						LampiroMidlet.disp.setCurrent(RegisterScreen.getInstance());
+		//@				LampiroMidlet.disp.setCurrent(RegisterScreen.getInstance());
 		// #endif
 	}
 
@@ -459,11 +459,11 @@ public class XMPPClient {
 		} else {
 			// subscribe_to_agent();
 			// #ifdef UI
-//@			UICanvas.getInstance().open(RosterScreen.getInstance(), true);
-//@			UICanvas.getInstance().close(RegisterScreen.getInstance());
+			UICanvas.getInstance().open(RosterScreen.getInstance(), true);
+			UICanvas.getInstance().close(RegisterScreen.getInstance());
 			// #endif
 // #ifndef UI
-									LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());
+			//@						LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());
 			// #endif
 			// UICanvas.getInstance().open(new RosterScreen(), true);
 		}
@@ -537,25 +537,25 @@ public class XMPPClient {
 				Contact u = roster.getContactByJid(from);
 				if (u == null) {
 					// #ifdef MUC
-//@					// first check if its a MUC
-//@					Element[] xs = p.getChildrenByName(null, "x");
-//@					for (int i = 0; xs != null && i < xs.length; i++) {
-//@						if (xs[i].uri != null
-//@								&& xs[i].uri.indexOf(XMPPClient.NS_MUC) >= 0) {
-//@							u = new MUC(Contact.userhost(from), Contact
-//@									.user(from));
-//@						}
-//@					}
-//@
-//@					if (u == null) {
-//@						// XXX Guess the subscription
-//@						u = new Contact(Contact.userhost(from), null, "both",
-//@								null);
-//@					}
+					// first check if its a MUC
+					Element[] xs = p.getChildrenByName(null, "x");
+					for (int i = 0; xs != null && i < xs.length; i++) {
+						if (xs[i].uri != null
+								&& xs[i].uri.indexOf(XMPPClient.NS_MUC) >= 0) {
+							u = new MUC(Contact.userhost(from), Contact
+									.user(from));
+						}
+					}
+
+					if (u == null) {
+						// XXX Guess the subscription
+						u = new Contact(Contact.userhost(from), null, "both",
+								null);
+					}
 					// #endif
 // #ifndef MUC
-															// XXX Guess the subscription
-															u = new Contact(Contact.userhost(from), null, "both", null);
+					//@										// XXX Guess the subscription
+					//@										u = new Contact(Contact.userhost(from), null, "both", null);
 					// #endif
 					u.updatePresence(new Presence(e));
 					roster.contacts.put(u.jid, u);
@@ -616,15 +616,15 @@ public class XMPPClient {
 				 */
 
 				// #ifdef UI
-//@				SubscriptionConfirmScreen scs = new SubscriptionConfirmScreen(u);
-//@				UICanvas.getInstance().open(scs, true);
-//@
+				SubscriptionConfirmScreen scs = new SubscriptionConfirmScreen(u);
+				UICanvas.getInstance().open(scs, true);
+
 				// #endif
 // #ifndef UI
-												Display d = Display.getDisplay(LampiroMidlet._lampiro);
-												SubscriptionConfirmAlert scf = new SubscriptionConfirmAlert(u,
-														d.getCurrent());
-												d.setCurrent(scf);
+				//@								Display d = Display.getDisplay(LampiroMidlet._lampiro);
+				//@								SubscriptionConfirmAlert scf = new SubscriptionConfirmAlert(u,
+				//@										d.getCurrent());
+				//@								d.setCurrent(scf);
 				// #endif
 
 			}
@@ -681,11 +681,11 @@ public class XMPPClient {
 
 	public void playSmartTone() {
 		// #ifdef UI
-//@		boolean shown = UICanvas.getInstance().getCurrentScreen() == RosterScreen
-//@				.getInstance();
+		boolean shown = UICanvas.getInstance().getCurrentScreen() == RosterScreen
+				.getInstance();
 		// #endif
 // #ifndef UI
-						boolean shown = RosterScreen.getInstance().isShown();
+		//@				boolean shown = RosterScreen.getInstance().isShown();
 		// #endif
 		boolean vibrate = (shown && play_flags[1])
 				|| ((!shown) && play_flags[0]);
@@ -693,10 +693,10 @@ public class XMPPClient {
 
 		if (vibrate) {
 			// #ifdef UI
-//@			LampiroMidlet.disp.vibrate(200);
+			LampiroMidlet.disp.vibrate(200);
 			// #endif
 // #ifndef UI
-									LampiroMidlet.disp.vibrate(200);
+			//@						LampiroMidlet.disp.vibrate(200);
 			// #endif
 		}
 
@@ -794,10 +794,10 @@ public class XMPPClient {
 			if (show) {
 				CommandListScreen cmdscr = new CommandListScreen(c);
 				// #ifdef UI
-//@				UICanvas.getInstance().open(cmdscr, true);
+				UICanvas.getInstance().open(cmdscr, true);
 				// #endif
 // #ifndef UI
-												LampiroMidlet.disp.setCurrent(cmdscr);
+				//@								LampiroMidlet.disp.setCurrent(cmdscr);
 				// #endif 
 			}
 		} // XXX we could add an alert if it's empty and we have to show
@@ -817,39 +817,39 @@ public class XMPPClient {
 	public void showAlert(AlertType type, String title, String text,
 			final Object next_screen) {
 		// #ifdef UI
-//@		if (next_screen != null) {
-//@			UICanvas.getInstance().open((UIScreen) next_screen, true);
-//@		}
-//@		UICanvas.showAlert(type, title, text);
+		if (next_screen != null) {
+			UICanvas.getInstance().open((UIScreen) next_screen, true);
+		}
+		UICanvas.showAlert(type, title, text);
 		// #endif
 // #ifndef UI
-				
-						Displayable cur = LampiroMidlet.disp.getCurrent();
-						if (cur.equals(alert)) {
-							alert.setString(alert.getString() + "\n" + text);
-							return;
-						}
-				
-						Image img;
-						try {
-							if (AlertType.INFO.equals(type)) {
-								img = Image.createImage("/icons/warning.png");
-							} else if (AlertType.ERROR.equals(type)) {
-								img = Image.createImage("/icons/error.png");
-							} else {
-								img = Image.createImage("/icons/error.png");
-							}
-				
-						} catch (IOException e) {
-							img = null;
-						}
-				
-						alert = new Alert(title, text, img, type);
-				
-						alert.setType(type);
-						alert.setTimeout(Alert.FOREVER);
-				
-						LampiroMidlet.disp.setCurrent(alert, (Displayable) next_screen);
+		//@		
+		//@				Displayable cur = LampiroMidlet.disp.getCurrent();
+		//@				if (cur.equals(alert)) {
+		//@					alert.setString(alert.getString() + "\n" + text);
+		//@					return;
+		//@				}
+		//@		
+		//@				Image img;
+		//@				try {
+		//@					if (AlertType.INFO.equals(type)) {
+		//@						img = Image.createImage("/icons/warning.png");
+		//@					} else if (AlertType.ERROR.equals(type)) {
+		//@						img = Image.createImage("/icons/error.png");
+		//@					} else {
+		//@						img = Image.createImage("/icons/error.png");
+		//@					}
+		//@		
+		//@				} catch (IOException e) {
+		//@					img = null;
+		//@				}
+		//@		
+		//@				alert = new Alert(title, text, img, type);
+		//@		
+		//@				alert.setType(type);
+		//@				alert.setTimeout(Alert.FOREVER);
+		//@		
+		//@				LampiroMidlet.disp.setCurrent(alert, (Displayable) next_screen);
 		//#endif
 	}
 
@@ -865,10 +865,10 @@ public class XMPPClient {
 		user.addTask(task);
 		System.out.println("Tsk: " + Integer.toHexString(task.getStatus()));
 		// #ifdef UI 
-//@		Displayable cur = LampiroMidlet.disp.getCurrent();
+		Displayable cur = LampiroMidlet.disp.getCurrent();
 		// #endif
 // #ifndef UI
-						Displayable cur = LampiroMidlet.disp.getCurrent();
+		//@				Displayable cur = LampiroMidlet.disp.getCurrent();
 		// #endif
 
 		byte type = task.getStatus();
@@ -944,10 +944,10 @@ public class XMPPClient {
 		if (display && !DataFormScreen.class.equals(klass)
 				&& !DataResultScreen.class.equals(klass)) {
 			// #ifdef UI
-//@			task.display();
+			task.display();
 			// #endif
 // #ifndef UI
-									task.display(LampiroMidlet.disp, cur);
+			//@						task.display(LampiroMidlet.disp, cur);
 			// #endif
 		}
 	};
