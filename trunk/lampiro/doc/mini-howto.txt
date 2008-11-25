@@ -27,6 +27,7 @@ After this procedure you have to add the external libraries to your build path (
 To add them to your build path you can use the following procedure:
 - right click on “lib/bouncycastle.jar” in the project explorer and choose “Add to build path” from the “Configure build path” menu
 - do the same procedure for “lib/xmlpull_1_1_3_1.jar”
+Finally two defines must be added in your project: right click your project in the project explorer, select “Antenna preprocessor”and add “MUC=1,UI=1” in the defines textbox.
 
 
 Run Lampiro
