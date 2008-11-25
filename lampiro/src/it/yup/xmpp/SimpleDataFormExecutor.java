@@ -9,25 +9,25 @@ package it.yup.xmpp;
 import java.util.Date;
 
 // #ifdef UI 
-//@import lampiro.screens.DataFormScreen;
-//@import lampiro.screens.DataFormScreen.DataFormListener;
-//@import lampiro.screens.DataResultScreen;
-//@import lampiro.screens.RosterScreen;
-//@import it.yup.ui.UICanvas;
-//@import it.yup.ui.UIScreen;
-//@
+import lampiro.screens.DataFormScreen;
+import lampiro.screens.DataFormScreen.DataFormListener;
+import lampiro.screens.DataResultScreen;
+import lampiro.screens.RosterScreen;
+import it.yup.ui.UICanvas;
+import it.yup.ui.UIScreen;
+
 // #endif
 // #ifndef UI
-
-import lampiro.LampiroMidlet;
-import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Displayable;
-
-import it.yup.screens.DataFormScreen;
-import it.yup.screens.DataResultScreen;
-import it.yup.screens.RosterScreen;
-import it.yup.screens.DataFormScreen.DataFormListener;
-
+//@
+//@import lampiro.LampiroMidlet;
+//@import javax.microedition.lcdui.Display;
+//@import javax.microedition.lcdui.Displayable;
+//@
+//@import it.yup.screens.DataFormScreen;
+//@import it.yup.screens.DataResultScreen;
+//@import it.yup.screens.RosterScreen;
+//@import it.yup.screens.DataFormScreen.DataFormListener;
+//@
 // #endif
 
 import it.yup.xmlstream.Element;
@@ -40,7 +40,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 
 	private Element form_element;
 	// #ifndef UI 
-	private Displayable next_display = null;
+//@	private Displayable next_display = null;
 	// #endif
 	private String label = new String();
 	private DataForm df;
@@ -96,13 +96,13 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		client.updateTask(this);
 
 		// #ifdef UI 
-//@						UICanvas.getInstance().show(RosterScreen.getInstance());
+						UICanvas.getInstance().show(RosterScreen.getInstance());
 		// #endif
 // #ifndef UI
-		if (next_display == null) {
-			next_display = RosterScreen.getInstance();
-		}
-		LampiroMidlet.disp.setCurrent(next_display);
+//@		if (next_display == null) {
+//@			next_display = RosterScreen.getInstance();
+//@		}
+//@		LampiroMidlet.disp.setCurrent(next_display);
 		// #endif
 	}
 
@@ -133,12 +133,12 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	}
 
 	// #ifdef UI 
-//@			public void display() {
-//@			UIScreen scr = null;
+			public void display() {
+			UIScreen scr = null;
 	// #endif
 // #ifndef UI
-	public void display(Display disp, Displayable nextDisplay) {
-		Displayable scr = null;
+//@	public void display(Display disp, Displayable nextDisplay) {
+//@		Displayable scr = null;
 		// #endif
 
 		Element form = form_element.getChildByName(DataForm.NAMESPACE,
@@ -158,10 +158,10 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 			return;
 		}
 		// #ifdef UI 
-//@						UICanvas.getInstance().open(scr, true);
+						UICanvas.getInstance().open(scr, true);
 		// #endif
 // #ifndef UI
-		disp.setCurrent(scr);
+//@		disp.setCurrent(scr);
 		// #endif
 	}
 

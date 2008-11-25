@@ -128,7 +128,7 @@ public class OptionsScreen extends UIScreen {
 		if (item == this.color) {
 			int colorIndex = this.color.getSelectedIndex();
 			// #ifdef UI
-//@			LampiroMidlet.changeColor(colorIndex);
+			LampiroMidlet.changeColor(colorIndex);
 			// #endif
 			Config cfg = Config.getInstance();
 			cfg.setProperty(Config.COLOR, this.color.getSelectedIndex() + "");
@@ -139,7 +139,7 @@ public class OptionsScreen extends UIScreen {
 		if (item == this.font_size) {
 			int fontIndex = this.font_size.getSelectedIndex();
 			// #ifdef UI
-//@			LampiroMidlet.changeFont(fontIndex);
+			LampiroMidlet.changeFont(fontIndex);
 			// #endif 
 			Config cfg = Config.getInstance();
 			cfg.setProperty(Config.FONT_SIZE, this.font_size.getSelectedIndex()

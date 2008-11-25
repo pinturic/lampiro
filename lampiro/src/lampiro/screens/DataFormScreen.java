@@ -476,7 +476,7 @@ public class DataFormScreen extends UIScreen {
 		fillForm();
 		dfl.execute(comm);
 		// #ifdef UI
-//@		UICanvas.getInstance().close(this);
+		UICanvas.getInstance().close(this);
 		// #endif
 	}
 

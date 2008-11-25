@@ -14,17 +14,17 @@ package lampiro;
 // #enddebug
 
 // #ifdef UI
-//@import it.yup.ui.UICanvas;
-//@import it.yup.ui.UIConfig;
-//@import lampiro.screens.SplashScreen;
-//@
+import it.yup.ui.UICanvas;
+import it.yup.ui.UIConfig;
+import lampiro.screens.SplashScreen;
+
 // #endif
 // #ifndef UI
-
-import javax.microedition.lcdui.Display;
-import javax.microedition.midlet.MIDlet;
-import it.yup.screens.SplashScreen;
-
+//@
+//@import javax.microedition.lcdui.Display;
+//@import javax.microedition.midlet.MIDlet;
+//@import it.yup.screens.SplashScreen;
+//@
 // #endif
 
 import it.yup.xmpp.Config;
@@ -74,21 +74,21 @@ public class LampiroMidlet extends MIDlet {
 		// XXX: remove!
 		LampiroMidlet.disp = Display.getDisplay(this);
 		// #ifdef UI
-//@		UICanvas.setDisplay(Display.getDisplay(this));
-//@		UICanvas canvas = UICanvas.getInstance();
-//@		UICanvas.display(null);
-//@		String colorString = Config.getInstance()
-//@				.getProperty(Config.COLOR, "0");
-//@		int colorInt = colorString.toCharArray()[0] - '0';
-//@		LampiroMidlet.changeColor(colorInt);
-//@		String fontString = Config.getInstance().getProperty(Config.FONT_SIZE,
-//@				"1");
-//@		int fontInt = fontString.toCharArray()[0] - '0';
-//@		LampiroMidlet.changeFont(fontInt);
-//@		canvas.open(new SplashScreen(), true);
+		UICanvas.setDisplay(Display.getDisplay(this));
+		UICanvas canvas = UICanvas.getInstance();
+		UICanvas.display(null);
+		String colorString = Config.getInstance()
+				.getProperty(Config.COLOR, "0");
+		int colorInt = colorString.toCharArray()[0] - '0';
+		LampiroMidlet.changeColor(colorInt);
+		String fontString = Config.getInstance().getProperty(Config.FONT_SIZE,
+				"1");
+		int fontInt = fontString.toCharArray()[0] - '0';
+		LampiroMidlet.changeFont(fontInt);
+		canvas.open(new SplashScreen(), true);
 		// #endif
 // #ifndef UI
-				disp.setCurrent(new SplashScreen());
+		//@		disp.setCurrent(new SplashScreen());
 		// #endif
 
 	}
@@ -145,51 +145,51 @@ public class LampiroMidlet extends MIDlet {
 	}
 
 	// #ifdef UI
-//@
-//@	static public void changeFont(int fontIndex) {
-//@		switch (fontIndex) {
-//@			case 0:
-//@				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-//@						Font.STYLE_PLAIN, Font.SIZE_SMALL);
-//@				break;
-//@			case 1:
-//@				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-//@						Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
-//@				break;
-//@			case 2:
-//@				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-//@						Font.STYLE_PLAIN, Font.SIZE_LARGE);
-//@				break;
-//@
-//@			default:
-//@				break;
-//@		}
-//@	}
-//@
-//@	static public void changeColor(int colorIndex) {
-//@		switch (colorIndex) {
-//@			case 0:
-//@				UIConfig.scrollbar_bg = 0x444444;
-//@				UIConfig.scrollbar_fg = 0x13a0f7;
-//@				UIConfig.header_bg = 0x2407db;
-//@				UIConfig.bg_color = 0xddddff;
-//@				break;
-//@			case 1:
-//@				UIConfig.scrollbar_bg = 0x444444;
-//@				UIConfig.scrollbar_fg = 0x10d288;
-//@				UIConfig.header_bg = 0x24982f;
-//@				UIConfig.bg_color = 0xddffdd;
-//@				break;
-//@			case 2:
-//@				UIConfig.scrollbar_bg = 0x444444;
-//@				UIConfig.scrollbar_fg = 0xf7654e;
-//@				UIConfig.header_bg = 0xdb0724;
-//@				UIConfig.bg_color = 0xffdddd;
-//@				break;
-//@			default:
-//@				break;
-//@		}
-//@	}
-//@
+
+	static public void changeFont(int fontIndex) {
+		switch (fontIndex) {
+			case 0:
+				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
+						Font.STYLE_PLAIN, Font.SIZE_SMALL);
+				break;
+			case 1:
+				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
+						Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
+				break;
+			case 2:
+				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
+						Font.STYLE_PLAIN, Font.SIZE_LARGE);
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	static public void changeColor(int colorIndex) {
+		switch (colorIndex) {
+			case 0:
+				UIConfig.scrollbar_bg = 0x444444;
+				UIConfig.scrollbar_fg = 0x13a0f7;
+				UIConfig.header_bg = 0x2407db;
+				UIConfig.bg_color = 0xddddff;
+				break;
+			case 1:
+				UIConfig.scrollbar_bg = 0x444444;
+				UIConfig.scrollbar_fg = 0x10d288;
+				UIConfig.header_bg = 0x24982f;
+				UIConfig.bg_color = 0xddffdd;
+				break;
+			case 2:
+				UIConfig.scrollbar_bg = 0x444444;
+				UIConfig.scrollbar_fg = 0xf7654e;
+				UIConfig.header_bg = 0xdb0724;
+				UIConfig.bg_color = 0xffdddd;
+				break;
+			default:
+				break;
+		}
+	}
+
 	// #endif 
 }

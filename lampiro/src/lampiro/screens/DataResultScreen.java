@@ -178,7 +178,7 @@ public class DataResultScreen extends UIScreen {
 		if (cmd == cmd_close) {
 			listener.execute(DataFormListener.CMD_DESTROY);
 			// #ifdef UI
-//@			UICanvas.getInstance().close(this);
+			UICanvas.getInstance().close(this);
 			// #endif
 			return;
 		} else if (cmd == cmd_next) {

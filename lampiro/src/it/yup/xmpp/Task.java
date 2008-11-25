@@ -48,10 +48,10 @@ public interface Task {
 	static public byte DF_DESTROY = 0x26;
 
 	// #ifdef UI 
-//@	public void display();
+	public void display();
 	// #endif
 // #ifndef UI
-		public void display(Display disp, Displayable next_screen);
+//@		public void display(Display disp, Displayable next_screen);
 	//#endif
 
 	/** Get the label that must be displayed when listing the tasks */
