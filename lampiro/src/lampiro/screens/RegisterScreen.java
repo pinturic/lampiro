@@ -99,7 +99,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UIMenu setStatus = new UIMenu("");
 
 	// #mdebug
-	//@	private UIButton cmd_debug = new UIButton("debug");
+//@	private UIButton cmd_debug = new UIButton("debug");
 	// #enddebug
 
 	/** true if we must register a new account */
@@ -156,7 +156,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		btn_login.setAnchorPoint(Graphics.HCENTER);
 		setStatus.append(cmd_state);
 		// #debug
-		//@		this.append(cmd_debug);
+//@		this.append(cmd_debug);
 	}
 
 	/** Called to notify that the {@link UIScreen} has become visible */
@@ -217,7 +217,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			}
 		}
 		// #debug
-		//@		this.append(cmd_debug);
+//@		this.append(cmd_debug);
 		this.setFreezed(false);
 		this.askRepaint();
 	}
@@ -305,7 +305,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				client.closeStream();
 			} catch (Exception e) {
 				// #mdebug
-				//@				System.out.println(e);
+//@				System.out.println(e);
 				// #enddebug
 			}
 
@@ -358,9 +358,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				remove(tf_email);
 			}
 			// #mdebug
-			//@		} else if (item == cmd_debug) {
-			//@			DebugScreen debugScreen = new DebugScreen();
-			//@			UICanvas.getInstance().open(debugScreen, true);
+//@		} else if (item == cmd_debug) {
+//@			DebugScreen debugScreen = new DebugScreen();
+//@			UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 
 		} else if (item == but_cancel) {
@@ -370,7 +370,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				// during closing connection
 				// exceptions from the transport can be generated
 				//#mdebug
-				//@				System.out.println(e);
+//@				System.out.println(e);
 				// #enddebug     
 			}
 			placeItems();
@@ -378,7 +378,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			if (grp_server.getSelectedIndex() == 1) {
 				String jid = tf_jid.getText();
 				tf_server.setText(get_server(jid) + ":5222");
-				append(tf_server);
+				if (this.getItemList().contains(tf_server) == false) {
+					append(tf_server);
+				}
 			} else {
 				remove(tf_server);
 			}

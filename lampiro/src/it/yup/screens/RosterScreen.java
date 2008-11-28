@@ -57,7 +57,7 @@ public class RosterScreen extends Canvas implements CommandListener {
 	private Command cmd_exit = new Command(rm.getString(ResourceIDs.STR_EXIT),
 			Command.SCREEN, 99);
 	// #debug    
-	//@	    private Command cmd_debug = new Command(rm.getString(ResourceIDs.STR_DEBUG), Command.SCREEN, 100);
+//@		    private Command cmd_debug = new Command(rm.getString(ResourceIDs.STR_DEBUG), Command.SCREEN, 100);
 	private Command cmd_about = new Command(
 			rm.getString(ResourceIDs.STR_ABOUT), Command.SCREEN, 98);
 	private Command cmd_querycmd = new Command(rm
@@ -161,7 +161,7 @@ public class RosterScreen extends Canvas implements CommandListener {
 		addCommand(cmd_state);
 		//        addCommand(cmd_reload);
 		// #debug        
-		//@		        addCommand(cmd_debug);
+//@				        addCommand(cmd_debug);
 		addCommand(cmd_about);
 		addCommand(cmd_options);
 		setCommandListener(this);
@@ -715,10 +715,10 @@ public class RosterScreen extends Canvas implements CommandListener {
 			StatusScreen ssc = new StatusScreen();
 			disp.setCurrent(ssc);
 			// #mdebug        	
-			//@			        } else if(c == cmd_debug) {
-			//@			        	DebugScreen debugScreen = new DebugScreen();
-			//@			        	debugScreen.setReturnScreen(this);
-			//@			        	disp.setCurrent(debugScreen);
+//@						        } else if(c == cmd_debug) {
+//@						        	DebugScreen debugScreen = new DebugScreen();
+//@						        	debugScreen.setReturnScreen(this);
+//@						        	disp.setCurrent(debugScreen);
 			// #enddebug        	
 		} else if (c == cmd_querycmd) {
 			Contact usr = selected_contact;

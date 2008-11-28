@@ -74,11 +74,11 @@ public class SocketChannel extends BaseChannel {
 
 				try {
 					// #debug					
-					//@					Logger.log("Connecting to " + connectionUrl);
+//@										Logger.log("Connecting to " + connectionUrl);
 					connection = (SocketConnection) Connector
 							.open(connectionUrl);
 					// #debug					
-					//@					Logger.log("Connected ");
+//@										Logger.log("Connected ");
 					inputStream = connection.openInputStream();
 					outputStream = connection.openOutputStream();
 
@@ -89,11 +89,11 @@ public class SocketChannel extends BaseChannel {
 					listener.connectionEstablished(SocketChannel.this);
 				} catch (IOException e) {
 					// #debug					
-					//@					Logger.log("Connection failed: " + e.getMessage());
+//@										Logger.log("Connection failed: " + e.getMessage());
 					listener.connectionFailed(SocketChannel.this);
 				} catch (Exception e) {
 					// #debug		    		
-					//@					Logger.log("Unexpected exception: " + e.getMessage());
+//@										Logger.log("Unexpected exception: " + e.getMessage());
 					listener.connectionFailed(SocketChannel.this);
 					//		    		YUPMidlet.yup.reportException("Unexpected Exception on Channel start.", e, null);
 				}

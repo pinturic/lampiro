@@ -42,7 +42,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		try {
 			// parser.require(KXmlParser.START_DOCUMENT, null, null);
 			// #debug			
-			//@			Logger.log("setting parser input");
+//@						Logger.log("setting parser input");
 			level = 0;
 			parser.setInput(this.channel.getReader());
 			StringBuffer streamStart = new StringBuffer();
@@ -51,7 +51,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 					.append("<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\" xmlns=\"jabber:client\" xml:lang=\"en\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\"");
 			streamStart.append((" to=\"" + Contact.domain(jid) + "\">"));
 			// #debug			
-			//@			Logger.log("Sending stream start");
+//@						Logger.log("Sending stream start");
 
 			// channel.sendContent(streamStart.toString().getBytes("utf-8"));
 			channel.sendContent(Utils.getBytesUtf8(streamStart.toString()));
@@ -59,8 +59,8 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		} catch (XmlPullParserException e) {
 			dispatchEvent(BasicXmlStream.STREAM_ERROR, null);
 			// #mdebug
-			//@			Logger.log("[SocketStream::restart] XmlPullParserException: "
-			//@					+ e.getMessage());
+//@						Logger.log("[SocketStream::restart] XmlPullParserException: "
+//@								+ e.getMessage());
 			// #enddebug
 		}
 	}
@@ -78,13 +78,13 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 
 	public void connectionEstablished(BaseChannel connection) {
 		// #debug		
-		//@		Logger.log("Connection established");
+//@				Logger.log("Connection established");
 		this.channel = (SocketChannel) connection;
 		// #debug		
-		//@		Logger.log("restarting stream");
+//@				Logger.log("restarting stream");
 		restart();
 		// #debug		
-		//@		Logger.log("starting reader");
+//@				Logger.log("starting reader");
 		new Thread(this).start();
 	}
 
@@ -115,7 +115,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 						Element stanza = Element.pullElement(parser);
 						level -= 1;
 						// #debug						
-						//@						Logger.log("[RECV] " + new String(stanza.toXml()));
+//@												Logger.log("[RECV] " + new String(stanza.toXml()));
 
 						promotePacket(stanza);
 						if ("features".equals(stanza.name)) {
@@ -126,19 +126,19 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 			}
 		} catch (XmlPullParserException e) {
 			// #debug			
-			//@			Logger.log(e.getMessage());
+//@						Logger.log(e.getMessage());
 			this.channel.close();
 			connectionLost(this.channel);
 		} catch (IOException e) {
 			// #debug			
-			//@			Logger.log(e.getMessage());
+//@						Logger.log(e.getMessage());
 			connectionLost(this.channel);
 		} catch (Exception e) {
 			this.channel.close();
 			connectionLost(this.channel);
 			// #mdebug			
-			//@			Logger.log("Parser " + e.getClass().getName() + ":"
-			//@					+ e.getMessage());
+//@						Logger.log("Parser " + e.getClass().getName() + ":"
+//@								+ e.getMessage());
 			// #enddebug
 		}
 

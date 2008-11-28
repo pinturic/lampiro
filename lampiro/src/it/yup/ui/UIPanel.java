@@ -16,7 +16,7 @@ import javax.microedition.lcdui.Graphics;
  * A panel that stacks vertically items vertically. If the container height is
  * exceeeded, a scrollbar is drawn.
  */
-public class UIPanel extends UIItem {
+public class UIPanel extends UIItem implements UIIContainer {
 
 	/** the contained items */
 	private Vector items;
@@ -425,6 +425,8 @@ public class UIPanel extends UIItem {
 	 */
 	public void addItem(UIItem it) {
 		items.addElement(it);
+		it.setScreen(this.screen);
+		it.setContainer(this);
 		this.dirty = true;
 		this.height = -1;
 	}
@@ -447,6 +449,9 @@ public class UIPanel extends UIItem {
 	 */
 	public void removeItem(UIItem it) {
 		int iIndex = items.indexOf(it);
+		if (this.screen != null) {
+			this.screen.removePaintedItem(it);
+		}
 		this.removeItemAt(iIndex);
 	}
 
@@ -462,8 +467,12 @@ public class UIPanel extends UIItem {
 			/* clear selection */
 			selectedIdx -= 1;
 		}
-		((UIItem) items.elementAt(idx)).setSelected(false);
+		UIItem ithItem = ((UIItem) items.elementAt(idx));
+		ithItem.setSelected(false);
 		items.removeElementAt(idx);
+		if (this.screen != null) {
+			this.screen.removePaintedItem(ithItem);
+		}
 		if (selectedIdx > 0 && selectedIdx < this.items.size()) ((UIItem) items
 				.elementAt(selectedIdx)).setDirty(true);
 		for (int i = idx; i < items.size(); i++) {
@@ -488,6 +497,7 @@ public class UIPanel extends UIItem {
 		for (int i = idx + 1; i < items.size(); i++) {
 			((UIItem) items.elementAt(i)).setDirty(true);
 		}
+		it.setContainer(this);
 		this.dirty = true;
 	}
 
@@ -510,7 +520,7 @@ public class UIPanel extends UIItem {
 	 *            The index to select. -1 to clear selection
 	 */
 	public void setSelectedIndex(int idx) {
-		if (idx < -1 || idx > items.size()) {
+		if (idx < -1 || idx >= items.size()) {
 			/* wrong index, ignore */
 			return;
 		}
@@ -544,6 +554,14 @@ public class UIPanel extends UIItem {
 					.getSelectedItem();
 		} else {
 			return this;
+		}
+	}
+
+	public void setSelectedItem(UIItem item) {
+		int index = this.items.indexOf(item);
+		this.setSelectedIndex(index);
+		if (this.getContainer() != null) {
+			this.getContainer().setSelectedItem(this);
 		}
 	}
 }

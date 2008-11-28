@@ -6,6 +6,8 @@
 
 package it.yup.ui;
 
+import java.util.Enumeration;
+
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
@@ -14,6 +16,34 @@ public class UIRadioButtons extends UIVLayout {
 
 	private int chechedIndex = 0;
 
+	private class UIRadioButton extends UILabel {
+		public UIRadioButton(Image img, String text) {
+			super(img, text);
+
+		}
+
+		boolean pointed = false;
+
+		public boolean keyPressed(int key) {
+			if (UICanvas.getInstance().getGameAction(key) == UICanvas.FIRE) {
+				this.pointed = true;
+				UIItem items[] = UIRadioButtons.this.layoutItems;
+				for (int i = 0; i < items.length; i++) {
+					if (items[i] == this) {
+						if (UIRadioButtons.this.selectedIndex != i) {
+							UIRadioButtons.this.selectedIndex = i;
+							UIRadioButtons.this.keyPressed(key);
+							break;
+						}
+					}
+				}
+
+				return true;
+			}
+			return false;
+		}
+	}
+
 	public UIRadioButtons(String[] stringItems) {
 		super(stringItems.length, 0);
 		int buttonNumber = stringItems.length;
@@ -21,7 +51,7 @@ public class UIRadioButtons extends UIVLayout {
 			Image img = (i == 0 ? UICanvas
 					.getUIImage("/icons/radio_checked.png") : UICanvas
 					.getUIImage("/icons/radio_unchecked.png"));
-			UILabel ulb = new UILabel(img, stringItems[i]);
+			UILabel ulb = new UIRadioButton(img, stringItems[i]);
 			ulb.setFocusable(true);
 			this.insert(ulb, i, 100 / buttonNumber,
 					UILayout.CONSTRAINT_PERCENTUAL);

@@ -8,7 +8,7 @@ package it.yup.ui;
 
 import javax.microedition.lcdui.Graphics;
 
-public abstract class UILayout extends UIItem {
+public abstract class UILayout extends UIItem implements UIIContainer {
 
 	public static final int CONSTRAINT_PIXELS = 0;
 	public static final int CONSTRAINT_PERCENTUAL = 1;
@@ -34,6 +34,7 @@ public abstract class UILayout extends UIItem {
 
 	public UILayout(int elemNumber) {
 		this.layoutItems = new UIItem[elemNumber];
+		this.focusable = false;
 		group = true;
 	}
 
@@ -211,4 +212,28 @@ public abstract class UILayout extends UIItem {
 		}
 	}
 
+	/**
+	 * Return the selected UIItem within the UIItem itself; usually it is the
+	 * UIItem itself but in the subclasses (like UIVLayout) it could be one of
+	 * the contained object.
+	 * 
+	 * @return
+	 */
+	public void setSelectedItem(UIItem item) {
+		for (int i = 0; i < layoutItems.length; i++) {
+			if (this.layoutItems[i] == item) {
+				if (this.selectedIndex >= 0
+						&& this.selectedIndex < layoutItems.length) {
+					this.layoutItems[selectedIndex].setSelected(false);
+				}
+				this.selectedIndex = i;
+				if (this.layoutItems[selectedIndex].isSelected() == false) {
+					this.layoutItems[selectedIndex].setSelected(true);
+				}
+			}
+		}
+		if (this.getContainer() != null) {
+			this.getContainer().setSelectedItem(this);
+		}
+	}
 }

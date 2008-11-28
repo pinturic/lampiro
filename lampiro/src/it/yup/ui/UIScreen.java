@@ -9,6 +9,7 @@ package it.yup.ui;
 import it.yup.util.ResourceIDs;
 
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.lcdui.Canvas;
@@ -29,7 +30,7 @@ import javax.microedition.lcdui.Image;
  * viene ridipinto.<br>
  * 
  */
-public class UIScreen extends UIMenu {
+public class UIScreen extends UIMenu implements UIIContainer {
 
 	/** il menu di questo screen */
 	private UIMenu menu;
@@ -62,14 +63,16 @@ public class UIScreen extends UIMenu {
 	 */
 
 	protected UIHLayout footer = new UIHLayout(2);
-	private UILabel footerLeft = new UILabel("");
-	private UILabel footerRight = new UILabel("");
+	UILabel footerLeft = new UILabel("");
+	UILabel footerRight = new UILabel("");
 
 	/**
 	 * The graphics in which the screen is painted
 	 * 
 	 */
 	private Graphics graphics;
+
+	private Vector paintedItems = new Vector(10);
 
 	/** Called to notify that the {@link UIScreen} has become visible */
 	public void showNotify() {
@@ -92,6 +95,7 @@ public class UIScreen extends UIMenu {
 		headerLayout.insert(headerSep, 0, 1, UILayout.CONSTRAINT_PIXELS);
 		headerLayout.insert(titleLabel, 1, imgHeight,
 				UILayout.CONSTRAINT_PIXELS);
+		titleLabel.setScreen(this);
 
 		this.setItemList(new Vector());
 		this.popupList = new Vector();
@@ -101,8 +105,11 @@ public class UIScreen extends UIMenu {
 		this.height = UICanvas.getInstance().getClipHeight();
 
 		footer.setGroup(false);
+		footer.setFocusable(false);
 		footer.insert(footerLeft, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
 		footer.insert(footerRight, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		this.footerLeft.setScreen(this);
+		this.footerRight.setScreen(this);
 		this.screen = this;
 
 	}
@@ -117,6 +124,7 @@ public class UIScreen extends UIMenu {
 	public int append(UIItem ui) {
 		getItemList().addElement(ui);
 		ui.setScreen(this);
+		ui.setContainer(this);
 		ui.setDirty(true);
 		this.askRepaint();
 		return getItemList().size() - 1;
@@ -151,7 +159,6 @@ public class UIScreen extends UIMenu {
 							.getAbsoluteY()
 							+ popUp.getHeight(this.graphics));
 		}
-
 		this.askRepaint();
 	}
 
@@ -187,6 +194,7 @@ public class UIScreen extends UIMenu {
 						+ getItemList().size()); }
 		getItemList().insertElementAt(ui, pos);
 		ui.setScreen(this);
+		ui.setContainer(this);
 		ui.setDirty(true);
 		for (int i = pos; i < getItemList().size(); i++) {
 			((UIItem) getItemList().elementAt(i)).setDirty(true);
@@ -252,6 +260,7 @@ public class UIScreen extends UIMenu {
 	public UIItem replace(int pos, UIItem ui) {
 		UIItem posth = super.replace(pos, ui);
 		ui.setScreen(this);
+		ui.setContainer(this);
 		this.askRepaint();
 		return posth;
 	}
@@ -464,14 +473,14 @@ public class UIScreen extends UIMenu {
 			}
 
 			// #mdebug
-			//@			System.out.println("moved: " + firstVisibleIndex + "/"
-			//@					+ lastVisibleIndex + "/" + selectedIndex);
+//@			System.out.println("moved: " + firstVisibleIndex + "/"
+//@					+ lastVisibleIndex + "/" + selectedIndex);
 			// #enddebug
 		}
 		return selectionKept;
 	}
 
-	private void handleMenuKey(UIMenu openMenu, int key) {
+	void handleMenuKey(UIMenu openMenu, int key) {
 		Object[] oldPopups = new Object[popupList.size()];
 		this.popupList.copyInto(oldPopups);
 		if (key == UICanvas.MENU_RIGHT
@@ -614,6 +623,7 @@ public class UIScreen extends UIMenu {
 				+ (canvasHeight - headerHeight) + "/" + g.getClipHeight() + "/"
 				+ g.getTranslateY());
 		this.paint0(g, canvasWidth, canvasHeight - headerHeight);
+		this.removePaintedItem(this);
 
 		// clean the gap
 		if (this.lastVisibleIndex == this.getItemList().size() - 1) {
@@ -1026,6 +1036,7 @@ public class UIScreen extends UIMenu {
 		if (this.menu != null) this.menu.setDirty(dirty);
 		this.headerLayout.setDirty(true);
 		this.footer.setDirty(true);
+		this.paintedItems.removeAllElements();
 	}
 
 	public void setSelectedIndex(int selectedIndex) {
@@ -1054,6 +1065,36 @@ public class UIScreen extends UIMenu {
 				this.askRepaint();
 			}
 		}
+
+	}
+
+	/*
+	 * The coordinates plus height and width of each item in this screen
+	 *  
+	 */
+	public void addPaintedItem(UIItem item) {
+		removePaintedItem(item);
+		paintedItems.insertElementAt(item, 0);
+	}
+
+	/*
+	 * Remove a painted item from screen paintItems
+	 *  
+	 */
+	public void removePaintedItem(UIItem item) {
+		paintedItems.removeElement(item);
+	}
+
+	public Vector getPaintedItems() {
+		return paintedItems;
+	}
+
+	/*
+	 * An event generated when a pointer stays on an UIItem 
+	 * for more than 500 ms
+	 */
+	public void longPressed(UIItem item) {
+		// TODO Auto-generated method stub
 
 	}
 }

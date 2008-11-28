@@ -121,7 +121,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	private UILabel closeLabel;
 
 	// #mdebug
-	//@	 private UILabel cmd_debug = new UILabel("Debug");
+//@		 private UILabel cmd_debug = new UILabel("Debug");
 	// #enddebug
 
 	private Hashtable cmd_urls = new Hashtable();
@@ -183,7 +183,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
 		// #debug
-		//@		 menu.append(cmd_debug);
+//@				 menu.append(cmd_debug);
 		menu.append(cmd_exit);
 		menu.append(cmd_write);
 		menu.append(cmd_clear);
@@ -507,17 +507,17 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			cmd_urls.clear();
 			this.setDirty(true);
 			// #mdebug
-			//@			 } else if (cmd == cmd_debug) {
-			//@			 Logger.log(
-			//@			
-			//@			 "h:" + UICanvas.getInstance().getHeight() + "w:"
-			//@			 + UICanvas.getInstance().getWidth() + "ch:");
-			//@			 Logger.log(this.getGraphics().getClipHeight() + "cw:"
-			//@			 + this.getGraphics().getClipWidth() + "ph:"
-			//@			 + this.chatPanel.getHeight(getGraphics()));
-			//@			 //
-			//@			 DebugScreen debugScreen = new DebugScreen();
-			//@			 UICanvas.getInstance().open(debugScreen, true);
+//@						 } else if (cmd == cmd_debug) {
+//@						 Logger.log(
+//@						
+//@						 "h:" + UICanvas.getInstance().getHeight() + "w:"
+//@						 + UICanvas.getInstance().getWidth() + "ch:");
+//@						 Logger.log(this.getGraphics().getClipHeight() + "cw:"
+//@						 + this.getGraphics().getClipWidth() + "ph:"
+//@						 + this.chatPanel.getHeight(getGraphics()));
+//@						 //
+//@						 DebugScreen debugScreen = new DebugScreen();
+//@						 UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 		} else if (cmd == this.zoomLabel) {
 			UICutLabel selLabel = (UICutLabel) this.chatPanel.getSelectedItem();

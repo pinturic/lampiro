@@ -68,10 +68,13 @@ public class StatusScreen extends UIScreen {
 			priorityVal = cfg.getProperty(Config.LAST_PRIORITY, "0");
 			if (priorityVal.length() == 0) priorityVal = "0";
 		}
-		for (int i = 0; i < mapping.length; i++) {
-			if (mapping[i].equals(show)) {
-				ch_status.setSelectedIndex(i);
-				break;
+		if (show == null) ch_status.setSelectedIndex(1);
+		else {
+			for (int i = 0; i < mapping.length; i++) {
+				if (mapping[i].equals(show)) {
+					ch_status.setSelectedIndex(i);
+					break;
+				}
 			}
 		}
 

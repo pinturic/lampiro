@@ -134,8 +134,8 @@ public class Roster implements PacketListener {
 			rms.setRecord(Config.RNUM_ROSTER, data, 0, data.length);
 		} catch (Exception e) {
 			// #mdebug
-			//@			Logger.log("Error in saving to storage: " + e.getMessage(),
-			//@						Logger.DEBUG);
+//@						Logger.log("Error in saving to storage: " + e.getMessage(),
+//@									Logger.DEBUG);
 			// #enddebug
 			client.showAlert(AlertType.ERROR, "Exception",
 					"Error saving roster to storage:\n" + e, null);
@@ -144,8 +144,8 @@ public class Roster implements PacketListener {
 
 	public void packetReceived(Element e) {
 		// #mdebug
-		//@		Logger.log("RosterHandler: received packet: " + new String(e.toXml()),
-		//@					Logger.DEBUG);
+//@				Logger.log("RosterHandler: received packet: " + new String(e.toXml()),
+//@							Logger.DEBUG);
 		// #enddebug
 
 		Element items[] = e.getChildByName(null, Iq.QUERY).getChildrenByName(

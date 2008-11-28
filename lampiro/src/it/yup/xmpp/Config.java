@@ -297,9 +297,9 @@ public class Config {
 			rms.setRecord(RNUM_CONFIG, data, 0, data.length);
 		} catch (Exception e) {
 			// #mdebug
-			//@			Logger.log("Error in saving to storage: " + e.getMessage(),
-			//@						Logger.DEBUG);
-			//@
+//@						Logger.log("Error in saving to storage: " + e.getMessage(),
+//@									Logger.DEBUG);
+//@			
 			// #enddebug
 			XMPPClient.getInstance().showAlert(AlertType.ERROR, "Config Error",
 					"Error while saving config:\n" + e.getMessage(), null);

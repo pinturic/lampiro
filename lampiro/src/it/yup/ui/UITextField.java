@@ -180,6 +180,8 @@ public class UITextField extends UIItem implements CommandListener {
 		}
 		g.translate(3, 4 + loffset + offset);
 		this.innerPanel.paint0(g, w - 6, innerLabelHeight);
+		// I don't want my Panel to be "clicked"
+		this.screen.removePaintedItem(innerPanel);
 		if (this.wrappable == false) {
 			this.innerPanel.setText(innerText);
 		}

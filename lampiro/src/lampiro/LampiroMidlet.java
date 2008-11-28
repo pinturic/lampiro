@@ -10,7 +10,7 @@ package lampiro;
 //@import it.yup.util.Logger;
 //@import it.yup.util.MemoryLogConsumer;
 //@import it.yup.util.StderrConsumer;
-//@import it.yup.util.XMPPConsumer; 
+//@import it.yup.util.XMPPConsumer;
 // #enddebug
 
 // #ifdef UI
@@ -66,9 +66,9 @@ public class LampiroMidlet extends MIDlet {
 		// #mdebug
 		//@		Logger.addConsumer(new StderrConsumer());
 		//@		Logger.addConsumer(MemoryLogConsumer.getConsumer());
-		//@		//XMPPConsumer xmppConsumer = XMPPConsumer.getConsumer();
-		//@		//xmppConsumer.debugJid = "blutest@jabber.bluendo.com";
-		//@		//Logger.addConsumer(xmppConsumer);
+		//@		XMPPConsumer xmppConsumer = XMPPConsumer.getConsumer();
+		//@		xmppConsumer.debugJid = "blutest@jabber.bluendo.com";
+		//@		Logger.addConsumer(xmppConsumer);
 		// #enddebug
 		_lampiro = this;
 		// XXX: remove!
