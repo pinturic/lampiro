@@ -36,7 +36,7 @@ public class UICombobox extends UILabel {
 
 		protected UIItem keyPressed(int key, int ga) {
 			if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)
-					&& this.selectedIndex >= 0) {
+					&& (this.selectedIndex >= 0 || UICombobox.this.multiChoice)) {
 				UICombobox.this.selectedIndex = this.selectedIndex;
 				UIItem selItem = null;
 				if (UICombobox.this.multiChoice == false) {

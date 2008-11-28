@@ -63,6 +63,11 @@ public abstract class UIItem {
 	/** The submenu associated with this item */
 	private UIMenu subMenu;
 
+	/*
+	 * The container of this object
+	 */
+	private UIIContainer container = null;
+
 	/**
 	 * Each UIItem will use a bg_color to draw its background; if bg_color is a
 	 * valid color then bg_color will be used to paint otherwise
@@ -132,6 +137,15 @@ public abstract class UIItem {
 	 * repainted or not.
 	 */
 	protected boolean dirty = true;
+
+	/*
+	 * The coordinates at which the Item painted last time:
+	 * coors[0]: X
+	 * coors[1]: Y
+	 * coors[2]: Width
+	 * coors[3]: Height
+	 */
+	int[] coors = new int[4];
 
 	/**
 	 * imposta lo schermo che contiene questo item.
@@ -239,6 +253,16 @@ public abstract class UIItem {
 		// UIMenu computes its clip by itself
 		g.clipRect(0, 0, w, h);
 
+		// notify the screen my coordinates 
+		coors[0] = originalX;
+		coors[1] = originalY;
+		coors[2] = g.getClipWidth();
+		// items can be painted in space lower than h or their clip
+		coors[3] = g.getClipHeight();
+		if (this.screen != null) {
+			this.screen.addPaintedItem(this);
+		}
+
 		// then draw it and catch any eventual exception
 		try {
 			paint(g, w, h);
@@ -247,9 +271,9 @@ public abstract class UIItem {
 			System.out.println("In paint0: " + e.getMessage());
 			Logger.log("In paint0:" + e.getMessage());
 			// #mdebug
-			//@			System.out.println(e);
-			//@			System.out.println("In paint0: " + e.getMessage());
-			//@			Logger.log("In paint0:" + e.getMessage());
+//@			System.out.println(e);
+//@			System.out.println("In paint0: " + e.getMessage());
+//@			Logger.log("In paint0:" + e.getMessage());
 			// #enddebug
 		}
 		this.dirty = false;
@@ -266,7 +290,6 @@ public abstract class UIItem {
 			this.subMenu.setAbsoluteY(g.getTranslateY() + 2);
 			this.subMenu.setWidth(w - 20);
 		}
-
 	}
 
 	/**
@@ -370,6 +393,14 @@ public abstract class UIItem {
 	 */
 	public int getFg_color() {
 		return fg_color;
+	}
+
+	public void setContainer(UIIContainer container) {
+		this.container = container;
+	}
+
+	public UIIContainer getContainer() {
+		return container;
 	}
 
 }

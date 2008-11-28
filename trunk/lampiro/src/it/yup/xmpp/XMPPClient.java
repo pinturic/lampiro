@@ -40,6 +40,8 @@ import java.util.Vector;
 import it.yup.util.ResourceManager;
 import org.bouncycastle.util.encoders.Base64;
 
+import com.sun.perseus.j2d.Point;
+
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Displayable;
@@ -519,6 +521,7 @@ public class XMPPClient {
 			u.addMessageToHistory(msg);
 			roster.updateContact(u, Contact.CH_MESSAGE_NEW);
 			playSmartTone();
+
 		}
 	}
 
@@ -526,8 +529,8 @@ public class XMPPClient {
 
 		public void packetReceived(Element e) {
 			// #mdebug
-			//@						Logger.log("PresenceHandler: received packet: "
-			//@								+ new String(e.toXml()), Logger.DEBUG);
+//@			Logger.log("PresenceHandler: received packet: "
+//@					+ new String(e.toXml()), Logger.DEBUG);
 			// #enddebug
 			String t = e.getAttribute(Stanza.ATT_TYPE);
 			if (t == null || Presence.T_UNAVAILABLE.equals(t)) {

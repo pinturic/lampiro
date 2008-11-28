@@ -270,9 +270,9 @@ public class UILabel extends UIItem {
 		}
 
 		// #mdebug
-		//@		System.out.println("Drawn UILabel '" + text + "' at: ("
-		//@				+ g.getTranslateX() + ", " + g.getTranslateY() + ")"
-		//@				+ (selected ? "S" : ""));
+//@				System.out.println("Drawn UILabel '" + text + "' at: ("
+//@						+ g.getTranslateX() + ", " + g.getTranslateY() + ")"
+//@						+ (selected ? "S" : ""));
 		// #enddebug
 
 		g.setFont(oldFont);

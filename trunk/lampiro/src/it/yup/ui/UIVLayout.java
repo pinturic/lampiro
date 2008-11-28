@@ -46,6 +46,7 @@ public class UIVLayout extends UILayout {
 		item.setLayoutHeight(height);
 		item.setType(type);
 		item.setScreen(screen);
+		item.setContainer(this);
 	}
 
 	/*
@@ -64,10 +65,10 @@ public class UIVLayout extends UILayout {
 		int pixelSum = 0;
 		int percentageSum = 0;
 		for (int i = 0; i < layoutItems.length; i++) {
-			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS)
-				pixelSum += layoutItems[i].getLayoutHeight();
-			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL)
-				percentageSum += layoutItems[i].getLayoutHeight();
+			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) pixelSum += layoutItems[i]
+					.getLayoutHeight();
+			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) percentageSum += layoutItems[i]
+					.getLayoutHeight();
 		}
 		int remainingPixels = 0;
 		if (percentageSum > 0) {
@@ -78,16 +79,15 @@ public class UIVLayout extends UILayout {
 		int i = 0;
 		for (i = 0; i < layoutItems.length - 1; i++) {
 			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) {
-				if (layoutItems[i].isDirty())
-					layoutItems[i].paint0(g, w, layoutItems[i]
-							.getLayoutHeight());
+				if (layoutItems[i].isDirty()) layoutItems[i].paint0(g, w,
+						layoutItems[i].getLayoutHeight());
 				pixelIndex += layoutItems[i].getLayoutHeight();
 				g.translate(0, layoutItems[i].getLayoutHeight());
 			}
 			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) {
 				int ithLayoutHeight = (layoutItems[i].getLayoutHeight() * remainingPixels) / 100;
-				if (layoutItems[i].isDirty())
-					layoutItems[i].paint0(g, w, ithLayoutHeight);
+				if (layoutItems[i].isDirty()) layoutItems[i].paint0(g, w,
+						ithLayoutHeight);
 				pixelIndex += ithLayoutHeight;
 				g.translate(0, ithLayoutHeight);
 			}
@@ -95,15 +95,16 @@ public class UIVLayout extends UILayout {
 		// the last row is "painted alone" to fill all the remaining
 		// pixels
 		if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) {
-			if (layoutItems[i].isDirty())
-				layoutItems[i].paint0(g, w, this.getHeight(g) - pixelIndex);
+			if (layoutItems[i].isDirty()) layoutItems[i].paint0(g, w, this
+					.getHeight(g)
+					- pixelIndex);
 			pixelIndex += layoutItems[i].getLayoutHeight();
 			g.translate(0, layoutItems[i].getLayoutHeight());
 		}
 		if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) {
 			int ithLayoutHeight = this.getHeight(g) - pixelIndex;
-			if (layoutItems[i].isDirty())
-				layoutItems[i].paint0(g, w, ithLayoutHeight);
+			if (layoutItems[i].isDirty()) layoutItems[i].paint0(g, w,
+					ithLayoutHeight);
 			pixelIndex += ithLayoutHeight;
 			g.translate(0, ithLayoutHeight);
 		}
@@ -139,34 +140,30 @@ public class UIVLayout extends UILayout {
 		int ga = UICanvas.getInstance().getGameAction(key);
 		if (layoutFocused) {
 			switch (ga) {
-			case Canvas.UP:
-				if (this.selectedIndex > 0) {
-					int newSelectedIndex = this.selectedIndex - 1;
-					if (this.isFocusable())
-						newSelectedIndex = traverseFocusable(newSelectedIndex,
-																false);
-					if (newSelectedIndex >= 0)
-						this.selectedIndex = newSelectedIndex;
-					else
+				case Canvas.UP:
+					if (this.selectedIndex > 0) {
+						int newSelectedIndex = this.selectedIndex - 1;
+						if (this.isFocusable()) newSelectedIndex = traverseFocusable(
+								newSelectedIndex, false);
+						if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
+						else
+							return false;
+						updateChildren();
+						return true;
+					} else
 						return false;
-					updateChildren();
-					return true;
-				} else
-					return false;
-			case Canvas.DOWN:
-				if (this.selectedIndex < this.layoutItems.length - 1) {
-					int newSelectedIndex = this.selectedIndex + 1;
-					if (this.isFocusable())
-						newSelectedIndex = traverseFocusable(newSelectedIndex,
-																true);
-					if (newSelectedIndex >= 0)
-						this.selectedIndex = newSelectedIndex;
-					else
+				case Canvas.DOWN:
+					if (this.selectedIndex < this.layoutItems.length - 1) {
+						int newSelectedIndex = this.selectedIndex + 1;
+						if (this.isFocusable()) newSelectedIndex = traverseFocusable(
+								newSelectedIndex, true);
+						if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
+						else
+							return false;
+						updateChildren();
+						return true;
+					} else
 						return false;
-					updateChildren();
-					return true;
-				} else
-					return false;
 			}
 		}
 

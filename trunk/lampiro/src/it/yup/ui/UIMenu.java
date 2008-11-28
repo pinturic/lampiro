@@ -28,7 +28,7 @@ import javax.microedition.lcdui.Image;
  * Generico menu da inserire in uno {@link UIScreen}.
  * 
  */
-public class UIMenu extends UIItem {
+public class UIMenu extends UIItem implements UIIContainer {
 
 	static ResourceManager rm = ResourceManager.getManager("common", "en");
 
@@ -91,7 +91,7 @@ public class UIMenu extends UIItem {
 			menuImage = Image.createImage("/icons/menuarrow.png");
 		} catch (IOException e) {
 			// #mdebug
-			//@			System.out.println("In allocating menuImage" + e.getMessage());
+//@			System.out.println("In allocating menuImage" + e.getMessage());
 			// #enddebug
 		}
 	}
@@ -177,6 +177,7 @@ public class UIMenu extends UIItem {
 		itemList.addElement(ui);
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
 		ui.setScreen(this.screen);
+		ui.setContainer(this);
 		return itemList.size() - 1;
 	}
 
@@ -196,6 +197,7 @@ public class UIMenu extends UIItem {
 
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
 		ui.setScreen(this.screen);
+		ui.setContainer(this);
 		itemList.insertElementAt(ui, pos);
 	}
 
@@ -208,6 +210,9 @@ public class UIMenu extends UIItem {
 	 */
 	public UIItem remove(int pos) {
 		UIItem ui = (UIItem) itemList.elementAt(pos);
+		if (this.screen != null) {
+			this.screen.removePaintedItem(ui);
+		}
 		itemList.removeElementAt(pos);
 		return ui;
 	}
@@ -223,6 +228,9 @@ public class UIMenu extends UIItem {
 		int idx = itemList.indexOf(ui);
 		if (idx != -1) {
 			remove(idx);
+			if (this.screen != null) {
+				this.screen.removePaintedItem(ui);
+			}
 			return true;
 		}
 		return false;
@@ -234,6 +242,12 @@ public class UIMenu extends UIItem {
 	public void removeAll() {
 		if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) ((UIItem) this.itemList
 				.elementAt(this.selectedIndex)).setSelected(false);
+		if (this.screen != null) {
+			Enumeration enItem = itemList.elements();
+			while (enItem.hasMoreElements()) {
+				this.screen.removePaintedItem((UIItem) enItem.nextElement());
+			}
+		}
 		itemList.removeAllElements();
 		selectedIndex = -1;
 	}
@@ -255,6 +269,7 @@ public class UIMenu extends UIItem {
 		UIItem posth = (UIItem) this.itemList.elementAt(pos);
 		itemList.setElementAt(ui, pos);
 		ui.setScreen(screen);
+		ui.setContainer(this);
 		return posth;
 	}
 
@@ -300,6 +315,7 @@ public class UIMenu extends UIItem {
 		// now that we have "height" and "h" that is our available height
 		// we must check how the menu can be resized or moved in the screen
 		// so that it assumes a nice visible aspect
+		boolean oldNeedScrollbar = needScrollbar;
 		needScrollbar = false;
 
 		// is it too big and it doesn't fit ?
@@ -329,9 +345,18 @@ public class UIMenu extends UIItem {
 				if (this instanceof UIScreen == false) h = this.height;
 			}
 		}
+		if (needScrollbar == false && oldNeedScrollbar) {
+			for (int i = firstVisibleIndex; i < this.lastVisibleIndex; i++) {
+				UIItem uith = (UIItem) this.itemList.elementAt(i);
+				uith.setDirty(true);
+			}
+		}
 
 		int initialX = g.getTranslateX();
 		int initialY = g.getTranslateY();
+		// notify the screen my coordinates 
+		coors[1] = initialY;
+		coors[3] = this.height;
 
 		// moving down or up the screen can cause the lastVisible or
 		// firstVisible
@@ -600,6 +625,13 @@ public class UIMenu extends UIItem {
 				uimi.setSelected(false);
 			}
 			this.selectedIndex = -1;
+			if (this.screen != null) {
+				Enumeration en = this.itemList.elements();
+				while (en.hasMoreElements()) {
+					this.screen.removePaintedItem((UIItem) en.nextElement());
+				}
+				this.screen.removePaintedItem(this);
+			}
 			this.setDirty(true);
 		}
 	}
@@ -709,6 +741,7 @@ public class UIMenu extends UIItem {
 	 *            the selectedIndex to set
 	 */
 	public void setSelectedIndex(int selectedIndex) {
+		if (selectedIndex == this.selectedIndex) return;
 		if (this.selectedIndex >= 0
 				&& this.selectedIndex < this.itemList.size()) {
 			((UIItem) this.itemList.elementAt(this.selectedIndex))
@@ -746,6 +779,14 @@ public class UIMenu extends UIItem {
 	 */
 	public Vector getItemList() {
 		return itemList;
+	}
+
+	public void setSelectedItem(UIItem item) {
+		int index = this.indexOf(item);
+		this.setSelectedIndex(index);
+		if (this.getContainer() != null) {
+			this.getContainer().setSelectedItem(this);
+		}
 	}
 
 }

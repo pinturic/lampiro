@@ -268,8 +268,8 @@ public abstract class BasicXmlStream implements TransportListener {
 			// XXX don't knwow if here we must do something like closing the stream
 			e.printStackTrace();
 			// #mdebug
-			//@    		e.printStackTrace();
-			//@    		Logger.log("[BasicXmlStream::promotePacket] RuntimeException: " + e.getClass().getName() + "\n" + e.getMessage());
+//@			    		e.printStackTrace();
+//@			    		Logger.log("[BasicXmlStream::promotePacket] RuntimeException: " + e.getClass().getName() + "\n" + e.getMessage());
 			// #enddebug
 
 		}

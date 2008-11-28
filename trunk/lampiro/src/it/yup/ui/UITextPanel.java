@@ -95,6 +95,11 @@ public class UITextPanel extends UIPanel {
 		}
 		this.needScrollbar = false;
 		super.paint(g, w, h);
+		// i don't want my labels to be "clicked"
+		Enumeration en = this.getItems().elements();
+		while (en.hasMoreElements()) {
+			this.screen.removePaintedItem((UIItem) en.nextElement());
+		}
 
 		// fill the gap
 		g.setColor(selected ? UIConfig.header_bg

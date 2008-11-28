@@ -51,6 +51,11 @@ import javax.microedition.lcdui.TextField;
 import lampiro.LampiroMidlet;
 import lampiro.screens.DataFormScreen.DataFormListener;
 
+//#mdebug
+//@import it.yup.util.Logger;
+//@
+//#enddebug
+
 public class RosterScreen extends UIScreen implements PacketListener {
 
 	private static final String IQ_REGISTER = "jabber:iq:register";
@@ -104,7 +109,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	// Command(rm.getString(ResourceIDs.STR_RELOAD_CONTACT), Command.SCREEN, 6);
 	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT));
 	// #mdebug
-	//@	private UILabel cmd_debug = new UILabel(rm.getString(ResourceIDs.STR_DEBUG));
+//@	private UILabel cmd_debug = new UILabel(rm.getString(ResourceIDs.STR_DEBUG));
 	// #enddebug
 	private UILabel cmd_about = new UILabel(rm.getString(ResourceIDs.STR_ABOUT));
 	private UILabel cmd_querycmd = new UILabel(rm
@@ -132,6 +137,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	private UIMenu groupInviteMenu = null;
 	private UIMenu gatewaysMenu = null;
 	private Hashtable gateways = new Hashtable();
+	private Hashtable transPortHash = new Hashtable();
 
 	/** the shown contacts */
 	private Hashtable shown_contacts = new Hashtable(20);
@@ -216,6 +222,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 					Font.STYLE_PLAIN, Font.SIZE_SMALL));
 			statusText.setFg_color(0xAAAAAA);
 			this.setGroup(false);
+			this.screen = RosterScreen.this;
 			this.updateContactData();
 		}
 
@@ -381,7 +388,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 				new String[] { "groupchat" });
 		q.child = new EventQuery("subject", null, null);
 		XMPPClient.getInstance().registerListener(q, this);
-
+		this.rosterPanel.setSelectedIndex(0);
 	}
 
 	private void updateHeader() {
@@ -477,7 +484,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		UIMenu menu = getMenu();
 		menu.clear();
 		// #debug
-		//@		menu.append(cmd_debug);
+//@		menu.append(cmd_debug);
 		menu.append(cmd_addc);
 		if (this.mucJid != null) menu.append(cmd_mucs);
 		menu.append(cmd_state);
@@ -515,6 +522,9 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	 *            the pressed key
 	 */
 	public boolean keyPressed(int kc) {
+		// #mdebug
+//@		Logger.log("Roster screen keypressed :" + kc);
+		// #enddebug
 		if (this.popupList.size() == 0
 				& this.getMenu().isOpenedState() == false) {
 
@@ -616,6 +626,10 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		if (item instanceof UIContact) {
 			UIContact uic = (UIContact) item;
 			Contact c = uic.c;
+			if (this.getSelectedContact() != c) {
+				this.rosterPanel.setSelectedIndex(this.rosterPanel.getItems()
+						.indexOf(uic));
+			}
 			if (c != null) {
 				chatWithSelected(true);
 			}
@@ -682,6 +696,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			helpField.expand();
 
 		} else if (c == cmd_addc) {
+			UICanvas.getInstance().pointerReleased(235, 5);
 			AddContactScreen acs = new AddContactScreen();
 			UICanvas.getInstance().open(acs, true);
 			// } else if(c == cmd_info) {
@@ -741,16 +756,11 @@ public class RosterScreen extends UIScreen implements PacketListener {
 				Object[] nameImg = (Object[]) this.gateways.get(from);
 				String name = (String) nameImg[0];
 				Image img = (Image) nameImg[1];
-				UIHLayout uhl = new UIHLayout(2);
 				UILabel ithTransport = new UILabel(img, name);
 				ithTransport.setFocusable(true);
-				UILabel ithFrom = new UILabel(from);
-				uhl.insert(ithTransport, 0, 100,
-						UIHLayout.CONSTRAINT_PERCENTUAL);
-				uhl.insert(ithFrom, 1, 0, UIHLayout.CONSTRAINT_PIXELS);
+				this.transPortHash.put(ithTransport, from);
 				UIMenu gatewaysMenu = RosterScreen.this.gatewaysMenu;
-				uhl.setGroup(false);
-				gatewaysMenu.append(uhl);
+				gatewaysMenu.append(ithTransport);
 				gatewaysMenu.setDirty(true);
 			}
 			gatewaysMenu.append(refresh_gateways);
@@ -788,9 +798,9 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			StatusScreen ssc = new StatusScreen();
 			UICanvas.getInstance().open(ssc, true);
 			// #mdebug
-			//@		} else if (c == cmd_debug) {
-			//@			DebugScreen debugScreen = new DebugScreen();
-			//@			UICanvas.getInstance().open(debugScreen, true);
+//@		} else if (c == cmd_debug) {
+//@			DebugScreen debugScreen = new DebugScreen();
+//@			UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 		} else if (c == cmd_querycmd) {
 			Contact usr = getSelectedContact();
@@ -892,10 +902,9 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			Enumeration en = gatewaysMenu.getItemList().elements();
 			// search the containing object
 			while (en.hasMoreElements()) {
-				UIItem uhl = (UIItem) en.nextElement();
-				if (uhl instanceof UIHLayout
-						&& ((UIHLayout) uhl).getItem(0) == c) {
-					from = ((UILabel) ((UIHLayout) uhl).getItem(1)).getText();
+				UIItem ithLabel = (UIItem) en.nextElement();
+				if (ithLabel instanceof UILabel && ithLabel == c) {
+					from = (String) this.transPortHash.get(ithLabel);
 					break;
 				}
 			}
@@ -909,6 +918,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	private void getIMGateways() {
 		components = null;
 		infoedComponents = 0;
+		transPortHash.clear();
 		IQResultListener dih = new IQResultListener() {
 			public void handleResult(Element e) {
 				Element q = e.getChildByName(XMPPClient.NS_IQ_DISCO_ITEMS,
@@ -1277,6 +1287,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			if (uic != null) {
 				this.rosterPanel.removeItem(uic);
 				chatScreenList.remove(c);
+				this.removePaintedItem(uic);
 			}
 			shown_contacts.remove(c);
 		} finally {
@@ -1365,4 +1376,18 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		return chatScreenList;
 	}
 
+	public void longPressed(UIItem item) {
+		if (item instanceof UIContact) {
+			UIContact uic = (UIContact) item;
+			Contact c = uic.c;
+			// #mdebug
+//@			Logger.log("longPressed on :" + c.getFullJid());
+			// #enddebug
+			if (this.getSelectedContact() != c) {
+				this.rosterPanel.setSelectedIndex(this.rosterPanel.getItems()
+						.indexOf(uic));
+			}
+			this.keyPressed(UICanvas.MENU_LEFT);
+		}
+	}
 }
