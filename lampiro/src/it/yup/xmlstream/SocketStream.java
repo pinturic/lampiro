@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketStream.java 1002 2008-11-18 14:26:17Z luca $
+ * $Id: SocketStream.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package it.yup.xmlstream;
@@ -143,6 +143,17 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		}
 
 	}
+	//	 #ifdef TLS
+//@			protected void startTLS() throws IOException {
+//@				channel.startTLS();
+//@			}
+//@			
+	//	 #endif
 
+	// #ifdef COMPRESSION
+//@		protected void startCompression() {
+//@			channel.startCompression();
+//@		}
+	// #endif
 
 }

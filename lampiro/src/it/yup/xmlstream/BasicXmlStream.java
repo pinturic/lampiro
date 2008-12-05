@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 1002 2008-11-18 14:26:17Z luca $
+ * $Id: BasicXmlStream.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package it.yup.xmlstream;
@@ -84,6 +84,14 @@ public abstract class BasicXmlStream implements TransportListener {
 
 	protected BasicXmlStream() {
 		// prepare the default initializers
+		// #ifdef COMPRESSION    
+//@		if (XMPPClient.getInstance().addCompression) initializers
+//@				.addElement(new CompressionInitializer());
+		// #endif    	
+		// #ifdef TLS
+//@				if (XMPPClient.getInstance().addTLS)
+//@				initializers.addElement(new TLSInitializer());
+		// #endif
 		initializers.addElement(new SASLAuthenticator());
 		initializers.addElement(new ResourceBinding());
 		initializers.addElement(new SessionOpener());

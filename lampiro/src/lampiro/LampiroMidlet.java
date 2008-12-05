@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: LampiroMidlet.java 934 2008-10-29 14:23:54Z luca $
+ * $Id: LampiroMidlet.java 1018 2008-12-05 12:06:33Z luca $
 */
 
 package lampiro;
@@ -64,11 +64,11 @@ public class LampiroMidlet extends MIDlet {
 	public LampiroMidlet() {
 		xmpp = XMPPClient.getInstance();
 		// #mdebug
-		//@		Logger.addConsumer(new StderrConsumer());
-		//@		Logger.addConsumer(MemoryLogConsumer.getConsumer());
-		//@		XMPPConsumer xmppConsumer = XMPPConsumer.getConsumer();
-		//@		xmppConsumer.debugJid = "blutest@jabber.bluendo.com";
-		//@		Logger.addConsumer(xmppConsumer);
+//@				Logger.addConsumer(new StderrConsumer());
+//@				Logger.addConsumer(MemoryLogConsumer.getConsumer());
+//@				XMPPConsumer xmppConsumer = XMPPConsumer.getConsumer();
+//@				xmppConsumer.debugJid = "blutest@jabber.bluendo.com";
+//@				Logger.addConsumer(xmppConsumer);
 		// #enddebug
 		_lampiro = this;
 		// XXX: remove!

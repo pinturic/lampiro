@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 934 2008-10-29 14:23:54Z luca $
+ * $Id: UICanvas.java 1018 2008-12-05 12:06:33Z luca $
 */
 
 /**
@@ -96,7 +96,7 @@ public class UICanvas extends GameCanvas {
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			// #debug
-			//@			Logger.log("In locking UI");
+//@						Logger.log("In locking UI");
 
 		}
 	}
@@ -140,7 +140,7 @@ public class UICanvas extends GameCanvas {
 	 */
 	protected void keyPressed(int key) {
 		// #mdebug
-		//@		Logger.log("key pressed:" + key);
+//@				Logger.log("key pressed:" + key);
 		// #enddebug
 
 		if (screenList.size() == 0 || viewedIndex > screenList.size()
@@ -159,12 +159,12 @@ public class UICanvas extends GameCanvas {
 		}
 
 		// #mdebug
-		//@		if (key == Canvas.KEY_POUND) {
-		//@			int x = 66;
-		//@			int y = 66;
-		//@			pointerPressed(x, y);
-		//@			pointerReleased(x, y);
-		//@		}
+//@				if (key == Canvas.KEY_POUND) {
+//@					int x = 66;
+//@					int y = 66;
+//@					pointerPressed(x, y);
+//@					pointerReleased(x, y);
+//@				}
 		// #enddebug
 
 		try {
@@ -172,8 +172,8 @@ public class UICanvas extends GameCanvas {
 			writeScreen.keyPressed(key);
 		} catch (Exception e) {
 			// #mdebug
-			//@			Logger.log("In key pressed:" + e.getMessage() + " "
-			//@					+ e.getClass().getName());
+//@						Logger.log("In key pressed:" + e.getMessage() + " "
+//@								+ e.getClass().getName());
 			// #enddebug
 		}
 	}
@@ -199,14 +199,14 @@ public class UICanvas extends GameCanvas {
 		Utils.tasks.schedule(longPressedTask, 500);
 
 		// #mdebug
-		//@		Logger.log("pointerPressed:" + x + " " + y + ":");
+//@				Logger.log("pointerPressed:" + x + " " + y + ":");
 		// #enddebug
 	}
 
 	private void longPress(UIScreen paintedScreen, UIItem foundItem) {
 		synchronized (longPressedTask) {
 			// #mdebug
-			//@			Logger.log("longPressed:");
+//@						Logger.log("longPressed:");
 			// #enddebug
 			longPressRun = true;
 			paintedScreen.longPressed(foundItem);
@@ -215,7 +215,7 @@ public class UICanvas extends GameCanvas {
 
 	public void pointerDragged(int x, int y) {
 		// #mdebug
-		//@		Logger.log("pointerDragged:" + x + " " + y + ":");
+//@				Logger.log("pointerDragged:" + x + " " + y + ":");
 		// #enddebug
 		UIScreen paintedScreen = getCurrentScreen();
 		if (paintedScreen == null) return;
@@ -315,7 +315,7 @@ public class UICanvas extends GameCanvas {
 		this.releasedTime = System.currentTimeMillis();
 
 		// #mdebug
-		//@		Logger.log("pointerReleased:" + x + " " + y + ":");
+//@				Logger.log("pointerReleased:" + x + " " + y + ":");
 		// #enddebug
 
 		synchronized (longPressedTask) {
@@ -333,7 +333,7 @@ public class UICanvas extends GameCanvas {
 		}
 
 		// #mdebug
-		//@		Logger.log("paintedScreen found:");
+//@				Logger.log("paintedScreen found:");
 		// #enddebug
 
 		UIItem foundItem = null;
@@ -341,51 +341,51 @@ public class UICanvas extends GameCanvas {
 		if (foundItem != null) {
 
 			// #mdebug
-			//@			try {
-			//@				Logger.log("Found item in pointerReleased:");
-			//@				Logger
-			//@						.log("Pression time: " + releasedTime + " "
-			//@								+ pressedTime);
-			//@				if (foundItem instanceof UILabel) {
-			//@					UILabel new_name = (UILabel) foundItem;
-			//@					Logger.log("Label: " + new_name.getText()
-			//@							+ foundItem.getWidth() + " "
-			//@							+ foundItem.getHeight(canvasGraphics));
-			//@				} else if (foundItem instanceof UILayout) {
-			//@					UILayout new_name = (UILayout) foundItem;
-			//@					Logger.log("Layout " + new_name.getWidth() + " "
-			//@							+ new_name.getHeight(canvasGraphics));
-			//@				} else if (foundItem instanceof UITextField) {
-			//@					UITextField new_name = (UITextField) foundItem;
-			//@					Logger.log("TextField " + new_name.getText());
-			//@				} else if (foundItem instanceof UIPanel) {
-			//@					UIPanel new_name = (UIPanel) foundItem;
-			//@					Logger.log("Panel " + new_name.getWidth() + " "
-			//@							+ new_name.getHeight(canvasGraphics));
-			//@				} else if (foundItem instanceof UIMenu) {
-			//@					Logger.log("Menu ");
-			//@					UIMenu new_name = (UIMenu) foundItem;
-			//@					try {
-			//@						Logger.log(((UILabel) new_name.getItemList().elementAt(
-			//@								0)).getText()
-			//@								+ " "
-			//@								+ new_name.getWidth()
-			//@								+ " "
-			//@								+ new_name.getHeight(canvasGraphics));
-			//@					} catch (Exception e) {
-			//@						Logger.log(e.getMessage() + e.getClass().getName());
-			//@					}
-			//@				} else {
-			//@					Logger.log("Found other ");
-			//@					try {
-			//@						Logger.log(foundItem.getWidth() + " "
-			//@								+ foundItem.getHeight(canvasGraphics));
-			//@					} catch (Exception e) {
-			//@						Logger.log(e.getMessage() + e.getClass().getName());
-			//@					}
-			//@				}
-			//@			} catch (Exception e) {
-			//@			}
+//@						try {
+//@							Logger.log("Found item in pointerReleased:");
+//@							Logger
+//@									.log("Pression time: " + releasedTime + " "
+//@											+ pressedTime);
+//@							if (foundItem instanceof UILabel) {
+//@								UILabel new_name = (UILabel) foundItem;
+//@								Logger.log("Label: " + new_name.getText()
+//@										+ foundItem.getWidth() + " "
+//@										+ foundItem.getHeight(canvasGraphics));
+//@							} else if (foundItem instanceof UILayout) {
+//@								UILayout new_name = (UILayout) foundItem;
+//@								Logger.log("Layout " + new_name.getWidth() + " "
+//@										+ new_name.getHeight(canvasGraphics));
+//@							} else if (foundItem instanceof UITextField) {
+//@								UITextField new_name = (UITextField) foundItem;
+//@								Logger.log("TextField " + new_name.getText());
+//@							} else if (foundItem instanceof UIPanel) {
+//@								UIPanel new_name = (UIPanel) foundItem;
+//@								Logger.log("Panel " + new_name.getWidth() + " "
+//@										+ new_name.getHeight(canvasGraphics));
+//@							} else if (foundItem instanceof UIMenu) {
+//@								Logger.log("Menu ");
+//@								UIMenu new_name = (UIMenu) foundItem;
+//@								try {
+//@									Logger.log(((UILabel) new_name.getItemList().elementAt(
+//@											0)).getText()
+//@											+ " "
+//@											+ new_name.getWidth()
+//@											+ " "
+//@											+ new_name.getHeight(canvasGraphics));
+//@								} catch (Exception e) {
+//@									Logger.log(e.getMessage() + e.getClass().getName());
+//@								}
+//@							} else {
+//@								Logger.log("Found other ");
+//@								try {
+//@									Logger.log(foundItem.getWidth() + " "
+//@											+ foundItem.getHeight(canvasGraphics));
+//@								} catch (Exception e) {
+//@									Logger.log(e.getMessage() + e.getClass().getName());
+//@								}
+//@							}
+//@						} catch (Exception e) {
+//@						}
 			// #enddebug
 
 			if (foundItem == paintedScreen.footerLeft) {
@@ -498,8 +498,8 @@ public class UICanvas extends GameCanvas {
 			retVal = super.getGameAction(keyCode);
 		} catch (Exception e) {
 			// #mdebug
-			//@			Logger.log("In getGameAction:" + keyCode + " "
-			//@					+ e.getClass().getName());
+//@						Logger.log("In getGameAction:" + keyCode + " "
+//@								+ e.getClass().getName());
 			// #enddebug
 		}
 		return retVal;
@@ -588,7 +588,7 @@ public class UICanvas extends GameCanvas {
 			}
 		} catch (Exception ex) {
 			// #debug
-			//@			Logger.log("In painting UI");
+//@						Logger.log("In painting UI");
 		} finally {
 			UICanvas.unlock();
 		}
@@ -779,8 +779,8 @@ public class UICanvas extends GameCanvas {
 			}
 		} catch (Exception e) {
 			// #mdebug
-			//@			System.out.println(e.getMessage());
-			//@			e.printStackTrace();
+//@						System.out.println(e.getMessage());
+//@						e.printStackTrace();
 			// #enddebug
 		}
 
@@ -949,36 +949,36 @@ public class UICanvas extends GameCanvas {
 	}
 
 	// #mdebug
-	//@	private static UIMenu logMenu = new UIMenu("log");
-	//@
-	//@	public static void clearLog() {
-	//@		logMenu.clear();
-	//@	}
-	//@
-	//@	public static void log(String logString) {
-	//@		UILabel uil = new UILabel(logString);
-	//@		logMenu.append(uil);
-	//@		logMenu.setAbsoluteX(10);
-	//@		logMenu.setAbsoluteY(20);
-	//@		logMenu.setWidth(UICanvas.getInstance().getWidth());
-	//@		UICanvas.getInstance().getCurrentScreen().addPopup(logMenu);
-	//@	}
-	//@
-	//@	public static void log(Vector logStrings) {
-	//@		logMenu.setAbsoluteX(10);
-	//@		logMenu.setAbsoluteY(20);
-	//@		logMenu.setWidth(UICanvas.getInstance().getWidth());
-	//@		for (Enumeration en = logStrings.elements(); en.hasMoreElements();) {
-	//@			String logString = (String) en.nextElement();
-	//@			if (logString != null) {
-	//@				UILabel uil = new UILabel(logString);
-	//@				logMenu.append(uil);
-	//@			}
-	//@		}
-	//@		UIScreen cs = UICanvas.getInstance().getCurrentScreen();
-	//@		if (cs != null) cs.addPopup(logMenu);
-	//@	}
-	//@
+//@		private static UIMenu logMenu = new UIMenu("log");
+//@	
+//@		public static void clearLog() {
+//@			logMenu.clear();
+//@		}
+//@	
+//@		public static void log(String logString) {
+//@			UILabel uil = new UILabel(logString);
+//@			logMenu.append(uil);
+//@			logMenu.setAbsoluteX(10);
+//@			logMenu.setAbsoluteY(20);
+//@			logMenu.setWidth(UICanvas.getInstance().getWidth());
+//@			UICanvas.getInstance().getCurrentScreen().addPopup(logMenu);
+//@		}
+//@	
+//@		public static void log(Vector logStrings) {
+//@			logMenu.setAbsoluteX(10);
+//@			logMenu.setAbsoluteY(20);
+//@			logMenu.setWidth(UICanvas.getInstance().getWidth());
+//@			for (Enumeration en = logStrings.elements(); en.hasMoreElements();) {
+//@				String logString = (String) en.nextElement();
+//@				if (logString != null) {
+//@					UILabel uil = new UILabel(logString);
+//@					logMenu.append(uil);
+//@				}
+//@			}
+//@			UIScreen cs = UICanvas.getInstance().getCurrentScreen();
+//@			if (cs != null) cs.addPopup(logMenu);
+//@		}
+//@	
 	// #enddebug
 
 }

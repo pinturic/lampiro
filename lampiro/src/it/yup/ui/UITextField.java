@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITextField.java 998 2008-11-18 10:44:25Z luca $
+ * $Id: UITextField.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package it.yup.ui;

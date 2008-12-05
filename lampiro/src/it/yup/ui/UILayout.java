@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILayout.java 869 2008-09-26 14:39:03Z luca $
+ * $Id: UILayout.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package it.yup.ui;

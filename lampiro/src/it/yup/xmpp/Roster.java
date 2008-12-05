@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 880 2008-10-01 15:44:07Z luca $
+ * $Id: Roster.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package it.yup.xmpp;

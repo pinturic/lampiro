@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIRadioButtons.java 878 2008-09-29 17:00:56Z luca $
+ * $Id: UIRadioButtons.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package it.yup.ui;
