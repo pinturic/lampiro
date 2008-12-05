@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BaseChannel.java 1010 2008-11-21 13:24:30Z luca $
+ * $Id: BaseChannel.java 1018 2008-12-05 12:06:33Z luca $
 */
 
 package it.yup.transport;
@@ -17,6 +17,10 @@ import java.util.Vector;
 
 import org.bouncycastle.crypto.tls.TlsOuputStream;
 
+// #ifdef COMPRESSION
+//@import com.jcraft.jzlib.ZOutputStream;
+//@
+// #endif
 
 public abstract class BaseChannel {
 
@@ -75,10 +79,10 @@ public abstract class BaseChannel {
 						try {
 							if (this.exiting) { return; }
 							// #mdebug							
-//@														Logger.log(
-//@																	"Sender: waiting for packets to send. Data: "
-//@																			+ XMPPClient.getTraffic(),
-//@																	Logger.DEBUG);
+//@																					Logger.log(
+//@																								"Sender: waiting for packets to send. Data: "
+//@																										+ XMPPClient.getTraffic(),
+//@																								Logger.DEBUG);
 							// #enddebug							
 							channel.packets.wait();
 
@@ -87,7 +91,7 @@ public abstract class BaseChannel {
 
 							if (!channel.pollAlive()) {
 								// #debug								
-//@																Logger.log("send exited");
+//@																								Logger.log("send exited");
 								return;
 							}
 
@@ -107,25 +111,44 @@ public abstract class BaseChannel {
 
 				try {
 					// #debug
-//@										Logger.log("[SEND] " + new String(pkt));
+//@															Logger.log("[SEND] " + new String(pkt));
 
 					// #ifndef BXMPP					
 					channel.outputStream.write(pkt);
 					channel.outputStream.flush();
+					// #ifdef COMPRESSION
+//@					if (channel.outputStream instanceof ZOutputStream) {
+//@						BaseChannel.bytes_sent = (int) ((ZOutputStream) channel.outputStream)
+//@								.getTotalOut();
+//@					}
+					// #ifndef TLS
+//@					else {
+//@						BaseChannel.bytes_sent += pkt.length;
+//@					}
+					// #endif
+// #ifdef TLS
+					//@					else if (channel.outputStream instanceof TlsOuputStream == false) {
+					//@						BaseChannel.bytes_sent += pkt.length;
+					//@					} else if (channel.outputStream instanceof TlsOuputStream == true) {
+					//@						BaseChannel.bytes_sent = SocketChannel.handler
+					//@								.getBytes_sent();
+					//@					}
+					// #endif
+					// #endif
 // #ifndef COMPRESSION
-					bytes_sent += pkt.length;
+										bytes_sent += pkt.length;
 					// #endif
 
 					// #endif
 				} catch (IOException e) {
 					// #debug
-//@										Logger.log("[SEND] IOException:" + e.getMessage());
+//@															Logger.log("[SEND] IOException:" + e.getMessage());
 					close();
 				}
 
 			}
 			// #debug
-//@						Logger.log("Sender: exiting", Logger.DEBUG);
+//@									Logger.log("Sender: exiting", Logger.DEBUG);
 
 		}
 	}

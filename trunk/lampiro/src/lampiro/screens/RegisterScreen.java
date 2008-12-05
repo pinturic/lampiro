@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1002 2008-11-18 14:26:17Z luca $
+ * $Id: RegisterScreen.java 1018 2008-12-05 12:06:33Z luca $
 */
 
 package lampiro.screens;
@@ -72,7 +72,15 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	private UITextField resource = null;
 
+	// #ifdef COMPRESSION
+//@					private UICheckbox cb_compression = new UICheckbox(rm
+//@							.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
+	// #endif
 
+	// #ifdef TLS
+	//@				private UICheckbox cb_TLS = new UICheckbox(rm
+	//@						.getString(ResourceIDs.STR_ENABLE_TLS));
+	// #endif
 
 	private UICombobox grp_server = new UICombobox("Server type", false);
 
@@ -145,6 +153,16 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			jid_server = get_server(tf_jid.getText());
 			tf_pwd.setText(cfg.getProperty(Config.PASSWORD, ""));
 			tf_server.setText(cfg.getProperty(Config.CONNECTING_SERVER, ""));
+			//#ifdef COMPRESSION
+//@															boolean enable_compression = Short.parseShort(cfg.getProperty(
+//@																	Config.COMPRESSION, "0")) == 1;
+//@															cb_compression.setChecked(enable_compression);
+			//#endif
+			//#ifdef TLS
+			//@												boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
+			//@														"0")) == 1;
+			//@												cb_TLS.setChecked(enable_TLS);
+			//#endif
 			// append(btn_login);
 		}
 
@@ -211,6 +229,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		checkLogin();
 
 		if (grp_advanced.isChecked()) {
+			//#ifdef COMPRESSION
+//@															append(this.cb_compression);
+			//#endif
+			//#ifdef TLS
+			//@												append(this.cb_TLS);
+			//#endif
 			append(grp_server);
 			if (grp_server.getSelectedIndex() == 1) {
 				append(tf_server);
@@ -270,6 +294,16 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				cfg.setProperty(Config.SERVER, server);
 				cfg.setProperty(Config.PASSWORD, tf_pwd.getText());
 				cfg.setProperty(Config.EMAIL, tf_email.getText());
+				// #ifdef COMPRESSION
+//@																				String enableCompression = "0";
+//@																				enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
+//@																				cfg.setProperty(Config.COMPRESSION, enableCompression);
+				// #endif
+				// #ifdef TLS
+				//@																String enableTlS = "0";
+				//@																enableTlS = (cb_TLS.isChecked() ? 1 : 0) + "";
+				//@																cfg.setProperty(Config.TLS, enableTlS);
+				// #endif
 
 				if (grp_server.getSelectedIndex() == 0) {
 					if (clientInitialized == false) cfg.setProperty(
@@ -283,6 +317,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 				// Get the XMPP client
 				XMPPClient xmpp = XMPPClient.getInstance();
+				//#ifdef COMPRESSION
+//@																				xmpp.addCompression = cb_compression.isChecked();
+				//#endif
+				//#ifdef TLS
+				//@																xmpp.addTLS = cb_TLS.isChecked();
+				//#endif
 				xmpp.createStream(register);
 
 				EventQuery qAuth = new EventQuery(EventQuery.ANY_EVENT, null,
@@ -388,6 +428,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		} else if (item == grp_advanced) {
 			if (grp_advanced.isChecked()) {
 				this.setFreezed(true);
+				//#ifdef COMPRESSION
+//@																				append(this.cb_compression);
+				//#endif
+				//#ifdef TLS
+				//@																append(this.cb_TLS);
+				//#endif
 				append(resource);
 
 				append(grp_server);
@@ -400,6 +446,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				this.setFreezed(true);
 				remove(grp_server);
 				remove(tf_server);
+				//#ifdef COMPRESSION
+//@																				remove(this.cb_compression);
+				//#endif
+				//#ifdef TLS
+				//@																remove(this.cb_TLS);
+				//#endif
 				remove(resource);
 				this.setFreezed(false);
 				this.askRepaint();

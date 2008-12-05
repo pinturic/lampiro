@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 924 2008-10-25 16:10:40Z luca $
+ * $Id: ChatScreen.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package lampiro.screens;

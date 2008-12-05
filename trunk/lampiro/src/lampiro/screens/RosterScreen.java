@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 933 2008-10-28 17:50:12Z luca $
+ * $Id: RosterScreen.java 1017 2008-11-28 21:57:46Z luca $
 */
 
 package lampiro.screens;

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketChannel.java 1002 2008-11-18 14:26:17Z luca $
+ * $Id: SocketChannel.java 1018 2008-12-05 12:06:33Z luca $
 */
 
 package it.yup.transport;
@@ -25,6 +25,12 @@ import org.bouncycastle.crypto.tls.AlwaysValidVerifyer;
 import org.bouncycastle.crypto.tls.TlsInputStream;
 import org.bouncycastle.crypto.tls.TlsProtocolHandler;
 
+// #ifdef COMPRESSION
+//@import com.jcraft.jzlib.JZlib;
+//@import com.jcraft.jzlib.ZInputStream;
+//@import com.jcraft.jzlib.ZOutputStream;
+//@
+// #endif
 
 public class SocketChannel extends BaseChannel {
 
@@ -44,6 +50,9 @@ public class SocketChannel extends BaseChannel {
 	protected boolean exiting = false;
 
 
+	// #ifdef COMPRESSION	
+//@	private boolean compressed = false;
+	// #endif
 
 	private TimerTask ka_task = null;
 
@@ -223,6 +232,25 @@ public class SocketChannel extends BaseChannel {
 			int b;
 			int ch = 0;
 			b = getByte();
+			// #ifdef COMPRESSION
+//@			InputStream sockInstream = SocketChannel.this.getInputStream();
+//@			if (sockInstream instanceof ZInputStream) {
+//@				BaseChannel.bytes_received = (int) ((ZInputStream) sockInstream)
+//@						.getTotalIn();
+//@			}
+			// #ifndef TLS 
+//@												else
+//@												{SocketChannel.this.bytes_received++;}			
+			// #endif
+// #ifdef TLS
+//@			else if (sockInstream instanceof TlsInputStream == false) {
+//@				BaseChannel.bytes_received++;
+//@			} else if (sockInstream instanceof TlsInputStream == true) {
+//@				BaseChannel.bytes_received = SocketChannel.handler
+//@						.getBytes_received();
+//@			}
+			// #endif
+			// #endif
 // #ifndef COMPRESSION
 									SocketChannel.this.bytes_received++;
 			// #endif
@@ -264,6 +292,33 @@ public class SocketChannel extends BaseChannel {
 		return new UTFReader(getInputStream());
 	}
 
+	//#ifdef COMPRESSION
+//@	public void startCompression() {
+//@		synchronized (packets) {
+//@			compressed = true;
+//@			inputStream = new ZInputStream(inputStream);
+//@			outputStream = new ZOutputStream(outputStream,
+//@					JZlib.Z_DEFAULT_COMPRESSION);
+//@			((ZOutputStream) outputStream).setFlushMode(JZlib.Z_PARTIAL_FLUSH);
+//@			//sender.exiting = true;
+//@			//packets.notify();
+//@		}
+//@	}
+//@
+	//	#endif
 
+	// #ifdef TLS
+//@	public void startTLS() throws IOException {
+//@		synchronized (packets) {
+//@			TlsProtocolHandler handler = new TlsProtocolHandler(inputStream,
+//@					outputStream);
+//@			handler.connect(new AlwaysValidVerifyer());
+//@			this.handler = handler;
+//@			outputStream = handler.getOutputStream();
+//@			inputStream = handler.getInputStream();
+//@
+//@		}
+//@	}
+	//  #endif
 
 }
