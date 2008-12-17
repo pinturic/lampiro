@@ -1,16 +1,20 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandExecutor.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: CommandExecutor.java 1051 2008-12-17 12:16:32Z luca $
 */
 
 package it.yup.xmpp;
 
+import java.io.IOException;
 import java.util.Date;
 import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Graphics;
+import javax.microedition.lcdui.Image;
 
 // #ifdef UI 
 import it.yup.ui.UICanvas;
+import it.yup.ui.UILabel;
 import it.yup.ui.UIScreen;
 import lampiro.screens.DataFormScreen;
 import lampiro.screens.DataResultScreen;
@@ -29,6 +33,7 @@ import lampiro.screens.DataFormScreen.DataFormListener;
 //@import it.yup.screens.DataFormScreen.DataFormListener;
 //@
 // #endif
+
 
 import it.yup.xmlstream.Element;
 import it.yup.xmlstream.EventQuery;
@@ -64,7 +69,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	private UIScreen screen;
 	// #endif
 // #ifndef UI
-//@		private Displayable next_screen;
+	//@		private Displayable next_screen;
 	// #endif
 
 	private String note = null;
@@ -73,8 +78,12 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 
 	private int step;
 
-	/** Create the command and send it to the remote node */
+
 	public CommandExecutor(Contact usr, String[] cmd) {
+		init(usr, cmd);
+	}
+
+	private void init(Contact usr, String[] cmd) {
 		this.usr = usr;
 		this.cmd = cmd;
 		this.status = Task.CMD_EXECUTING;
@@ -87,15 +96,18 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				XMPPClient.NS_COMMANDS);
 		cel.setAttribute("node", cmd[0]);
 		cel.setAttribute("action", "execute");
+		sendPacket(iq);
+
+		XMPPClient.getInstance().updateTask(this);
+	}
+
+	private void sendPacket(Iq iq) {
 		XMPPClient xmpp = XMPPClient.getInstance();
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "id" },
 				new String[] { iq.getAttribute(Iq.ATT_ID) });
 
 		xmpp.registerOneTimeListener(eq, this);
 		xmpp.sendPacket(iq);
-
-		XMPPClient.getInstance().updateTask(this);
-
 	}
 
 	public void packetReceived(Element el) {
@@ -111,6 +123,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 
 		/* every time this is copied, not a problem, SHOULD stay the same */
 		sid = command.getAttribute("sessionid");
+
 
 		/* Parse the dataform if present */
 		Element form = command.getChildByName(DataForm.NAMESPACE, DataForm.X);
@@ -141,6 +154,14 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 			// unexpexted status, discard the message, and notify?
 			this.status = Task.CMD_ERROR;
 			// XXX is this enough?
+		}
+
+		if (df == null) {
+			if (this.status != Task.CMD_FINISHED) {
+				this.status = Task.CMD_FORM_LESS;
+			} else {
+				this.status = Task.CMD_DESTROY;
+			}
 		}
 
 		Element note_element = command.getChildByName(
@@ -201,12 +222,12 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		}
 		// #endif
 // #ifndef UI
-//@				LampiroMidlet.disp.setCurrent(next_screen);
+		//@				LampiroMidlet.disp.setCurrent(next_screen);
 		// #endif
 
 	}
 
-	private void sendReply(String action, Element dfel) {
+	void sendReply(String action, Element dfel) {
 		Iq iq = new Iq(usr.getFullJid(), Iq.T_SET);
 		Element cel = iq.addElement("http://jabber.org/protocol/commands",
 				"command", "http://jabber.org/protocol/commands");
@@ -220,12 +241,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		if (dfel != null) {
 			cel.children.addElement(dfel);
 		}
-		XMPPClient xmpp = XMPPClient.getInstance();
-		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "id" },
-				new String[] { iq.getAttribute(Iq.ATT_ID) });
-
-		xmpp.registerOneTimeListener(eq, this);
-		xmpp.sendPacket(iq);
+		sendPacket(iq);
 	}
 
 	// #ifdef UI 
@@ -233,9 +249,9 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		UIScreen screen = null;
 		// #endif
 // #ifndef UI
-//@			public void display(Display disp, Displayable next_screen) {
-//@				this.next_screen = next_screen;
-//@				Screen screen = null;
+		//@			public void display(Display disp, Displayable next_screen) {
+		//@				this.next_screen = next_screen;
+		//@				Screen screen = null;
 		// #endif
 
 		XMPPClient client = XMPPClient.getInstance();
@@ -304,18 +320,19 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 			client.showAlert(AlertType.INFO, "Note", note, null);
 		}
 		if (screen != null) {
+
 			UICanvas.getInstance().open(screen, true);
 		}
 		// #endif
 // #ifndef UI
-//@				if (screen != null) {
-//@					if (note != null) {
-//@						client.showAlert(AlertType.INFO, "Note", note, screen);
-//@		
-//@					} else {
-//@						LampiroMidlet.disp.setCurrent(screen);
-//@					}
-//@				}
+		//@				if (screen != null) {
+		//@					if (note != null) {
+		//@						client.showAlert(AlertType.INFO, "Note", note, screen);
+		//@		
+		//@					} else {
+		//@						LampiroMidlet.disp.setCurrent(screen);
+		//@					}
+		//@				}
 		// #endif 
 
 	}
@@ -332,5 +349,4 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	public String getFrom() {
 		return usr.jid;
 	}
-
 }

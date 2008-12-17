@@ -30,9 +30,9 @@ public class UITextField extends UIItem implements CommandListener {
 	// of nokia N95 that leaves the "cancel" button alone and mixes
 	// all the others button on the same menus!!!
 	/** ok command for the TextBox */
-	private static Command cmd_ok = new Command("OK", Command.CANCEL, 1);
+	private static Command cmd_ok = new Command("OK", Command.OK, 1);
 	/** ok command for the TextBox */
-	private static Command cmd_cancel = new Command("CANCEL", Command.OK, 2);
+	private static Command cmd_cancel = new Command("CANCEL", Command.CANCEL, 2);
 	/** the TextBox used */
 	private static TextBox tb;
 
