@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: XMPPClient.java 1044 2008-12-16 22:47:58Z luca $
 */
 
 package it.yup.xmpp;
@@ -41,6 +41,8 @@ import it.yup.util.ResourceManager;
 import org.bouncycastle.util.encoders.Base64;
 
 import com.sun.perseus.j2d.Point;
+
+import javab.math.BigInteger;
 
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -177,7 +179,8 @@ public class XMPPClient {
 				presence_icons[i] = Image.createImage(16, 16);
 			}
 		}
-	};
+
+	}
 
 	/**
 	 * Get the XMPP client (a singleton)
@@ -529,8 +532,8 @@ public class XMPPClient {
 
 		public void packetReceived(Element e) {
 			// #mdebug
-//@			Logger.log("PresenceHandler: received packet: "
-//@					+ new String(e.toXml()), Logger.DEBUG);
+			//@			Logger.log("PresenceHandler: received packet: "
+			//@					+ new String(e.toXml()), Logger.DEBUG);
 			// #enddebug
 			String t = e.getAttribute(Stanza.ATT_TYPE);
 			if (t == null || Presence.T_UNAVAILABLE.equals(t)) {

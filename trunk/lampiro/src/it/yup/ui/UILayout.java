@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILayout.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UILayout.java 1044 2008-12-16 22:47:58Z luca $
 */
 
 package it.yup.ui;
@@ -84,7 +84,7 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 	public void setScreen(UIScreen _us) {
 		screen = _us;
 		for (int i = 0; i < layoutItems.length; i++) {
-			layoutItems[i].setScreen(screen);
+			if (layoutItems[i] != null) layoutItems[i].setScreen(screen);
 		}
 	}
 

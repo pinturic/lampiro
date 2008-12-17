@@ -36,7 +36,7 @@ import javax.microedition.lcdui.TextField;
 public class AddContactScreen extends UIScreen {
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+			"en");
 	/*
 	 * the found gateways
 	 */
@@ -56,7 +56,7 @@ public class AddContactScreen extends UIScreen {
 		setTitle(rm.getString(ResourceIDs.STR_ADD_CONTACT));
 
 		t_jid = new UITextField(rm.getString(ResourceIDs.STR_ADDRESS), null,
-				64, TextField.EMAILADDR);
+				64, TextField.ANY);
 		t_name = new UITextField(rm.getString(ResourceIDs.STR_NICKNAME), null,
 				64, TextField.NON_PREDICTIVE);
 		t_group = new UITextField(rm.getString(ResourceIDs.STR_GROUP), null,
@@ -103,11 +103,10 @@ public class AddContactScreen extends UIScreen {
 
 			public void handleResult(Element e) {
 				Element q = e.getChildByName(XMPPClient.NS_IQ_DISCO_ITEMS,
-												Iq.QUERY);
+						Iq.QUERY);
 				if (q != null) {
-					Element items[] = q
-							.getChildrenByName(XMPPClient.NS_IQ_DISCO_ITEMS,
-												"item");
+					Element items[] = q.getChildrenByName(
+							XMPPClient.NS_IQ_DISCO_ITEMS, "item");
 					for (int i = 0; i < items.length; i++) {
 						String ithJid = items[i].getAttribute("jid");
 						IQResultListener dih = new IQResultListener() {
@@ -117,23 +116,20 @@ public class AddContactScreen extends UIScreen {
 							}
 
 							public void handleResult(Element e) {
-								Element q = e
-										.getChildByName(
-														XMPPClient.NS_IQ_DISCO_INFO,
-														Iq.QUERY);
+								Element q = e.getChildByName(
+										XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
 								if (q != null) {
 									String name = "";
 									String category = "";
 									String from = e.getAttribute("from");
-									Element identity = q
-											.getChildByName(
-															XMPPClient.NS_IQ_DISCO_INFO,
-															"identity");
+									Element identity = q.getChildByName(
+											XMPPClient.NS_IQ_DISCO_INFO,
+											"identity");
 									name = identity.getAttribute("name");
 									category = identity
 											.getAttribute("category");
-									if (category.toLowerCase()
-											.compareTo("gateway") == 0) {
+									if (category.toLowerCase().compareTo(
+											"gateway") == 0) {
 										t_type.append(name);
 										AddContactScreen.this.gateways
 												.addElement(from);
@@ -143,7 +139,7 @@ public class AddContactScreen extends UIScreen {
 						};
 						Iq iq = new Iq(ithJid, Iq.T_GET);
 						iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY,
-										XMPPClient.NS_IQ_DISCO_INFO);
+								XMPPClient.NS_IQ_DISCO_INFO);
 						XMPPClient.getInstance().sendIQ(iq, dih);
 					}
 				}
@@ -153,7 +149,7 @@ public class AddContactScreen extends UIScreen {
 		String domain = Contact.domain(myJid);
 		Iq iq = new Iq(domain, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY,
-						XMPPClient.NS_IQ_DISCO_ITEMS);
+				XMPPClient.NS_IQ_DISCO_ITEMS);
 		XMPPClient.getInstance().sendIQ(iq, dih);
 	}
 
@@ -163,19 +159,17 @@ public class AddContactScreen extends UIScreen {
 				String jid = t_jid.getText();
 				String name = t_name.getText();
 				String group = t_group.getText();
-				registerContact(jid, name, group);
+				if (registerContact(jid, name, group) == false) { return; }
 			} else {
 				IQResultListener gjh = new IQResultListener() {
 					public void handleError(Element e) {
 					}
 
 					public void handleResult(Element e) {
-						Element query = e
-								.getChildByName(XMPPClient.JABBER_IQ_GATEWAY,
-												Iq.QUERY);
-						Element q = query
-								.getChildByName(XMPPClient.JABBER_IQ_GATEWAY,
-												"jid");
+						Element query = e.getChildByName(
+								XMPPClient.JABBER_IQ_GATEWAY, Iq.QUERY);
+						Element q = query.getChildByName(
+								XMPPClient.JABBER_IQ_GATEWAY, "jid");
 						String jid = q.content;
 						String name = t_name.getText();
 						String group = t_group.getText();
@@ -187,11 +181,9 @@ public class AddContactScreen extends UIScreen {
 						.getSelectedIndex() - 1);
 				Iq iq = new Iq(to, Iq.T_SET);
 				Element query = iq.addElement(XMPPClient.JABBER_IQ_GATEWAY,
-												Iq.QUERY,
-												XMPPClient.JABBER_IQ_GATEWAY);
-				Element prompt = query
-						.addElement(XMPPClient.JABBER_IQ_GATEWAY, Iq.PROMPT,
-									XMPPClient.JABBER_IQ_GATEWAY);
+						Iq.QUERY, XMPPClient.JABBER_IQ_GATEWAY);
+				Element prompt = query.addElement(XMPPClient.JABBER_IQ_GATEWAY,
+						Iq.PROMPT, XMPPClient.JABBER_IQ_GATEWAY);
 				prompt.content = this.t_jid.getText();
 				XMPPClient.getInstance().sendIQ(iq, gjh);
 			}
@@ -205,14 +197,14 @@ public class AddContactScreen extends UIScreen {
 	/**
 	 * 
 	 */
-	private void registerContact(String jid, String name, String group) {
+	private boolean registerContact(String jid, String name, String group) {
 		Contact c;
 		// XXX also check if the contact is not already present in the
 		// roster
-		if (jid == null || !(Utils.is_email(jid))) {
+		if (jid == null || !(Utils.is_jid(jid))) {
 			t_error.setText("bad jid");
 			append(t_error);
-			return;
+			return false;
 		}
 
 		String groups[] = null;
@@ -220,7 +212,7 @@ public class AddContactScreen extends UIScreen {
 			groups = new String[] { group };
 		}
 		c = new Contact(jid, name, null, groups);
-
 		XMPPClient.getInstance().getRoster().subscribeContact(c);
+		return true;
 	}
 }

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 900 2008-10-10 21:47:40Z luca $
+ * $Id: RegisterScreen.java 1042 2008-12-12 15:53:41Z luca $
 */
 
 package it.yup.screens;
@@ -137,7 +137,7 @@ public class RegisterScreen extends Form implements CommandListener,
 		addCommand(cmd_exit);
 		setCommandListener(this);
 		// #debug        
-//@				        addCommand(new Command("debug", Command.SCREEN, 1));
+		//@				        addCommand(new Command("debug", Command.SCREEN, 1));
 	}
 
 	public static RegisterScreen getInstance() {
@@ -170,12 +170,12 @@ public class RegisterScreen extends Form implements CommandListener,
 
 	public void commandAction(Command c, Displayable d) {
 		if (c == cmd_exit) {
-			LampiroMidlet._lampiro.exit();
+			LampiroMidlet.exit();
 			// #mdebug        	
-//@						        } else if ("debug".equals(c.getLabel())) {        	
-//@						        	DebugScreen debugScreen = new DebugScreen();
-//@						        	debugScreen.setReturnScreen(this);
-//@						        	LampiroMidlet.disp.setCurrent(debugScreen);
+			//@						        } else if ("debug".equals(c.getLabel())) {        	
+			//@						        	DebugScreen debugScreen = new DebugScreen();
+			//@						        	debugScreen.setReturnScreen(this);
+			//@						        	LampiroMidlet.disp.setCurrent(debugScreen);
 			// #enddebug        	
 		} else if (c == cmd_login) {
 			login();

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: RosterScreen.java 1054 2008-12-17 15:59:27Z luca $
 */
 
 package lampiro.screens;
@@ -25,6 +25,7 @@ import it.yup.util.Utils;
 import it.yup.xmlstream.Element;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
+import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.MUC;
 import it.yup.xmpp.Task;
@@ -109,7 +110,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	// Command(rm.getString(ResourceIDs.STR_RELOAD_CONTACT), Command.SCREEN, 6);
 	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT));
 	// #mdebug
-//@	private UILabel cmd_debug = new UILabel(rm.getString(ResourceIDs.STR_DEBUG));
+	//@	private UILabel cmd_debug = new UILabel(rm.getString(ResourceIDs.STR_DEBUG));
 	// #enddebug
 	private UILabel cmd_about = new UILabel(rm.getString(ResourceIDs.STR_ABOUT));
 	private UILabel cmd_querycmd = new UILabel(rm
@@ -311,7 +312,6 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	// #endif
 
 	private RosterScreen() {
-
 		setMenu(new UIMenu(""));
 		f_u = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN,
 				Font.SIZE_SMALL);
@@ -484,7 +484,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		UIMenu menu = getMenu();
 		menu.clear();
 		// #debug
-//@		menu.append(cmd_debug);
+		//@		menu.append(cmd_debug);
 		menu.append(cmd_addc);
 		if (this.mucJid != null) menu.append(cmd_mucs);
 		menu.append(cmd_state);
@@ -523,7 +523,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	 */
 	public boolean keyPressed(int kc) {
 		// #mdebug
-//@		Logger.log("Roster screen keypressed :" + kc);
+		//@		Logger.log("Roster screen keypressed :" + kc);
 		// #enddebug
 		if (this.popupList.size() == 0
 				& this.getMenu().isOpenedState() == false) {
@@ -696,7 +696,6 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			helpField.expand();
 
 		} else if (c == cmd_addc) {
-			UICanvas.getInstance().pointerReleased(235, 5);
 			AddContactScreen acs = new AddContactScreen();
 			UICanvas.getInstance().open(acs, true);
 			// } else if(c == cmd_info) {
@@ -798,9 +797,9 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			StatusScreen ssc = new StatusScreen();
 			UICanvas.getInstance().open(ssc, true);
 			// #mdebug
-//@		} else if (c == cmd_debug) {
-//@			DebugScreen debugScreen = new DebugScreen();
-//@			UICanvas.getInstance().open(debugScreen, true);
+			//@		} else if (c == cmd_debug) {
+			//@			DebugScreen debugScreen = new DebugScreen();
+			//@			UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 		} else if (c == cmd_querycmd) {
 			Contact usr = getSelectedContact();
@@ -1270,7 +1269,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 				UIContact uic = (UIContact) this.rosterPanel.getItems()
 						.elementAt(i);
 				String contactName = uic.c.getPrintableName().toLowerCase();
-				if (contactName.indexOf(sel_pattern) < 0) {
+				if (contactName.indexOf(sel_pattern) != 0) {
 					hiddenContacts.addElement(uic.c);
 					this.rosterPanel.removeItem(uic);
 				}
@@ -1381,7 +1380,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			UIContact uic = (UIContact) item;
 			Contact c = uic.c;
 			// #mdebug
-//@			Logger.log("longPressed on :" + c.getFullJid());
+			//@			Logger.log("longPressed on :" + c.getFullJid());
 			// #enddebug
 			if (this.getSelectedContact() != c) {
 				this.rosterPanel.setSelectedIndex(this.rosterPanel.getItems()

@@ -22,19 +22,19 @@ public class Utils {
 	 * Global event scheduler
 	 */
 	static public Timer tasks = new Timer();
-	
+
 	private static boolean has_utf8 = false;
-	
+
 	static {
 		try {
 			// XXX don't waht will happen with optimizer && obfuscator
 			"".getBytes("UTF-8");
 			has_utf8 = true;
-		} catch(UnsupportedEncodingException usx) {
+		} catch (UnsupportedEncodingException usx) {
 			has_utf8 = false;
 		}
 	}
-	
+
 	/**
 	 * Compute a digest of a message
 	 * @param msg 
@@ -47,11 +47,11 @@ public class Utils {
 	public static String hexDigest(String msg, String digestType) {
 		return bytesToHex(digest(msg, digestType));
 	}
-	
+
 	static public byte[] digest(String msg, String digestType) {
-	    return digest(getBytesUtf8(msg), digestType);
+		return digest(getBytesUtf8(msg), digestType);
 	}
-	
+
 	/**
 	 * 
 	 * @param data
@@ -60,13 +60,13 @@ public class Utils {
 	 */
 	static public byte[] digest(byte data[], String digestType) {
 		GeneralDigest digest = null;
-		if(digestType.equals("sha1")) {
+		if (digestType.equals("sha1")) {
 			digest = new SHA1Digest();
-		} else if(digestType.equals("md5")) {
+		} else if (digestType.equals("md5")) {
 			digest = new MD5Digest();
 		} else {
 			return null;
-		} 
+		}
 
 		// XXX too many copies of data, modify the hash functions so that they write
 		// the result to a byte array
@@ -77,34 +77,31 @@ public class Utils {
 		System.arraycopy(out, 0, result, 0, len);
 		return result;
 	}
-	
-	private static void hexDigit(PrintStream p, byte x) {
-    	char c;
 
-    	c = (char) ((x >> 4) & 0xf);
-    	if (c > 9)
-    		c = (char) ((c - 10) + 'a');
-    	else
-    		c = (char) (c + '0');
-    	p.write(c);
-    	c = (char) (x & 0xf);
-    	if (c > 9)
-    		c = (char)((c-10) + 'a');
-    	else
-    		c = (char)(c + '0');
-    	p.write(c);
-    }
-	
-	public static String bytesToHex(byte digestBits[])
-    {
+	private static void hexDigit(PrintStream p, byte x) {
+		char c;
+
+		c = (char) ((x >> 4) & 0xf);
+		if (c > 9) c = (char) ((c - 10) + 'a');
+		else
+			c = (char) (c + '0');
+		p.write(c);
+		c = (char) (x & 0xf);
+		if (c > 9) c = (char) ((c - 10) + 'a');
+		else
+			c = (char) (c + '0');
+		p.write(c);
+	}
+
+	public static String bytesToHex(byte digestBits[]) {
 		ByteArrayOutputStream ou = new ByteArrayOutputStream();
 		PrintStream p = new PrintStream(ou);
-		for(int i = 0; i < digestBits.length; i++)
+		for (int i = 0; i < digestBits.length; i++)
 			hexDigit(p, digestBits[i]);
 
 		return (ou.toString());
-    }
-	
+	}
+
 	/**
 	 * Parse a  line with values separated by delim
 	 * 
@@ -112,9 +109,9 @@ public class Utils {
 	public static Vector tokenize(String line, char delim) {
 		Vector tokens = new Vector();
 		StringBuffer token = new StringBuffer();
-		for(int i=0; i<line.length(); i++) {
+		for (int i = 0; i < line.length(); i++) {
 			char c = line.charAt(i);
-			if(c == delim) {
+			if (c == delim) {
 				tokens.addElement(token.toString());
 				token.setLength(0);
 			} else {
@@ -124,159 +121,171 @@ public class Utils {
 		tokens.addElement(token.toString());
 		return tokens;
 	}
-	
+
 	/**
 	 * Parse a  line with values separated by delim
 	 * @param line the string that is being parsed
 	 * @param delims the set of delimiters
 	 * @param keep if true keep delimiters
-	 */	
+	 */
 	public static Vector tokenize(String line, String delims[], boolean keep) {
 		Vector tokens = new Vector();
-		StringBuffer token = new StringBuffer();		
+		StringBuffer token = new StringBuffer();
 		int i = 0;
 		boolean in_delim = true;
-		while(i<line.length()) {
+		while (i < line.length()) {
 			int l = -1;
 			// find the longest delimiter
 			int di = -1;
-			for(int j=0; j < delims.length; j++) {
-				if(delims[j].length() > l && line.startsWith(delims[j], i)){
+			for (int j = 0; j < delims.length; j++) {
+				if (delims[j].length() > l && line.startsWith(delims[j], i)) {
 					l = delims[j].length();
 					di = j;
 				}
 			}
 
-			if(in_delim) {
-				if(l < 0) {
+			if (in_delim) {
+				if (l < 0) {
 					token.append(line.charAt(i));
 					in_delim = false;
-				} else if (keep){
+				} else if (keep) {
 					tokens.addElement(delims[di]);
 				}
 			} else {
-				if(l >= 0) {
+				if (l >= 0) {
 					tokens.addElement(token.toString());
 					token.setLength(0);
-					if(keep) {tokens.addElement(delims[di]);};
+					if (keep) {
+						tokens.addElement(delims[di]);
+					}
+					;
 					in_delim = true;
 				} else {
 					token.append(line.charAt(i));
 				}
 			}
-			
+
 			i += Math.max(l, 1);
 		}
-		if(token.length() > 0) {
+		if (token.length() > 0) {
 			tokens.addElement(token.toString());
 		}
 		return tokens;
 	}
-	
+
 	public static boolean is_email(String s) {
 		Vector parts = Utils.tokenize(s, '@');
-		return (parts.size() == 2) &&
-			((String)parts.elementAt(0)).length()>0 &&
-			((String)parts.elementAt(1)).length()>0 ;
+		return (parts.size() == 2)
+				&& ((String) parts.elementAt(0)).length() > 0
+				&& ((String) parts.elementAt(1)).length() > 0;
 	}
-	
-	public static boolean[] str2flags(String s, int start, int length){
+
+	public static boolean is_jid(String s) {
+		Vector parts = Utils.tokenize(s, '.');
+		return (parts.size() >= 2)
+				&& ((String) parts.elementAt(0)).length() > 0
+				&& ((String) parts.elementAt(1)).length() > 0;
+	}
+
+	public static boolean[] str2flags(String s, int start, int length) {
 		int flags = Integer.parseInt(s);
-		boolean v[]= new boolean[length];
+		boolean v[] = new boolean[length];
 		flags >>= start;
-		for(int i=0; i<length; i++){
+		for (int i = 0; i < length; i++) {
 			int mask = 0x01 << i;
 			v[i] = ((flags & mask) == mask);
 		}
 		return v;
 	};
-	
-	public static String flags2str(boolean v[], int offset){
+
+	public static String flags2str(boolean v[], int offset) {
 		int flags = 0;
-		for(int i=0; i < v.length; i++) {
-			flags |= (v[i]?(0x01<<i):(0));
+		for (int i = 0; i < v.length; i++) {
+			flags |= (v[i] ? (0x01 << i) : (0));
 		}
 		flags <<= offset;
 		return "" + flags;
 	}
-	
+
 	public static Vector find_urls(String s) {
 		Vector v = new Vector();
 		int i = 0;
 		int url_start, url_end;
-		while(i<s.length()) {
-			if((url_start = s.indexOf("http://", i))>=0) {
+		while (i < s.length()) {
+			if ((url_start = s.indexOf("http://", i)) >= 0) {
 				url_end = s.indexOf(' ', url_start + 7);
-				if(url_end < 0) url_end = s.length();
+				if (url_end < 0) url_end = s.length();
 				v.addElement(s.substring(url_start, url_end));
 				i = url_end;
-			} else if((url_start = s.indexOf("www.", i))>=0){
+			} else if ((url_start = s.indexOf("www.", i)) >= 0) {
 				url_end = s.indexOf(' ', url_start + 4);
-				if(url_end < 0) url_end = s.length();
-				v.addElement("http://"+ s.substring(url_start, url_end));
+				if (url_end < 0) url_end = s.length();
+				v.addElement("http://" + s.substring(url_start, url_end));
 				i = url_end;
 			} else {
 				break;
 			}
-		} 
+		}
 		return v;
 	}
-	
+
 	public static final byte[] getBytesUtf8(String str) {
-		if(has_utf8) {
+		if (has_utf8) {
 			try {
 				return str.getBytes("UTF-8");
-			} catch(UnsupportedEncodingException usx) {
+			} catch (UnsupportedEncodingException usx) {
 				// shouldnt...
 			}
 		}
 		char[] chars = str.toCharArray();
 		int vlen = chars.length;
-		for(int i = 0; i < chars.length; i++) {
+		for (int i = 0; i < chars.length; i++) {
 			char ch = chars[i];
-			if(ch >= 0 && ch <= 0x07F) {
+			if (ch >= 0 && ch <= 0x07F) {
 				;
-			} else if(ch >= 0x080 && ch <= 0x07FF) {
+			} else if (ch >= 0x080 && ch <= 0x07FF) {
 				vlen++;
-			} else if( (ch >= 0x0800 && ch <= 0x0D7FF) || 
-					(ch >= 0x00E000 && ch <= 0x00FFFD) ) {
+			} else if ((ch >= 0x0800 && ch <= 0x0D7FF)
+					|| (ch >= 0x00E000 && ch <= 0x00FFFD)) {
 				vlen += 2;
-			} if(ch >= 0x010000 && ch <= 0x10FFFF) {
+			}
+			if (ch >= 0x010000 && ch <= 0x10FFFF) {
 				vlen += 3;
 			} else {
 				/* invalid char, ignore */
-				vlen --;
+				vlen--;
 			}
 		}
 		byte[] buf = new byte[vlen];
 		int j = 0;
-		for(int i = 0; i < chars.length; i++) {
+		for (int i = 0; i < chars.length; i++) {
 			char ch = chars[i];
-			if(ch >= 0 && ch <= 0x07F) {
-				buf[j++] = (byte)(ch & 0x07F);
-			} else if(ch >= 0x080 && ch <= 0x07FF) {
-				buf[j++] = (byte)(0xC0 | ((ch & 0x07C0) >> 6));
-				buf[j++] = (byte)(0x80 | ((ch & 0x003F)));
-			} else if( (ch >= 0x0800 && ch <= 0x0D7FF) || 
-					(ch >= 0x00E000 && ch <= 0x00FFFD) ) {
-				buf[j++] = (byte)(0xE0 | ((ch & 0x0F000) >> 12));
-				buf[j++] = (byte)(0x80 | ((ch & 0x00FC0) >> 6));
-				buf[j++] = (byte)(0x80 | ((ch & 0x0003F)));
-			} if(ch >= 0x010000 && ch <= 0x10FFFF) {
+			if (ch >= 0 && ch <= 0x07F) {
+				buf[j++] = (byte) (ch & 0x07F);
+			} else if (ch >= 0x080 && ch <= 0x07FF) {
+				buf[j++] = (byte) (0xC0 | ((ch & 0x07C0) >> 6));
+				buf[j++] = (byte) (0x80 | ((ch & 0x003F)));
+			} else if ((ch >= 0x0800 && ch <= 0x0D7FF)
+					|| (ch >= 0x00E000 && ch <= 0x00FFFD)) {
+				buf[j++] = (byte) (0xE0 | ((ch & 0x0F000) >> 12));
+				buf[j++] = (byte) (0x80 | ((ch & 0x00FC0) >> 6));
+				buf[j++] = (byte) (0x80 | ((ch & 0x0003F)));
+			}
+			if (ch >= 0x010000 && ch <= 0x10FFFF) {
 				/* non dovrebbero essere usate */
-				buf[j++] = (byte)(0xE0 | ((ch & 0x1C0000) >> 18));
-				buf[j++] = (byte)(0x80 | ((ch & 0x03F000) >> 12));
-				buf[j++] = (byte)(0x80 | ((ch & 0x000FC0) >> 6));
-				buf[j++] = (byte)(0x80 | ((ch & 0x00003F)));
+				buf[j++] = (byte) (0xE0 | ((ch & 0x1C0000) >> 18));
+				buf[j++] = (byte) (0x80 | ((ch & 0x03F000) >> 12));
+				buf[j++] = (byte) (0x80 | ((ch & 0x000FC0) >> 6));
+				buf[j++] = (byte) (0x80 | ((ch & 0x00003F)));
 			}
 		}
 		return buf;
 	}
-	
-//	static public void main(String params[]) {
-//		Vector tokens = Utils.tokenize(" Ciao a  tutti ,   come \nva va  ciao\r\npipo ", new String[] {" ", "  ", "\n", "\r\n"}, true);
-//		for(int i=0; i<tokens.size(); i++) {
-//			System.out.println("->" + tokens.elementAt(i) + "<-");
-//		}
-//	}
+
+	//	static public void main(String params[]) {
+	//		Vector tokens = Utils.tokenize(" Ciao a  tutti ,   come \nva va  ciao\r\npipo ", new String[] {" ", "  ", "\n", "\r\n"}, true);
+	//		for(int i=0; i<tokens.size(); i++) {
+	//			System.out.println("->" + tokens.elementAt(i) + "<-");
+	//		}
+	//	}
 }

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: StatusScreen.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: StatusScreen.java 1042 2008-12-12 15:53:41Z luca $
 */
 
 package lampiro.screens;
@@ -40,9 +40,12 @@ public class StatusScreen extends UIScreen {
 	private UIRadioButtons ch_status;
 	private UITextField tf_status;
 	private UITextField priority;
-	private UILabel cmd_status = new UILabel(rm
-			.getString(ResourceIDs.STR_SET_STATUS));
-	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_BACK));
+	private UILabel cmd_status = new UILabel(rm.getString(
+			ResourceIDs.STR_SET_STATUS).toUpperCase());
+	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CANCEL)
+			.toUpperCase());
+
+	private UIMenu closeMenu = null;
 
 	/** private constructor */
 	public StatusScreen() {
@@ -55,6 +58,8 @@ public class StatusScreen extends UIScreen {
 		String show = "";
 		String messageStatus = "";
 		String priorityVal = "";
+		closeMenu = new UIMenu("");
+		closeMenu.append(cmd_exit);
 
 		if (myContact != null) {
 			Presence p = myContact.getPresence();
@@ -80,17 +85,25 @@ public class StatusScreen extends UIScreen {
 
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
+		ch_status.setSubmenu(closeMenu);
 		append(ch_status);
+		for (int i = 0; i < mapping.length; i++) {
+			ch_status.getItem(i).setSubmenu(closeMenu);
+		}
 		tf_status = new UITextField(rm
 				.getString(ResourceIDs.STR_STATUS_MESSAGE), messageStatus, 128,
 				TextField.ANY);
+		tf_status.setSubmenu(closeMenu);
 		append(tf_status);
 		priority = new UITextField(rm.getString(ResourceIDs.STR_PRIORITY),
 				priorityVal, 10, TextField.NUMERIC);
+		priority.setSubmenu(closeMenu);
 		append(priority);
 
-		menu.append(cmd_exit);
+		//menu.append(cmd_exit);
 		menu.append(cmd_status);
+		this.setSelectedIndex(0);
+
 		this.setFreezed(false);
 		this.askRepaint();
 	}

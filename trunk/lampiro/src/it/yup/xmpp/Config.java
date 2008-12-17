@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: Config.java 1025 2008-12-09 14:40:32Z luca $
 */
 
 package it.yup.xmpp;
@@ -297,9 +297,9 @@ public class Config {
 			rms.setRecord(RNUM_CONFIG, data, 0, data.length);
 		} catch (Exception e) {
 			// #mdebug
-//@						Logger.log("Error in saving to storage: " + e.getMessage(),
-//@									Logger.DEBUG);
-//@			
+			//@						Logger.log("Error in saving to storage: " + e.getMessage(),
+			//@									Logger.DEBUG);
+			//@			
 			// #enddebug
 			XMPPClient.getInstance().showAlert(AlertType.ERROR, "Config Error",
 					"Error while saving config:\n" + e.getMessage(), null);
