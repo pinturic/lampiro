@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: OptionsScreen.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: OptionsScreen.java 1028 2008-12-09 15:44:50Z luca $
 */
 
 package it.yup.screens;

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1042 2008-12-12 15:53:41Z luca $
+ * $Id: RegisterScreen.java 1102 2009-01-12 13:40:17Z luca $
 */
 
 package lampiro.screens;

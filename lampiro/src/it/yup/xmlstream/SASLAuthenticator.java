@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SASLAuthenticator.java 870 2008-09-28 12:03:11Z luca $
+ * $Id: SASLAuthenticator.java 1028 2008-12-09 15:44:50Z luca $
 */
 
 package it.yup.xmlstream;

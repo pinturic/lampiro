@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: BasicXmlStream.java 1028 2008-12-09 15:44:50Z luca $
 */
 
 package it.yup.xmlstream;

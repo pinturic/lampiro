@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1025 2008-12-09 14:40:32Z luca $
+ * $Id: Config.java 1102 2009-01-12 13:40:17Z luca $
 */
 
 package it.yup.xmpp;
@@ -105,6 +105,7 @@ public class Config {
 	public static short LAST_PRIORITY = 0x0017;
 	/** XMPP resource */
 	public static short YUP_RESOURCE = 0x0021;
+
 
 	/**
 	 * Using bit masks

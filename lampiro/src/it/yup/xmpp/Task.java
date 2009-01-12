@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Task.java 1039 2008-12-10 16:07:44Z luca $
+ * $Id: Task.java 1102 2009-01-12 13:40:17Z luca $
 */
 
 package it.yup.xmpp;
@@ -33,7 +33,7 @@ public interface Task {
 	static public byte CMD_ERROR = 0x16;
 	/** Remove the result */
 	static public byte CMD_DESTROY = 0x17;
-	/** Remove the result */
+	/** A task without form*/
 	static public byte CMD_FORM_LESS = 0x18;
 
 	/** The form is awaiting for user imput */
