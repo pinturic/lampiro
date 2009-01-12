@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 872 2008-09-28 15:09:27Z luca $
+ * $Id: Contact.java 1028 2008-12-09 15:44:50Z luca $
 */
 
 package it.yup.xmpp;

@@ -47,6 +47,7 @@
 47	Help
 48	Roster screen, available menus:< - left: actions performend on the selected contact< - right: general actions< Shortcuts and navigation:<1) up and down keys: move the selection up and down<2) fire button: start chat with the selected contact<3) left and right: navigate through open screens<4) letter keys: filter contacts (left key for resetting selection)<5) '*' pressed for 2'': jump to an open screen<
 49	Description
+50	Error registration
 100	Write message
 101	Chat with
 102	Clear Chat

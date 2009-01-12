@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1044 2008-12-16 22:47:58Z luca $
+ * $Id: XMPPClient.java 1102 2009-01-12 13:40:17Z luca $
 */
 
 package it.yup.xmpp;

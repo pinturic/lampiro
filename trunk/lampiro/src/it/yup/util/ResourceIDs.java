@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 906 2008-10-14 20:33:51Z luca $
+ * $Id: ResourceIDs.java 1102 2009-01-12 13:40:17Z luca $
 */
 
 /**
@@ -15,6 +15,7 @@ package it.yup.util;
 public class ResourceIDs {
 
 	public static final int STR_CLOSE = 1;
+	public static final int STR_USERNAME = 2;
 	public static final int STR_PASSWORD = 3;
 	public static final int STR_WAIT = 4;
 	public static final int STR_LOGIN = 5;
@@ -59,6 +60,7 @@ public class ResourceIDs {
 	public static final int STR_HELP = 47;
 	public static final int STR_HELP_TEXT = 48;
 	public static final int STR_DESC = 49;
+	public static final int STR_REG_ERROR = 50;
 
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;

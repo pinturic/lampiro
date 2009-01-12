@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: KXmlSerializer.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: KXmlSerializer.java 1028 2008-12-09 15:44:50Z luca $
 */
 
 /* Copyright (c) 2002,2003, Stefan Haustein, Oberhausen, Rhld., Germany

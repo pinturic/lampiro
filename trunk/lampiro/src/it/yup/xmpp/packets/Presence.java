@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Presence.java 906 2008-10-14 20:33:51Z luca $
+ * $Id: Presence.java 1028 2008-12-09 15:44:50Z luca $
 */
 
 package it.yup.xmpp.packets;

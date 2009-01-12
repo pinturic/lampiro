@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1054 2008-12-17 15:59:27Z luca $
+ * $Id: RosterScreen.java 1102 2009-01-12 13:40:17Z luca $
 */
 
 package lampiro.screens;
@@ -59,7 +59,7 @@ import lampiro.screens.DataFormScreen.DataFormListener;
 
 public class RosterScreen extends UIScreen implements PacketListener {
 
-	private static final String IQ_REGISTER = "jabber:iq:register";
+	static final String IQ_REGISTER = "jabber:iq:register";
 
 	/*
 	 * The number of components that are recognized at the jabber server
@@ -946,7 +946,8 @@ public class RosterScreen extends UIScreen implements PacketListener {
 										type = identity.getAttribute("type");
 										String category = identity
 												.getAttribute("category");
-										if (category.compareTo("conference") == 0) mucJid = from;
+										if (category.compareTo("conference") == 0
+												&& type.compareTo("text") == 0) mucJid = from;
 										name = identity.getAttribute("name");
 									} else {
 										name = from;
@@ -1085,7 +1086,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		/*
 		 * the dataformscreen opened with registration data
 		 */
-		private DataFormScreen dfs;
+		private UIScreen dfs;
 
 		public void handleError(Element e) {
 			// TODO Auto-generated method stub
@@ -1097,14 +1098,21 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			if (q != null) {
 				/* Parse the dataform if present */
 				this.e = e;
+				UIScreen screen = null;
 				Element form = q.getChildByName(DataForm.NAMESPACE, DataForm.X);
-				DataForm df = new DataForm(form);
-				this.df = df;
-				RegisterDataFormExecutor rdf = new RegisterDataFormExecutor(
-						this);
-				DataFormScreen screen = new DataFormScreen(df, rdf);
-				this.dfs = screen;
-				UICanvas.getInstance().open(screen, true);
+				if (form != null) {
+					DataForm df = new DataForm(form);
+					this.df = df;
+					RegisterDataFormExecutor rdf = new RegisterDataFormExecutor(
+							this);
+					screen = new DataFormScreen(df, rdf);
+					this.dfs = screen;
+				} else if (q.getChildByName(null, "username") != null) {
+					screen = new GatewayRegisterScreen(e);
+				}
+				if (screen != null) {
+					UICanvas.getInstance().open(screen, true);
+				}
 			}
 		}
 	}

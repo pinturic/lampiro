@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: OptionsScreen.java 909 2008-10-14 21:14:03Z luca $
+ * $Id: OptionsScreen.java 1075 2008-12-30 16:32:44Z luca $
 */
 
 package lampiro.screens;
