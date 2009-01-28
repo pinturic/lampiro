@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: Config.java 1135 2009-01-27 23:07:46Z luca $
 */
 
 package it.yup.xmpp;
@@ -150,6 +150,11 @@ public class Config {
 	 * Font Size for roster and chat
 	 */
 	public static short HISTORY_SIZE = 0x0018;
+	
+	/*
+	 * The accepted gateways
+	 */
+	public static short ACCEPTED_GATEWAYS = 0x0022;
 
 	/** the bluendo assistent */
 	public static final String LAMPIRO_AGENT = "lampiro@golem.jabber.bluendo.com";

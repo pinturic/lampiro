@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MessageComposerScreen.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: MessageComposerScreen.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package lampiro.screens;
@@ -75,7 +75,7 @@ public class MessageComposerScreen extends UIScreen {
 				msg = new Message(user.jid, null);
 				String subject = tf_subject.getText();
 				if(subject != null && !"".equals(subject)) {
-					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT, null).content = subject;
+					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT).content = subject;
 				}
 			} else {
 				msg = new Message(user.jid, "chat");

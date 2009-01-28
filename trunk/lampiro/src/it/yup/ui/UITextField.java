@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITextField.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: UITextField.java 1134 2009-01-27 13:37:18Z luca $
 */
 
 package it.yup.ui;
@@ -39,6 +39,12 @@ public class UITextField extends UIItem implements CommandListener {
 	private UITextPanel innerPanel;
 
 	private boolean groupSelected = false;
+	
+	/*
+	 * Must be set to true when the UITextfield must automatically unexpand
+	 * when loosing focus 
+	 */
+	private boolean autoUnexpand = true;
 
 	/** the label */
 	private String label;
@@ -255,7 +261,7 @@ public class UITextField extends UIItem implements CommandListener {
 		if (wrappable && groupSelected) {
 			if (ga != Canvas.FIRE) {
 				boolean innerKeyKeep = this.innerPanel.keyPressed(key);
-				if (innerKeyKeep == false) {
+				if (innerKeyKeep == false && this.autoUnexpand) {
 					unExpand();
 				}
 				return innerKeyKeep;
@@ -376,5 +382,13 @@ public class UITextField extends UIItem implements CommandListener {
 
 	public boolean isDirty() {
 		return this.dirty || innerPanel.isDirty();
+	}
+
+	public void setAutoUnexpand(boolean autoUnexpand) {
+		this.autoUnexpand = autoUnexpand;
+	}
+
+	private boolean isAutoUnexpand() {
+		return autoUnexpand;
 	}
 }

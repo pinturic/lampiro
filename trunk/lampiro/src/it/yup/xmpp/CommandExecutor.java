@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandExecutor.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: CommandExecutor.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmpp;
@@ -92,8 +92,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		last_modify = new Date();
 
 		Iq iq = new Iq(usr.getFullJid(), Iq.T_SET);
-		Element cel = iq.addElement(XMPPClient.NS_COMMANDS, "command",
-				XMPPClient.NS_COMMANDS);
+		Element cel = iq.addElement(XMPPClient.NS_COMMANDS, "command");
 		cel.setAttribute("node", cmd[0]);
 		cel.setAttribute("action", "execute");
 		sendPacket(iq);
@@ -230,7 +229,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	void sendReply(String action, Element dfel) {
 		Iq iq = new Iq(usr.getFullJid(), Iq.T_SET);
 		Element cel = iq.addElement("http://jabber.org/protocol/commands",
-				"command", "http://jabber.org/protocol/commands");
+				"command");
 		cel.setAttribute("node", cmd[0]);
 		if (sid != null) {
 			cel.setAttribute("sessionid", sid);

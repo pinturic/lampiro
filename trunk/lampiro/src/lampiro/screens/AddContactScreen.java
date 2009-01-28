@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AddContactScreen.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: AddContactScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package lampiro.screens;
@@ -83,16 +83,11 @@ public class AddContactScreen extends UIScreen {
 		 * ch_grps.append(g.name, null); } if(ch_grps.size() > 0) {
 		 * append(ch_grps); }
 		 */
-		setMenu(new UIMenu(""));
-		UIMenu menu = getMenu();
-		menu.append(cmd_save);
-		menu.append(cmd_exit);
-
+		setMenu(UIMenu.easyMenu("", -1, -1, -1, cmd_save));
+		getMenu().append(cmd_exit);
 		this.setFreezed(false);
 		this.askRepaint();
-
 		getGateways();
-
 	}
 
 	private void getGateways() {
@@ -142,8 +137,7 @@ public class AddContactScreen extends UIScreen {
 							}
 						};
 						Iq iq = new Iq(ithJid, Iq.T_GET);
-						iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY,
-										XMPPClient.NS_IQ_DISCO_INFO);
+						iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
 						XMPPClient.getInstance().sendIQ(iq, dih);
 					}
 				}
@@ -152,8 +146,7 @@ public class AddContactScreen extends UIScreen {
 		String myJid = XMPPClient.getInstance().my_jid;
 		String domain = Contact.domain(myJid);
 		Iq iq = new Iq(domain, Iq.T_GET);
-		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY,
-						XMPPClient.NS_IQ_DISCO_ITEMS);
+		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
 		XMPPClient.getInstance().sendIQ(iq, dih);
 	}
 
@@ -187,11 +180,9 @@ public class AddContactScreen extends UIScreen {
 						.getSelectedIndex() - 1);
 				Iq iq = new Iq(to, Iq.T_SET);
 				Element query = iq.addElement(XMPPClient.JABBER_IQ_GATEWAY,
-												Iq.QUERY,
-												XMPPClient.JABBER_IQ_GATEWAY);
+												Iq.QUERY);
 				Element prompt = query
-						.addElement(XMPPClient.JABBER_IQ_GATEWAY, Iq.PROMPT,
-									XMPPClient.JABBER_IQ_GATEWAY);
+						.addElement(XMPPClient.JABBER_IQ_GATEWAY, Iq.PROMPT);
 				prompt.content = this.t_jid.getText();
 				XMPPClient.getInstance().sendIQ(iq, gjh);
 			}
@@ -209,7 +200,7 @@ public class AddContactScreen extends UIScreen {
 		Contact c;
 		// XXX also check if the contact is not already present in the
 		// roster
-		if (jid == null || !(Utils.is_email(jid))) {
+		if (jid == null || !(Utils.is_jid(jid))) {
 			t_error.setText("bad jid");
 			append(t_error);
 			return;

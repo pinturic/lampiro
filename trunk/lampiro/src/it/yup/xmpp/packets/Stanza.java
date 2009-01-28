@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Stanza.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: Stanza.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmpp.packets;
@@ -18,15 +18,15 @@ public class Stanza extends Element {
 	//public static final String ATT_JID  = "jid";
 
 	protected Stanza(String name, String to, String type, String id) {
-		super(NS_JABBER_CLIENT, name, NS_JABBER_CLIENT);
+		super(NS_JABBER_CLIENT, name);
 		if (to != null) {
-			attributes.addElement(new String[] { ATT_TO, to });
+			attributes.addElement(new String[] { null,ATT_TO, to });
 		}
 		if (type != null) {
-			attributes.addElement(new String[] { ATT_TYPE, type });
+			attributes.addElement(new String[] { null,ATT_TYPE, type });
 		}
 		if (id != null) {
-			attributes.addElement(new String[] { ATT_ID, id });
+			attributes.addElement(new String[] { null,ATT_ID, id });
 		}
 	}
 

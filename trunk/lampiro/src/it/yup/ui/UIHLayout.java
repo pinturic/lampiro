@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIHLayout.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIHLayout.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 /**
@@ -173,6 +173,27 @@ public class UIHLayout extends UILayout {
 		}
 
 		return false;
+	}
+
+	/*
+	 * An helper function that builds an horizontal layout of three items.
+	 * The first and third item are dummy and the second is the passed item.
+	 * Size is the size in pixel od the seconde layout element
+	 * 
+	 * @param item
+	 * 			the item to insert in the middle of the layout
+	 * @param size
+	 * 			the size of the middle element of the layout  
+	 */
+	public static UIHLayout easyCenterLayout (UILabel item, int size){
+		UIHLayout buttonLayout = new UIHLayout(3);
+		UILabel dummyLabel = new UILabel("");
+		item.setAnchorPoint(Graphics.HCENTER);
+		buttonLayout.setGroup(false);
+		buttonLayout.insert(dummyLabel, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		buttonLayout.insert(item, 1, size, UILayout.CONSTRAINT_PIXELS);
+		buttonLayout.insert(dummyLabel, 2, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		return buttonLayout;
 	}
 
 }

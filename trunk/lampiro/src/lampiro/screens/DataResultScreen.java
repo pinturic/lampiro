@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 913 2008-10-21 10:47:46Z luca $
+ * $Id: DataResultScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 /**
@@ -186,18 +186,14 @@ public class DataResultScreen extends UIScreen {
 		} else if (cmd == cmd_prev) {
 			pos--;
 		} else if (cmd == show_desc_label) {
-			UIMenu descriptionMenu = new UIMenu(rm
-					.getString(ResourceIDs.STR_DESC));
-			descriptionMenu.setAbsoluteX(10);
-			descriptionMenu.setAbsoluteY(20);
-			descriptionMenu.setWidth(this.getWidth() - 20);
 			int index = this.getSelectedIndex();
 			String desc = ((DataForm.Field) this.df.fields.elementAt(index)).desc;
 			UITextField descField = new UITextField("", desc, desc.length(),
 					TextField.UNEDITABLE);
 			descField.setWrappable(true);
+			UIMenu descriptionMenu = UIMenu.easyMenu(rm
+					.getString(ResourceIDs.STR_DESC), 10, 20, this.getWidth() - 20, descField);
 			//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
-			descriptionMenu.append(descField);
 			descriptionMenu.cancelMenuString = "";
 			descriptionMenu.selectMenuString = rm.getString(
 					ResourceIDs.STR_CLOSE).toUpperCase();

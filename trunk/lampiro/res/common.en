@@ -47,7 +47,7 @@
 47	Help
 48	Roster screen, available menus:< - left: actions performend on the selected contact< - right: general actions< Shortcuts and navigation:<1) up and down keys: move the selection up and down<2) fire button: start chat with the selected contact<3) left and right: navigate through open screens<4) letter keys: filter contacts (left key for resetting selection)<5) '*' pressed for 2'': jump to an open screen<
 49	Description
-50	Error registration
+50	Error during registration
 100	Write message
 101	Chat with
 102	Clear Chat
@@ -81,6 +81,17 @@
 224	Note
 225	Enable TLS
 226	Stop login
+227	It appears that this is the first time you run Lampiro.<If the menu keys do not work  keep the "#" button pressed in the next screen to show the configuration tool.
+228	Please press the button you wish to associate to the left menu
+229	Please press the button you wish to associate to the right menu
+230	Please confirm the left key
+231	Please confirm the right key
+232	Thank you, press a key to proceed.
+233	Please press the same key as before!
+234	The selected key is not valid
+235	Press left key
+236	Press right key
+237	Configuring keys
 300	Send message to
 500	Fill the form
 700	Send message
@@ -100,9 +111,12 @@
 802	Status message
 803	Priority
 804	Resource
-900	Subscription confirmation
-901	Presence subscription request from
+900	Subscription request
+901	wants to modify your roster
 902	Do you accept?
+903	Accept all
+904	Always accept
+905	Presence subscription request
 1001	Choose a command
 1002	Execute
 1003	Task History

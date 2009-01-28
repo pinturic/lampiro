@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Message.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: Message.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmpp.packets;
@@ -25,7 +25,7 @@ public class Message extends Stanza {
 		if (el != null)
 			el.content = body;
 		else
-			el = addElement(NS_JABBER_CLIENT, BODY, null);
+			el = addElement(NS_JABBER_CLIENT, BODY);
 			el.content = body;
 	}
 

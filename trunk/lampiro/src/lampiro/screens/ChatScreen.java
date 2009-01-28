@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: ChatScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package lampiro.screens;
@@ -530,15 +530,11 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			tb.addCommand(cmd_ok);
 			tb.setCommandListener(this);
 			UICanvas.display(tb);*/
-
-			UIMenu zoomedMenu = new UIMenu("Expanded");
 			UITextField expField = new UITextField("", selText, selText
 					.length(), TextField.UNEDITABLE);
 			expField.setWrappable(true);
+			UIMenu zoomedMenu = UIMenu.easyMenu("Expanded", 10, 20, this.getWidth() - 20, expField);
 			zoomedMenu.append(expField);
-			zoomedMenu.setAbsoluteY(20);
-			zoomedMenu.setAbsoluteX(10);
-			zoomedMenu.setWidth(this.getWidth() - 20);
 			zoomedMenu.cancelMenuString = "";
 			zoomedMenu.selectMenuString = rm.getString(ResourceIDs.STR_CLOSE)
 					.toUpperCase();
