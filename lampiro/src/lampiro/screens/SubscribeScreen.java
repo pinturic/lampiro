@@ -3,12 +3,6 @@
  */
 package lampiro.screens;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
-
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIConfig;
@@ -26,15 +20,20 @@ import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
 
+import java.util.Enumeration;
+import java.util.Hashtable;
+
+import javax.microedition.lcdui.Image;
+
 /**
  * @author luca
  *
  */
 public class SubscribeScreen extends UIScreen {
 
-	public static final int ADD=0;
-	public static final int DELETE=1;
-	public static final int MODIFY=2;
+	public static final int ADD = 0;
+	public static final int DELETE = 1;
+	public static final int MODIFY = 2;
 
 	private UIPanel subscribePanel;
 
@@ -46,35 +45,37 @@ public class SubscribeScreen extends UIScreen {
 
 	public UIButton acceptAll = new UIButton(rm
 			.getString(ResourceIDs.STR_ACCEPT_ALL));
-	
+
 	private UIButton acceptAlways = new UIButton(rm
 			.getString(ResourceIDs.STR_ACCEPT_ALWAYS));
 
 	private UIButton close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
 
 	private UILabel cmd_no;
-	
+
 	private UILabel sub_text = new UILabel("");
 
 	private Contact fromContact = null;
-	
-	UIHLayout acceptLayout= null;
-	
-	public SubscribeScreen (Contact fromContact){
+
+	UIHLayout acceptLayout = null;
+
+	public SubscribeScreen(Contact fromContact) {
 		this();
 		this.fromContact = fromContact;
-		this.sub_text.setText(fromContact.getPrintableName()+ " " +rm.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST_FROM));
+		this.sub_text.setText(fromContact.getPrintableName() + " "
+				+ rm.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST_FROM));
 		int acceptIndex = subscribePanel.getItems().indexOf(acceptLayout);
-		UIHLayout newAcceptLayout= null;
-		newAcceptLayout = UIHLayout.easyCenterLayout(acceptAlways, 110);
+		UIHLayout newAcceptLayout = null;
+		newAcceptLayout = UIHLayout.easyCenterLayout(acceptAlways, 130);
 		acceptAlways.setFont(UIConfig.small_font);
-		subscribePanel.insertItemAt(newAcceptLayout,acceptIndex+1);
+		subscribePanel.insertItemAt(newAcceptLayout, acceptIndex + 1);
 	}
+
 	/**
 	 * 
 	 */
 	public SubscribeScreen() {
-		sub_text.setWrappable(true, UICanvas.getInstance().getWidth()-10);
+		sub_text.setWrappable(true, UICanvas.getInstance().getWidth() - 10);
 		cmd_yes = new UILabel(rm.getString(ResourceIDs.STR_YES).toUpperCase());
 		UIMenu menu = new UIMenu("");
 		menu.append(cmd_yes);
@@ -84,13 +85,15 @@ public class SubscribeScreen extends UIScreen {
 		subscribePanel.setMaxHeight(-1);
 		subscribePanel.setFocusable(true);
 		this.append(subscribePanel);
-		this.sub_text.setText(rm.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST));
+		this.sub_text.setText(rm
+				.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST));
 		subscribePanel.addItem(this.sub_text);
-		acceptLayout = UIHLayout.easyCenterLayout(acceptAll, 110);
+		acceptLayout = UIHLayout.easyCenterLayout(acceptAll, 130);
 		acceptLayout.setSelectedItem(acceptAll);
 		acceptAll.setImg(UICanvas.getUIImage("/icons/contact_add_all.png"));
 		acceptAll.setFont(UIConfig.small_font);
-		acceptAlways.setImg(UICanvas.getUIImage("/icons/contact_add_always.png"));
+		acceptAlways.setImg(UICanvas
+				.getUIImage("/icons/contact_add_always.png"));
 		subscribePanel.addItem(acceptLayout);
 		acceptAll.setFocusable(true);
 		UISeparator sep = new UISeparator(2);
@@ -127,11 +130,11 @@ public class SubscribeScreen extends UIScreen {
 		// then insert it
 		String upAction = "";
 		Image image = null;
-		if (action == SubscribeScreen.ADD){
+		if (action == SubscribeScreen.ADD) {
 			upAction = rm.getString(ResourceIDs.STR_ADD_CONTACT);
 			image = UICanvas.getUIImage("/icons/contact_add.png");
 		}
-		if (action == SubscribeScreen.DELETE){
+		if (action == SubscribeScreen.DELETE) {
 			upAction = rm.getString(ResourceIDs.STR_DELETE_CONTACT);
 			image = UICanvas.getUIImage("/icons/contact_delete.png");
 		}
@@ -146,8 +149,10 @@ public class SubscribeScreen extends UIScreen {
 		ithSubscription.setSubmenu(this.denyMenu);
 		ithSubscription.setWrappable(true,
 				UICanvas.getInstance().getWidth() - 20);
-		subscriptions.put(ithSubscription, new Object[] { c, new Integer(action) });
-		this.subscribePanel.insertItemAt(uhl, this.subscribePanel.getItems().size()-2);
+		subscriptions.put(ithSubscription, new Object[] { c,
+				new Integer(action) });
+		this.subscribePanel.insertItemAt(uhl, this.subscribePanel.getItems()
+				.size() - 2);
 		return true;
 	}
 
@@ -158,7 +163,7 @@ public class SubscribeScreen extends UIScreen {
 			Contact c = (Contact) objects[0];
 			int action = ((Integer) objects[1]).intValue();
 			if (cmd == cmd_yes) {
-				if (action == SubscribeScreen.ADD ) XMPPClient.getInstance()
+				if (action == SubscribeScreen.ADD) XMPPClient.getInstance()
 						.getRoster().subscribeContact(c);
 				else if (action == SubscribeScreen.DELETE) XMPPClient
 						.getInstance().getRoster().unsubscribeContact(c);
@@ -170,8 +175,7 @@ public class SubscribeScreen extends UIScreen {
 						.removeItem((UIItem) selLabel.getContainer());
 				this.subscriptions.remove(selLabel);
 			}
-			if (this.subscriptions.isEmpty())
-				this.itemAction(this.close);
+			if (this.subscriptions.isEmpty()) this.itemAction(this.close);
 			else
 				this.askRepaint();
 		}
@@ -194,23 +198,25 @@ public class SubscribeScreen extends UIScreen {
 		} else if (cmd == acceptAlways) {
 			this.itemAction(acceptAll);
 			Config cfg = Config.getInstance();
-			String acceptedGateways = cfg.getProperty(Config.ACCEPTED_GATEWAYS, "");
-			acceptedGateways = acceptedGateways+"<"+this.fromContact.jid.trim();
+			String acceptedGateways = cfg.getProperty(Config.ACCEPTED_GATEWAYS,
+					"");
+			acceptedGateways = acceptedGateways + "<"
+					+ this.fromContact.jid.trim();
 			cfg.setProperty(Config.ACCEPTED_GATEWAYS, acceptedGateways);
 			cfg.saveToStorage();
 		}
 	}
 
 	private static SubscribeScreen userSubscriptionScreen = null;
-	
+
 	public synchronized static void releaseScreen(SubscribeScreen ss) {
-		if (ss == SubscribeScreen.userSubscriptionScreen){
+		if (ss == SubscribeScreen.userSubscriptionScreen) {
 			userSubscriptionScreen = null;
 		}
 	}
+
 	public synchronized static SubscribeScreen getUserSubscription() {
-		if (userSubscriptionScreen==null)
-			userSubscriptionScreen = new SubscribeScreen();
+		if (userSubscriptionScreen == null) userSubscriptionScreen = new SubscribeScreen();
 		return userSubscriptionScreen;
 	}
 }
