@@ -30,8 +30,8 @@
 //@		}
 //@		
 //@		if(found) {
-//@			Element compress = new Element("http://jabber.org/protocol/compress", "compress", "http://jabber.org/protocol/compress");
-//@			compress.addElement("http://jabber.org/protocol/compress", "method", null).content = "zlib";
+//@			Element compress = new Element("http://jabber.org/protocol/compress", "compress");
+//@			compress.addElement("http://jabber.org/protocol/compress", "method").content = "zlib";
 //@			EventQuery pq = new EventQuery(EventQuery.ANY_PACKET, null, null);
 //@			stream.addOnetimeEventListener(pq, this);
 //@			stream.send(compress, -1);

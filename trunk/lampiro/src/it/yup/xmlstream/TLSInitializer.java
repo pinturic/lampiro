@@ -21,7 +21,7 @@
 //@		
 //@		this.stream = stream;
 //@
-//@		Element starttls = new Element(this.namespace, "starttls", this.namespace);
+//@		Element starttls = new Element(this.namespace, "starttls");
 //@		EventQuery pq = new EventQuery(EventQuery.ANY_PACKET, null, null);
 //@		stream.addOnetimeEventListener(pq, this);
 //@		stream.send(starttls, -1);
