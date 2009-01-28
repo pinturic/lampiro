@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Utils.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: Utils.java 1135 2009-01-27 23:07:46Z luca $
 */
 
 package it.yup.util;
@@ -171,6 +171,13 @@ public class Utils {
 			tokens.addElement(token.toString());
 		}
 		return tokens;
+	}
+	
+	public static boolean is_jid(String s) {
+		Vector parts = Utils.tokenize(s, '.');
+		return (parts.size() >= 2)
+				&& ((String) parts.elementAt(0)).length() > 0
+				&& ((String) parts.elementAt(1)).length() > 0;
 	}
 	
 	public static boolean is_email(String s) {

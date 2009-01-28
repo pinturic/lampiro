@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AboutScreen.java 1015 2008-11-25 09:48:49Z luca $
+ * $Id: AboutScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package lampiro.screens;
@@ -39,9 +39,7 @@ public class AboutScreen extends UIScreen {
 			ul.setAnchorPoint(Graphics.HCENTER | Graphics.VCENTER);
 			append(ul);
 		}
-		setMenu(new UIMenu(""));
-		UIMenu menu = getMenu();
-		menu.append(cmd_ok);
+		setMenu(UIMenu.easyMenu("", -1, -1, -1, cmd_ok));
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {

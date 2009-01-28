@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIPanel.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIPanel.java 1135 2009-01-27 23:07:46Z luca $
 */
 
 package it.yup.ui;
@@ -447,12 +447,13 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 * @param it
 	 *            The item to remove
 	 */
-	public void removeItem(UIItem it) {
+	public int removeItem(UIItem it) {
 		int iIndex = items.indexOf(it);
 		if (this.screen != null) {
 			this.screen.removePaintedItem(it);
 		}
 		this.removeItemAt(iIndex);
+		return iIndex;
 	}
 
 	/**
@@ -475,8 +476,15 @@ public class UIPanel extends UIItem implements UIIContainer {
 		}
 		if (selectedIdx > 0 && selectedIdx < this.items.size()) ((UIItem) items
 				.elementAt(selectedIdx)).setDirty(true);
+		boolean newSelected = false;
 		for (int i = idx; i < items.size(); i++) {
-			((UIItem) items.elementAt(i)).setDirty(true);
+			UIItem ithElem = ((UIItem) items.elementAt(i));
+			ithElem.setDirty(true);
+			if (newSelected == false && ithElem.isFocusable()){
+				this.setSelectedItem(ithElem);
+				this.selectedIdx = idx;
+				newSelected = true;
+			}
 		}
 		this.dirty = true;
 	}
@@ -520,6 +528,9 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 *            The index to select. -1 to clear selection
 	 */
 	public void setSelectedIndex(int idx) {
+		if (this.getContainer() != null) {
+			this.getContainer().setSelectedItem(this);
+		}
 		if (idx < -1 || idx >= items.size()) {
 			/* wrong index, ignore */
 			return;
@@ -560,8 +571,6 @@ public class UIPanel extends UIItem implements UIIContainer {
 	public void setSelectedItem(UIItem item) {
 		int index = this.items.indexOf(item);
 		this.setSelectedIndex(index);
-		if (this.getContainer() != null) {
-			this.getContainer().setSelectedItem(this);
-		}
+		
 	}
 }

@@ -27,12 +27,14 @@
 			device="Generic/Java"
 			symbols="${preprocess.symbols}"
 			printsymbols="true">
+			<excludesfile name="${exclude-list}"/>
 		</wtkpreprocess>
    </target>
    <target depends="-eclipseme-initialize,-eclipseme-preprocess" name="-eclipseme-build">
       <echo message="Building source files..."/>
       <wtkbuild destdir="${path.build.classes}" encoding="${src.encoding}" source="1.3" sourcepath="" srcdir="${project.root.lampiro}/preprocess/src">
          <classpath refid="classpath.lampiro"/>
+      	<excludesfile name="${exclude-list}"/>
       </wtkbuild>
       <wtkbuild destdir="${path.build.classes}" encoding="${src.encoding}" source="1.3" sourcepath="" srcdir="${project.root.lampiro}/res">
          <classpath refid="classpath.lampiro"/>

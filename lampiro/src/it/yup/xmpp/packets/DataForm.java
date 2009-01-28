@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataForm.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: DataForm.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 /**
@@ -169,7 +169,7 @@ public class DataForm {
 
 		if (type == TYPE_FORM || type == TYPE_RESULT) { return null; }
 
-		Element el = new Element(NAMESPACE, X, NAMESPACE);
+		Element el = new Element(NAMESPACE, X);
 		el.setAttribute(Stanza.ATT_TYPE, type);
 		/* cancel, non mando nient'altro??? */
 		if (type == TYPE_CANCEL) { return el; }
@@ -182,14 +182,14 @@ public class DataForm {
 				continue;
 			}
 
-			Element ch = el.addElement(NAMESPACE, FIELD, null);
+			Element ch = el.addElement(NAMESPACE, FIELD);
 			ch.setAttribute(FLD_TYPE, fld.type);
 			ch.setAttribute(FLD_VAR, fld.varName);
 
 			if (fld.type == FLT_BOOLEAN || fld.type == FLT_HIDDEN
 					|| fld.type == FLT_JIDSINGLE || fld.type == FLT_TXTPRIV
 					|| fld.type == FLT_TXTSINGLE || fld.type == FLT_LISTSINGLE) {
-				Element val = ch.addElement(NAMESPACE, FLD_VALUE, null);
+				Element val = ch.addElement(NAMESPACE, FLD_VALUE);
 				val.content = fld.dValue;
 				continue;
 			}
@@ -199,13 +199,13 @@ public class DataForm {
 				/* XXX: This is maybe wrong, if no value has been set by user, no "<value>" 
 				 * tag should be reported? standard doesn't address this issue... */
 				if (fld.dValue == null) {
-					Element val = ch.addElement(NAMESPACE, FLD_VALUE, null);
+					Element val = ch.addElement(NAMESPACE, FLD_VALUE);
 					val.content = "";
 					continue;
 				}
 				int p = 0, q = 0;
 				do {
-					Element val = ch.addElement(NAMESPACE, FLD_VALUE, null);
+					Element val = ch.addElement(NAMESPACE, FLD_VALUE);
 					q = fld.dValue.indexOf('\n', p);
 					if (q == -1) {
 						val.content = fld.dValue.substring(p);

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIMenu.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIMenu.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 /**
@@ -787,6 +787,30 @@ public class UIMenu extends UIItem implements UIIContainer {
 		if (this.getContainer() != null) {
 			this.getContainer().setSelectedItem(this);
 		}
+	}
+
+	/*
+	 * An helper function that builds and initialize a UIMenu.
+	 * 
+	 * @param item
+	 * 			the UIMenu title
+	 * @param absoluteX
+	 * 			the X position of the UIMenu
+	 * @param absoluteY
+	 * 			the Y position of the UIMenu
+	 * @param width
+	 * 			the width of the UIMenu
+	 * @param firstItem
+	 * 			the first item to add to the UIMenu  
+	 */
+	public static UIMenu easyMenu(String title, int absoluteX, int absoluteY, int width,
+			UIItem firstItem) {
+		UIMenu retMenu = new UIMenu(title);
+		if (absoluteX > 0) retMenu.setAbsoluteX(absoluteX);
+		if (absoluteY > 0) retMenu.setAbsoluteY(absoluteY);
+		if (width > 0) retMenu.setWidth(width);
+		if (firstItem != null) retMenu.append(firstItem);
+		return retMenu;
 	}
 
 }

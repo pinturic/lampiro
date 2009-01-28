@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Element.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: Element.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmlstream;
@@ -27,7 +27,6 @@ public class Element
     public String content;
     public String name;
     public String uri;
-    public String defaultUri;
     
     // XXX delete?
     // inserting time
@@ -41,13 +40,11 @@ public class Element
         attributes = new Vector();
         uri = null;
         name = null;
-        defaultUri = null;
     }
     
-    public Element(String uri, String name, String defaultUri) {
+    public Element(String uri, String name) {
         this.uri = uri;
         this.name = name;
-        this.defaultUri = defaultUri;
         children = new Vector();
         attributes = new Vector(); //Hashtable();
     }
@@ -61,8 +58,8 @@ public class Element
     public String getAttribute(String name) {
         for(int i=0; i<attributes.size(); i++) {
             String attr[] = (String[]) attributes.elementAt(i);
-            if(attr[0].equals(name)) {
-                return attr[1];
+            if(attr[1].equals(name)) {
+                return attr[2];
             }
         }
         return null;
@@ -71,29 +68,29 @@ public class Element
     public void setAttribute (String name, String value) {
         Enumeration en = attributes.elements();
         while(en.hasMoreElements()) {
-            String pair[] = (String[]) en.nextElement();
-            if(pair[0].equals(name)) {
-                pair[1] = value;
+            String triplet[] = (String[]) en.nextElement();
+            if(triplet[1].equals(name)) {
+                triplet[2] = value;
                 return;
             }
         }
-        attributes.addElement(new String[] {name, value});
+        attributes.addElement(new String[] {null,name, value});
     }
 
     public void delAttribute (String name) {
         Enumeration en = attributes.elements();
         while(en.hasMoreElements()) {
-            String pair[] = (String[]) en.nextElement();
-            if(pair[0].equals(name)) {
-                attributes.removeElement(pair);
+            String triplet[] = (String[]) en.nextElement();
+            if(triplet[1].equals(name)) {
+                attributes.removeElement(triplet);
                 return;
             }
         }
     }
     
     // easy creation a of child
-    public Element addElement(String uri, String name, String defaultUri) {
-        Element e = new Element(uri, name, defaultUri);
+    public Element addElement(String uri, String name) {
+        Element e = new Element(uri, name);
         children.addElement(e);
         return e;
     }
@@ -163,17 +160,15 @@ public class Element
         el.name = parser.getName();
         el.uri = parser.getNamespace();
         for(int i = 0; i<parser.getAttributeCount(); i++) {
-            // XXX consider inserting attribute namespaces
-            el.attributes.addElement(new String[] {parser.getAttributeName(i), parser.getAttributeValue(i)});
+            el.attributes.addElement(new String[] {parser.getAttributeNamespace(i),parser.getAttributeName(i), parser.getAttributeValue(i)});
         }
         return el;
     }
     
     protected void _parse(XmlPullParser parser) throws XmlPullParserException, IOException {
         for(int i = 0; i<parser.getAttributeCount(); i++) {
-            // XXX consider inserting attribute namespaces
-            attributes.addElement(new String[] {parser.getAttributeName(i), parser.getAttributeValue(i)});
-        } 
+            attributes.addElement(new String[] {parser.getAttributeNamespace(i),parser.getAttributeName(i), parser.getAttributeValue(i)});
+        }  
         this.name = parser.getName();
         this.uri = parser.getNamespace();
         
@@ -226,16 +221,15 @@ public class Element
         return baos.toByteArray();
     }
     
+        
     private void write(XmlSerializer serializer) {
         try {
-            if(uri.equals(defaultUri)) {
-                serializer.setPrefix("", uri);
-            }
-            serializer.startTag(uri, name);
+			serializer.setPrefix("", this.uri);
+			serializer.startTag(this.uri, name);
             Enumeration attrEn = attributes.elements();
             while(attrEn.hasMoreElements()) {
-                String attr[] = (String[]) attrEn.nextElement();
-                serializer.attribute(null, attr[0], attr[1]);
+            	String attr[] = (String[]) attrEn.nextElement();
+            	serializer.attribute(attr[0], attr[1], attr[2]);
             }
             Enumeration childEn = children.elements();
             while(childEn.hasMoreElements()) {
@@ -245,7 +239,7 @@ public class Element
             if(content!=null) {
                 serializer.text(content);
             }
-            serializer.endTag(uri, name);
+            serializer.endTag(this.uri, name);
             serializer.flush();
         } catch (IllegalArgumentException e) {
 // #debug
@@ -265,11 +259,10 @@ public class Element
     	this.name = e.name;
     	this.uri = e.uri;
     	this.content = e.content;
-    	this.defaultUri = e.defaultUri;
     	
     	for(int i=0; i<e.attributes.size(); i++) {
-    		String pair[] = (String[]) e.attributes.elementAt(i);
-    		this.attributes.addElement(new String[] {pair[0], pair[1]});
+    		String triplet[] = (String[]) e.attributes.elementAt(i);
+    		this.attributes.addElement(new String[] {triplet[0], triplet[1],triplet[2]});
     	}
     	
     	for(int i=0; i<e.children.size(); i++) {
@@ -283,11 +276,10 @@ public class Element
     	e.name = this.name;
     	e.uri = this.uri;
     	e.content = this.content;
-    	e.defaultUri = this.defaultUri;
     	
     	for(int i=0; i<this.attributes.size(); i++) {
-    		String pair[] = (String[]) this.attributes.elementAt(i);
-    		e.attributes.addElement(new String[] {pair[0], pair[1]});
+    		String triplet[] = (String[]) this.attributes.elementAt(i);
+    		e.attributes.addElement(new String[] {triplet[0], triplet[1], triplet[2]});
     	}
     	
     	for(int i=0; i<this.children.size(); i++) {
@@ -301,13 +293,14 @@ public class Element
     	try {
 			os.writeUTF(name==null?"":name);
 			os.writeUTF(uri==null?"":uri);
-			os.writeUTF(defaultUri==null?"":defaultUri);
 			os.writeUTF(content==null?"":content);
 			os.writeShort(attributes.size());
 			for(int i=0; i<attributes.size(); i++) {
 				String attr[]=(String[]) attributes.elementAt(i);
+				// XXX check what happens if null
 				os.writeUTF(attr[0]);
 				os.writeUTF(attr[1]);
+				os.writeUTF(attr[2]);
 			}
 			os.writeShort(children.size());
 			for(int i=0; i<children.size(); i++) {
@@ -325,13 +318,13 @@ public class Element
     	try {
 			el.name = is.readUTF();
 			el.uri = is.readUTF();
-			el.defaultUri = is.readUTF();
 			el.content = is.readUTF();
 			int n = is.readShort();
 			for(int i=0; i<n; i++) {
-				String attr[] = new String[2];
+				String attr[] = new String[3];
 				attr[0] = is.readUTF();
 				attr[1] = is.readUTF();
+				attr[2] = is.readUTF();
 				el.attributes.addElement(attr);
 			}
 			n = is.readShort();

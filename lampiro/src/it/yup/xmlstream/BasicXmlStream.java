@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: BasicXmlStream.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmlstream;
@@ -310,7 +310,7 @@ public abstract class BasicXmlStream implements TransportListener {
 					for (int i = 0; i < receivedPacket.attributes.size(); i++) {
 						String[] ithAttr = ((String[]) receivedPacket.attributes
 								.elementAt(i));
-						if ((ithAttr[0].equals(lthName) && ithAttr[1]
+						if ((ithAttr[1].equals(lthName) && ithAttr[2]
 								.equals(lthValue))) {
 							matched = true;
 							break;
@@ -412,10 +412,10 @@ public abstract class BasicXmlStream implements TransportListener {
 		public void start(BasicXmlStream xmlStream) {
 			this.stream = xmlStream;
 			Iq iq = new Iq(null, "set");
-			Element bind = new Element(namespace, "bind", namespace);
+			Element bind = new Element(namespace, "bind");
 			String s = Contact.resource(xmlStream.jid);
 			if (s != null) {
-				Element resource = new Element(namespace, "resource", namespace);
+				Element resource = new Element(namespace, "resource");
 				resource.content = s;
 				bind.children.addElement(resource);
 			}
@@ -456,7 +456,7 @@ public abstract class BasicXmlStream implements TransportListener {
 		public void start(BasicXmlStream xmlStream) {
 			this.stream = xmlStream;
 			Iq iq = new Iq(null, "set");
-			Element session = new Element(namespace, "session", namespace);
+			Element session = new Element(namespace, "session");
 			iq.children.addElement(session);
 			EventQuery q = new EventQuery("iq", new String[] { "id" },
 					new String[] { iq.getAttribute("id") });

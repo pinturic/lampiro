@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 1018 2008-12-05 12:06:33Z luca $
+ * $Id: UICanvas.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 /**
@@ -11,6 +11,7 @@ package it.yup.ui;
 
 import it.yup.util.Logger;
 import it.yup.util.Utils;
+import it.yup.xmpp.Config;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -39,9 +40,20 @@ import javax.microedition.lcdui.game.GameCanvas;
 public class UICanvas extends GameCanvas {
 
 	/** the key used to activate the left key */
-	public static int MENU_LEFT;
+	public static int MENU_LEFT=-6;
 	/** the key used to activate the right key */
-	public static int MENU_RIGHT;
+	public static int MENU_RIGHT=-7;
+	public static int MENU_CANCEL=-8;
+	
+	private static final Object[][] keyMaps = {
+		{"Nokia",new Integer(-6),new Integer(-7)},
+		{"ricsson",new Integer(-6),new Integer(-7)},
+		{"iemens",new Integer(-1),new Integer(-4)},
+		{"otorola",new Integer(-21),new Integer(-22)},
+		{"harp",new Integer(-21),new Integer(-22)},
+		{"j2me",new Integer(-6),new Integer(-7)},
+		{"SunMicrosystems_wtk",new Integer(-6),new Integer(-7)}
+	};
 
 	/** The alert used to show errors (if any) */
 	private static Alert alert;
@@ -117,6 +129,60 @@ public class UICanvas extends GameCanvas {
 		super(false);
 		setFullScreenMode(true);
 		screenList = new Vector();
+		String keys = Config.getInstance().getProperty(Config.CANVAS_KEYS);
+		// not initialized
+		if (keys == null || keys.indexOf(',') == -1)
+			setupdefaultKeyCode();
+	}
+	
+	private boolean isMotorola ()
+	{
+		try {
+			String imei = System.getProperty("IMEI");
+			if (imei != null) return true;
+			imei = System.getProperty("com.motorola.IMEI");
+			if (imei != null) return true;
+		} catch (Exception e) {
+
+		}
+		return false;
+	}
+
+	private void setupdefaultKeyCode() {
+		String platform = System.getProperty("microedition.platform");
+		
+		// hack to detectd if is a "strange motorola"
+		if (platform.indexOf("otorola") == -1 && isMotorola()) {
+			platform = "Motorola";
+		}
+		
+		for(int i =0 ;i< keyMaps.length;++i)
+		{
+			String manufacturer = (String)keyMaps[i][0];
+			
+			if(platform.indexOf(manufacturer)!=-1)
+			{
+				if(i==1) 
+				{
+					if(platform.indexOf("P900")!=-1 || platform.indexOf("P908")!=-1)
+					{
+						UICanvas.MENU_LEFT = ((Integer)keyMaps[i][2]).intValue();
+						UICanvas.MENU_RIGHT = ((Integer)keyMaps[i][1]).intValue();
+					}
+					else
+					{
+						UICanvas.MENU_LEFT = ((Integer)keyMaps[i][1]).intValue();
+						UICanvas.MENU_RIGHT = ((Integer)keyMaps[i][2]).intValue();
+					}
+				}
+				else
+				{
+					UICanvas.MENU_LEFT = ((Integer)keyMaps[i][1]).intValue();
+					UICanvas.MENU_RIGHT = ((Integer)keyMaps[i][2]).intValue();
+				}
+				break;
+			}
+		}
 	}
 
 	/**
@@ -520,7 +586,9 @@ public class UICanvas extends GameCanvas {
 		UIScreen s0 = (UIScreen) screenList.elementAt(viewedIndex);
 		if (key == Canvas.KEY_STAR) {
 			if (s0.popupIsPresent(this.wlist) == false) {
-				wlist = new UIMenu("");
+				wlist = UIMenu.easyMenu("", 20, (this.getClipHeight() - wlist
+						.getHeight(canvasGraphics/* getGraphics() */)) / 2,
+						getWidth() - 40, null);
 				for (int i = 0; i < screenList.size(); i++) {
 					UIScreen si = (UIScreen) screenList.elementAt(i);
 					if (si != null) {
@@ -528,10 +596,6 @@ public class UICanvas extends GameCanvas {
 						wlist.append(um);
 					}
 				}
-				wlist.setAbsoluteX(20);
-				wlist.setWidth(this.getWidth() - 40);
-				wlist.setAbsoluteY((this.getClipHeight() - wlist
-						.getHeight(canvasGraphics/* getGraphics() */)) / 2);
 				s0.addPopup(wlist);
 				return;
 			}
@@ -890,13 +954,10 @@ public class UICanvas extends GameCanvas {
 		// if no screen is available it means the UI is not "ready"
 		// in that case we use a native alert screen
 		if (currentScreen != null) {
-			UIMenu alertMenu = new UIMenu("");
-			alertMenu.setAbsoluteY(20);
-			alertMenu.setAbsoluteX(10);
-			alertMenu.setWidth(UICanvas.getInstance().getWidth() - 20);
 			UILabel titleLabel = new UILabel(img, title);
+			UIMenu alertMenu = UIMenu.easyMenu("", 10, 20,
+					UICanvas.getInstance().getWidth() - 20, titleLabel);
 			titleLabel.setFont(bigFont);
-			alertMenu.append(titleLabel);
 			titleLabel.setFocusable(false);
 			UILabel textLabel = new UILabel(text);
 			alertMenu.append(textLabel);
@@ -924,7 +985,7 @@ public class UICanvas extends GameCanvas {
 	 * @param imgName
 	 * @return
 	 */
-	protected static Image getUIImage(String imgName) {
+	public static Image getUIImage(String imgName) {
 		try {
 			return Image.createImage(imgName);
 		} catch (IOException e) {

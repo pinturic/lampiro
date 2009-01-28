@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: ResourceIDs.java 1135 2009-01-27 23:07:46Z luca $
 */
 
 /**
@@ -96,10 +96,20 @@ public class ResourceIDs {
 	public static final int STR_NOTE = 224;
 	public static final int STR_ENABLE_TLS = 225;
 	public static final int STR_STOP_LOGIN = 226;
+	public static final int STR_KEY_HELP= 227;
+	public static final int STR_KEY_SELECT_LEFT= 228;
+	public static final int STR_KEY_SELECT_RIGHT= 229;
+	public static final int STR_KEY_CONFIRM_LEFT= 230;
+	public static final int STR_KEY_CONFIRM_RIGHT= 231;
+	public static final int STR_KEY_PROCEED = 232;
+	public static final int STR_KEY_ERROR_KEY= 233;
+	public static final int STR_KEY_ERROR_SELECTION = 234;
+	public static final int STR_KEY_PRESS_LEFT= 235;
+	public static final int STR_KEY_PRESS_RIGHT = 236;
+	public static final int STR_KEY_CONFIGURE = 237;
+	
 	public static final int STR_MESSAGE_TO = 300;
-
 	public static final int STR_FILL_FORM = 500;
-
 	public static final int STR_SEND_MESSAGE = 700;
 	public static final int STR_CHAT = 701;
 	public static final int STR_EDIT_CONTACT = 702;
@@ -122,6 +132,9 @@ public class ResourceIDs {
 	public static final int STR_SUBSCRIPTION_CONFIRM = 900;
 	public static final int STR_SUBSCRIPTION_REQUEST_FROM = 901;
 	public static final int STR_SUBSCRIPTION_ACCEPT = 902;
+	public static final int STR_ACCEPT_ALL = 903;
+	public static final int STR_ACCEPT_ALWAYS = 904;
+	public static final int STR_SUBSCRIPTION_REQUEST = 905;
 
 	public static final int STR_CMDSCREEN_TITLE = 1001;
 	public static final int STR_EXECUTE = 1002;

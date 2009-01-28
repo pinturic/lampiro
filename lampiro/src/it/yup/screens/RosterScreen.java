@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: RosterScreen.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.screens;
@@ -726,8 +726,7 @@ public class RosterScreen extends Canvas implements CommandListener {
 			Iq iq = new Iq(usr.getFullJid(), Iq.T_GET);
 			Element query = iq
 					.addElement("http://jabber.org/protocol/disco#items",
-								Iq.QUERY,
-								"http://jabber.org/protocol/disco#info");
+								Iq.QUERY);
 			query.setAttribute("node", "http://jabber.org/protocol/commands");
 			AdHocCommandsHandlder handler = new AdHocCommandsHandlder();
 			XMPPClient.getInstance().sendIQ(iq, handler);

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MessageComposerScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: MessageComposerScreen.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.screens;
@@ -100,8 +100,7 @@ public class MessageComposerScreen extends Form implements CommandListener {
 				msg = new Message(user.jid, null);
 				String subject = tf_subject.getString();
 				if (subject != null && !"".equals(subject)) {
-					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT,
-									null).content = subject;
+					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT).content = subject;
 				}
 			} else {
 				msg = new Message(user.jid, "chat");

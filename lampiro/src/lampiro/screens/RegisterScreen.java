@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: RegisterScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package lampiro.screens;
@@ -34,6 +34,7 @@ import java.io.InputStream;
 import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
@@ -92,9 +93,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UIButton btn_login = new UIButton(rm
 			.getString(ResourceIDs.STR_LOGIN));
 
-	private UIHLayout logLayout = new UIHLayout(3);
+	private UIHLayout logLayout;
 
-	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT));
+	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT).toUpperCase());
 
 	private UILabel cmd_state = new UILabel(rm.getString(
 			ResourceIDs.STR_CHANGE_STATUS).toUpperCase());
@@ -107,7 +108,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UIMenu setStatus = new UIMenu("");
 
 	// #mdebug
-	//@	private UIButton cmd_debug = new UIButton("debug");
+//@		private UIButton cmd_debug = new UIButton("debug");
 	// #enddebug
 
 	/** true if we must register a new account */
@@ -125,10 +126,22 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			.getString(ResourceIDs.STR_LOGIN_HINT), 5000, TextField.UNEDITABLE);
 
 	private static RegisterScreen _registerScreen = null;
+	
+	public void keyRepeated(int key) {
+		if (key == Canvas.KEY_POUND) {
+			KeyScreen ks = new KeyScreen();
+			UICanvas.getInstance().open(ks, true);
+			ks.checkKeys();
+			UICanvas.getInstance().close(this);
+		}
+	}
 
 	private RegisterScreen() {
 		resource = new UITextField(rm.getString(ResourceIDs.STR_RESOURCE), cfg
 				.getProperty(Config.YUP_RESOURCE, "Lampiro"), 50, TextField.ANY);
+		UIMenu mainMenu = new UIMenu("");
+		this.setMenu(mainMenu);
+		mainMenu.append(this.cmd_exit);
 		_registerScreen = this;
 		setTitle(rm.getString(ResourceIDs.STR_TITLE));
 
@@ -166,15 +179,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			// append(btn_login);
 		}
 
-		UILabel dummyLabel = new UILabel("");
-		logLayout.setGroup(false);
-		logLayout.insert(dummyLabel, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		logLayout.insert(dummyLabel, 2, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		logLayout.insert(btn_login, 1, 100, UILayout.CONSTRAINT_PIXELS);
-		btn_login.setAnchorPoint(Graphics.HCENTER);
+		logLayout = UIHLayout.easyCenterLayout(btn_login, 100);
 		setStatus.append(cmd_state);
 		// #debug
-		//@		this.append(cmd_debug);
+//@				this.append(cmd_debug);
 	}
 
 	/** Called to notify that the {@link UIScreen} has become visible */
@@ -241,7 +249,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			}
 		}
 		// #debug
-		//@		this.append(cmd_debug);
+//@				this.append(cmd_debug);
 		this.setFreezed(false);
 		this.askRepaint();
 	}
@@ -262,16 +270,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		ul.setAnchorPoint(Graphics.HCENTER | Graphics.TOP);
 		append(ul);
 		append(progress_gauge);
-		UILabel dummyLabel = new UILabel("");
 		// if compression is ebabled even TLS is
 		hint.setWrappable(true);
 		append(hint);
-		UIHLayout uhl = new UIHLayout(3);
-		uhl.setGroup(false);
-		but_cancel.setAnchorPoint(Graphics.HCENTER);
-		uhl.insert(dummyLabel, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		uhl.insert(this.but_cancel, 1, 100, UILayout.CONSTRAINT_PIXELS);
-		uhl.insert(dummyLabel, 2, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		UIHLayout uhl = UIHLayout.easyCenterLayout(this.but_cancel, 100);
 		append(uhl);
 
 		new Thread() {
@@ -345,7 +347,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				client.closeStream();
 			} catch (Exception e) {
 				// #mdebug
-				//@				System.out.println(e);
+//@								System.out.println(e);
 				// #enddebug
 			}
 
@@ -398,9 +400,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				remove(tf_email);
 			}
 			// #mdebug
-			//@		} else if (item == cmd_debug) {
-			//@			DebugScreen debugScreen = new DebugScreen();
-			//@			UICanvas.getInstance().open(debugScreen, true);
+//@					} else if (item == cmd_debug) {
+//@						DebugScreen debugScreen = new DebugScreen();
+//@						UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 
 		} else if (item == but_cancel) {
@@ -410,7 +412,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				// during closing connection
 				// exceptions from the transport can be generated
 				//#mdebug
-				//@				System.out.println(e);
+//@								System.out.println(e);
 				// #enddebug     
 			}
 			placeItems();

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SASLAuthenticator.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: SASLAuthenticator.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmlstream;
@@ -50,7 +50,7 @@ public class SASLAuthenticator extends Initializer {
 		// look for the best auth mechanism and start the auth (the first, the better)
 		Element mechanisms = (Element) stream.features.get(namespace);
 
-		Element auth = new Element(namespace, "auth", namespace);
+		Element auth = new Element(namespace, "auth");
 		for (int i = 0; i < supportedMechanisms.length; i++) {
 			for (int j = 0; j < mechanisms.children.size(); j++) {
 				Element mechanism = (Element) mechanisms.children.elementAt(j);
@@ -212,8 +212,7 @@ public class SASLAuthenticator extends Initializer {
 				response_content = unparse(responseDirectives);
 			}
 
-			Element responseElement = new Element(namespace, "response",
-					namespace);
+			Element responseElement = new Element(namespace, "response");
 			// responseElement.content = new String(Base64.encode(content.getBytes("utf-8")));
 			// BASE64 **SHOULD** be UTF-8
 			responseElement.content = new String(Base64.encode(Utils

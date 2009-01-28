@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Presence.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: Presence.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.xmpp.packets;
@@ -65,7 +65,7 @@ public class Presence extends Stanza {
 	public void setShow(String show) {
 		Element el = getChildByName(NS_JABBER_CLIENT, SHOW);
 		if (el == null) {
-			el = addElement(NS_JABBER_CLIENT, SHOW, null);
+			el = addElement(NS_JABBER_CLIENT, SHOW);
 		}
 		el.content = show;
 	}
@@ -82,7 +82,7 @@ public class Presence extends Stanza {
 	public void setPriority(int priority) {
 		Element el = getChildByName(NS_JABBER_CLIENT, PRIORITY);
 		if (el == null) {
-			el = addElement(NS_JABBER_CLIENT, PRIORITY, null);
+			el = addElement(NS_JABBER_CLIENT, PRIORITY);
 		}
 		el.content = String.valueOf(priority);
 	}
@@ -108,7 +108,7 @@ public class Presence extends Stanza {
 	public void setStatus(String status) {
 		Element el = getChildByName(NS_JABBER_CLIENT, STATUS);
 		if (el == null) {
-			el = addElement(NS_JABBER_CLIENT, STATUS, null);
+			el = addElement(NS_JABBER_CLIENT, STATUS);
 		}
 		el.content = status;
 	}

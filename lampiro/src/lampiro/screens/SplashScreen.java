@@ -1,18 +1,24 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: SplashScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package lampiro.screens;
 
+import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIConfig;
+import it.yup.ui.UIHLayout;
+import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
+import it.yup.ui.UITextField;
 import it.yup.ui.UIVLayout;
+import it.yup.util.ResourceIDs;
+import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
 import it.yup.xmpp.Config;
 
@@ -21,41 +27,17 @@ import java.util.TimerTask;
 
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
+import javax.microedition.lcdui.TextField;
 
 public class SplashScreen extends UIScreen {
 
-	private static final byte STATE_SPLASH = 0;
-	private static final byte STATE_LEFT_WAIT = 1;
-	private static final byte STATE_LEFT_OK = 2;
-	private static final byte STATE_RIGHT_WAIT = 3;
-	private static final byte STATE_RIGHT_OK = 4;
-	private static final byte STATE_WAIT_DONE = 5;
-
-	private UILabel txt = null;
-	private UILabel err = null;
-
-	private byte status = STATE_SPLASH;
-	private int lkey;
-	private int rkey;
-
-	private UIMenu confMenu = new UIMenu("Configuring keys.");
-	private Image downArrow = null;
-	private int oldFg = UIConfig.header_fg;
-
+	private static ResourceManager rm = ResourceManager.getManager("common",
+	"en");
+	
+	private UIMenu helpMenu; 
+	private UIButton close;
+	
 	public SplashScreen() {
-		// to simulate an empty footer!!!
-		UIConfig.header_fg = UIConfig.header_bg;
-		//
-		txt = new UILabel("");
-		err = new UILabel("");
-		try {
-			downArrow = Image.createImage("/icons/downarrow.png");
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		txt.setWrappable(true, UICanvas.getInstance().getWidth() - 10);
 		try {
 			setTitle("Lampiro");
 			UIVLayout uvl = new UIVLayout(4, -1);
@@ -94,101 +76,41 @@ public class SplashScreen extends UIScreen {
 			int l = Integer.parseInt(keys.substring(0, q));
 			int r = Integer.parseInt(keys.substring(q + 1));
 			UICanvas.setMenuKeys(l, r);
-			UIConfig.header_fg = this.oldFg;
 			UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
 			UICanvas.getInstance().close(SplashScreen.this);
-		} else {
-			status = STATE_LEFT_WAIT;
-			removeAll();
-			setTitle("Configuration");
-			txt.setText("Please press the button below the left menu.");
-			append(txt);
-			append(err);
-			askRepaint();
-
-			UILabel confLabel = new UILabel(this.downArrow, "Press left key");
-			this.confMenu.append(confLabel);
-			this.confMenu.setAbsoluteX(2);
-			this.confMenu.setWidth((UICanvas.getInstance().getWidth() * 2) / 3);
-			int screenHeight = UICanvas.getInstance().getClipHeight();
-			int menuHeight = this.confMenu.getHeight(getGraphics());
-			int footerHeight = this.footer.getHeight(getGraphics());
-			this.confMenu.setAbsoluteY(screenHeight - menuHeight - footerHeight
-					- 2);
-			this.addPopup(confMenu);
 		}
-	}
-
-	public boolean keyPressed(int key) {
-		switch (status) {
-		case STATE_LEFT_WAIT:
-			lkey = key;
-			txt.setText("Please confirm the left key.");
-			err.setText(" ");
-			status = STATE_LEFT_OK;
-			this.setDirty(true);
-			askRepaint();
-			break;
-		case STATE_LEFT_OK:
-			if (lkey == key) {
-				status = STATE_RIGHT_WAIT;
-				txt.setText("Please press the button below the right menu.");
-				err.setText("");
-
-				UILabel confLabel = new UILabel(this.downArrow,
-						"Press right key");
-				confLabel.setAnchorPoint(Graphics.RIGHT);
-				confLabel.setFlip(true);
-				this.confMenu.remove(1);
-				this.confMenu.append(confLabel);
-				this.confMenu.setAbsoluteX(this.getWidth()
-						- confMenu.getWidth());
-				this.setDirty(true);
-				this.askRepaint();
-
-			} else {
-				err.setText("Please press the same key as before!");
-				txt.setText("Please press the button below the left menu.");
-				askRepaint();
-
-				status = STATE_LEFT_WAIT;
-			}
-			this.setDirty(true);
-			askRepaint();
-			break;
-		case STATE_RIGHT_WAIT:
-			rkey = key;
-			txt.setText("Please confirm the right key.");
-			err.setText(" ");
-			status = STATE_RIGHT_OK;
-			this.setDirty(true);
-			askRepaint();
-			break;
-		case STATE_RIGHT_OK:
-			if (rkey == key) {
-				status = STATE_WAIT_DONE;
-				txt.setText("Thank you, press a key to proceed.");
-				err.setText(" ");
-				this.removePopup(confMenu);
-			} else {
-				status = STATE_RIGHT_WAIT;
-				txt.setText("Please press the button below the right menu.");
-				err.setText("Please press the same key as before!");
-				askRepaint();
-			}
-			this.setDirty(true);
-			askRepaint();
-			break;
-		case STATE_WAIT_DONE:
-			String keys = lkey + "," + rkey;
+		else
+		{
+			// save actual configuration
+			SplashScreen.this.close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
+			keys = UICanvas.MENU_LEFT + "," + UICanvas.MENU_RIGHT;
 			Config.getInstance().setProperty(Config.CANVAS_KEYS, keys);
 			Config.getInstance().saveToStorage();
-			UICanvas.setMenuKeys(lkey, rkey);
-			UIConfig.header_fg = this.oldFg;
+			
+			String help = rm.getString(ResourceIDs.STR_KEY_HELP);
+			help = help.replace('<', '\n');
+
+			UITextField helpField = new UITextField("", help, help.length(),
+					TextField.UNEDITABLE);
+			helpField.setAutoUnexpand(false);
+			helpField.setWrappable(true);
+			helpMenu = UIMenu.easyMenu(rm.getString(ResourceIDs.STR_HELP), 1,
+					30, UICanvas.getInstance().getWidth() - 2, helpField);
+			helpMenu.selectMenuString = "";
+			helpMenu.setSelectedIndex(1);
+			helpMenu.cancelMenuString = "";
+			UIHLayout uhl = UIHLayout.easyCenterLayout(close, 80);
+			helpMenu.append(uhl);
+			this.addPopup(helpMenu);
+			this.askRepaint();
+			helpField.expand();
+		}
+	}
+	
+	public void menuAction(UIMenu menu, UIItem c) {
+		if (menu == this.helpMenu) {
 			UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
 			UICanvas.getInstance().close(SplashScreen.this);
-			break;
 		}
-		return false;
 	}
 }

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUCScreen.java 922 2008-10-24 16:17:28Z luca $
+ * $Id: MUCScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package lampiro.screens;
@@ -141,18 +141,14 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			XMPPClient client = XMPPClient.getInstance();
 			Message msg = new Message(Contact.userhost(this.user.jid),
 					"groupchat");
-			msg.addElement("", "subject", null).content = topicName;
+			msg.addElement("", "subject").content = topicName;
 			client.sendPacket(msg);
 			this.topic_name_field.setText("");
 			return;
 		} else if (c == cmd_topic) {
-			UIMenu topicNameMenu = new UIMenu(rm
-					.getString(ResourceIDs.STR_CHOOSE_NAME));
-			topicNameMenu.append(topic_name_field);
+			UIMenu topicNameMenu = UIMenu.easyMenu(rm
+					.getString(ResourceIDs.STR_CHOOSE_NAME), 10, 20, this.getWidth() - 20, topic_name_field);
 			topicNameMenu.append(topic_button);
-			topicNameMenu.setAbsoluteX(10);
-			topicNameMenu.setAbsoluteY(20);
-			topicNameMenu.setWidth(this.getWidth() - 20);
 			topicNameMenu.setDirty(true);
 			topicNameMenu.setSelectedIndex(topicNameMenu
 					.indexOf(topic_name_field));
@@ -211,10 +207,9 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 
 	private void sendInvite(Contact ithContact) {
 		Message msg = new Message(user.jid, null);
-		Element x = new Element(XMPPClient.NS_MUC_USER, DataForm.X,
-				XMPPClient.NS_MUC_USER);
+		Element x = new Element(XMPPClient.NS_MUC_USER, DataForm.X);
 		msg.children.addElement(x);
-		Element invite = new Element("", "invite", null);
+		Element invite = new Element("", "invite");
 		invite.setAttribute(Message.ATT_TO, ithContact.getFullJid());
 		x.children.addElement(invite);
 		XMPPClient.getInstance().sendPacket(msg);

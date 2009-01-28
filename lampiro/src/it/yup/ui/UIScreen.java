@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIScreen.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIScreen.java 1132 2009-01-26 16:05:01Z luca $
 */
 
 package it.yup.ui;
@@ -192,6 +192,8 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		if (pos < 0 || pos >= getItemList().size()) { throw new ArrayIndexOutOfBoundsException(
 				"Invalid menu pos: " + getItemList() + ", "
 						+ getItemList().size()); }
+		int oldSelectedIndex = this.getSelectedIndex();
+		if (pos <= oldSelectedIndex) this.setSelectedIndex(++oldSelectedIndex);
 		getItemList().insertElementAt(ui, pos);
 		ui.setScreen(this);
 		ui.setContainer(this);
@@ -619,9 +621,12 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		g.setClip(0, headerHeight, canvasWidth, canvasHeight - headerHeight);
 		g.translate(0, headerHeight);
 
-		System.out.println("paint0: " + canvasWidth + "/"
-				+ (canvasHeight - headerHeight) + "/" + g.getClipHeight() + "/"
-				+ g.getTranslateY());
+		// #mdebug 
+//@		System.out.println("paint0: " + canvasWidth + "/"
+//@				+ (canvasHeight - headerHeight) + "/" + g.getClipHeight() + "/"
+//@				+ g.getTranslateY());
+		// #enddebug
+		
 		this.paint0(g, canvasWidth, canvasHeight - headerHeight);
 		this.removePaintedItem(this);
 
@@ -795,10 +800,11 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			g.drawLine(canvasWidth / 2, 0, canvasWidth / 2, footerHeight);
 		}
 
-		System.out.println("screenPaint done: " + g.getClipWidth() + "/"
-				+ g.getClipHeight() + "/" + g.getTranslateX() + "/"
-				+ g.getTranslateY());
-
+		// #mdebug 
+//@		System.out.println("screenPaint done: " + g.getClipWidth() + "/"
+//@				+ g.getClipHeight() + "/" + g.getTranslateX() + "/"
+//@				+ g.getTranslateY());
+		// #enddebug
 		g.setFont(cfont);
 		return changed;
 	}

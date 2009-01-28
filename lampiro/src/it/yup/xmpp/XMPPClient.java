@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: XMPPClient.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package it.yup.xmpp;
@@ -59,7 +59,7 @@ import lampiro.screens.DataFormScreen;
 import lampiro.screens.DataResultScreen;
 import lampiro.screens.RegisterScreen;
 import lampiro.screens.RosterScreen;
-import lampiro.screens.SubscriptionConfirmScreen;
+import lampiro.screens.SubscribeScreen;
 
 // #endif
 // #ifndef UI
@@ -84,7 +84,7 @@ public class XMPPClient {
 	 * http://tools.ietf.org/html/rfc4790#section-9.3
 	 */
 	private String[] features = new String[] { MIDP_PLATFORM, NS_COMMANDS,
-			NS_IQ_DISCO_INFO, NS_MUC, JABBER_X_DATA };
+			NS_IQ_DISCO_INFO, NS_MUC,NS_ROSTERX, JABBER_X_DATA };
 
 	/** the client instance */
 	private static XMPPClient xmppInstance;
@@ -153,6 +153,7 @@ public class XMPPClient {
 	public static String NS_COMMANDS = "http://jabber.org/protocol/commands";
 	public static String NS_CAPS = "http://jabber.org/protocol/caps";
 	public static String NS_MUC = "http://jabber.org/protocol/muc";
+	public static String NS_ROSTERX = "http://jabber.org/protocol/rosterx";
 	public static String NS_MUC_USER = "http://jabber.org/protocol/muc#user";
 	public static String NS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
 	public static String MIDP_PLATFORM = "http://bluendo.com/midp#platform";
@@ -418,23 +419,23 @@ public class XMPPClient {
 		p.setStatus(msg);
 		// set capabilities
 		String uri = NS_CAPS;
-		Element cap = p.addElement(uri, "c", uri);
+		Element cap = p.addElement(uri, "c");
 		cap.setAttribute("node", "http://bluendo.com/lampiro/caps");
 		cap.setAttribute("hash", "sha-1");
 		cap.setAttribute("ver", getCapVer());
 
 		// XXX I don't like this, it could be better to send capabilities with a
 		// different hash in the version
-		Element x = p.addElement(JABBER_X_DATA, "x", JABBER_X_DATA);
+		Element x = p.addElement(JABBER_X_DATA, "x");
 		x.setAttribute("type", "result");
-		Element field = x.addElement(JABBER_X_DATA, "field", JABBER_X_DATA);
+		Element field = x.addElement(JABBER_X_DATA, "field");
 		field.setAttribute("var", "FORM_TYPE");
 		field.setAttribute("type", "hidden");
-		field.addElement(JABBER_X_DATA, "value", JABBER_X_DATA).content = MIDP_PLATFORM;
+		field.addElement(JABBER_X_DATA, "value").content = MIDP_PLATFORM;
 
-		field = x.addElement(JABBER_X_DATA, "field", JABBER_X_DATA);
+		field = x.addElement(JABBER_X_DATA, "field");
 		field.setAttribute("var", "microedition.platform");
-		field.addElement(JABBER_X_DATA, "value", JABBER_X_DATA).content = System
+		field.addElement(JABBER_X_DATA, "value").content = System
 				.getProperty("microedition.platform");
 
 		me.updatePresence(p);
@@ -532,8 +533,8 @@ public class XMPPClient {
 
 		public void packetReceived(Element e) {
 			// #mdebug
-			//@			Logger.log("PresenceHandler: received packet: "
-			//@					+ new String(e.toXml()), Logger.DEBUG);
+//@						Logger.log("PresenceHandler: received packet: "
+//@								+ new String(e.toXml()), Logger.DEBUG);
 			// #enddebug
 			String t = e.getAttribute(Stanza.ATT_TYPE);
 			if (t == null || Presence.T_UNAVAILABLE.equals(t)) {
@@ -541,6 +542,7 @@ public class XMPPClient {
 
 				String from = e.getAttribute(Stanza.ATT_FROM);
 				Contact u = roster.getContactByJid(from);
+				String type = e.getAttribute(Stanza.ATT_TYPE);
 				if (u == null) {
 					// #ifdef MUC
 					// first check if its a MUC
@@ -554,6 +556,8 @@ public class XMPPClient {
 					}
 
 					if (u == null) {
+						if (type.compareTo(Presence.T_UNAVAILABLE)==0)
+							return;
 						// XXX Guess the subscription
 						u = new Contact(Contact.userhost(from), null, "both",
 								null);
@@ -622,9 +626,9 @@ public class XMPPClient {
 				 */
 
 				// #ifdef UI
-				SubscriptionConfirmScreen scs = new SubscriptionConfirmScreen(u);
+				SubscribeScreen scs = SubscribeScreen.getUserSubscription();
+				scs.addSubscription(u, SubscribeScreen.ADD);
 				UICanvas.getInstance().open(scs, true);
-
 				// #endif
 // #ifndef UI
 				//@								Display d = Display.getDisplay(LampiroMidlet._lampiro);
@@ -655,29 +659,26 @@ public class XMPPClient {
 			Iq reply = new Iq(p.getAttribute(Stanza.ATT_FROM), Iq.T_RESULT);
 			reply.setAttribute(Stanza.ATT_ID, p.getAttribute(Stanza.ATT_ID));
 			String node = q.getAttribute("node");
-			Element qr = reply.addElement(NS_IQ_DISCO_INFO, Iq.QUERY,
-					NS_IQ_DISCO_INFO);
+			Element qr = reply.addElement(NS_IQ_DISCO_INFO, Iq.QUERY);
 
 			if (node == null) {
-				Element identity = qr.addElement(NS_IQ_DISCO_INFO, "identity",
-						NS_IQ_DISCO_INFO);
+				Element identity = qr.addElement(NS_IQ_DISCO_INFO, "identity");
 				identity.setAttribute("category", "client");
 				identity.setAttribute("type", "phone");
 				identity.setAttribute("name", "Lampiro");
 				for (int i = 0; i < features.length; i++) {
 					Element feature = identity.addElement(NS_IQ_DISCO_INFO,
-							"feature", NS_IQ_DISCO_INFO);
+							"feature");
 					feature.setAttribute("var", features[i]);
 				}
 
 			} else if (MIDP_PLATFORM.equals(node)) {
 				qr.setAttribute("node", MIDP_PLATFORM);
-				Element x = qr.addElement(JABBER_X_DATA, "x", JABBER_X_DATA);
+				Element x = qr.addElement(JABBER_X_DATA, "x");
 				x.setAttribute("type", "result");
-				Element field = x.addElement(JABBER_X_DATA, "field",
-						JABBER_X_DATA);
+				Element field = x.addElement(JABBER_X_DATA, "field");
 				field.setAttribute("var", "microedition.platform");
-				field.addElement(JABBER_X_DATA, "value", JABBER_X_DATA).content = System
+				field.addElement(JABBER_X_DATA, "value").content = System
 						.getProperty("microedition.platform");
 
 			}
@@ -762,10 +763,7 @@ public class XMPPClient {
 		new_p.children.addElement(p.getChildByName(null, "c"));
 		new_p.setPriority(p.getPriority());
 		me.updatePresence(new_p);
-
-		System.out.println(new String(new_p.toXml()));
 		sendPacket(new_p);
-
 		if (Presence.T_UNAVAILABLE.equals(new_p.getAttribute(Stanza.ATT_TYPE))) {
 			closeStream();
 		}

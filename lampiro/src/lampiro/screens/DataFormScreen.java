@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 911 2008-10-16 20:46:27Z luca $
+ * $Id: DataFormScreen.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 /**
@@ -139,15 +139,14 @@ public class DataFormScreen extends UIScreen {
 	private UILabel cmd_delay = new UILabel(rm
 			.getString(ResourceIDs.STR_FILLLATER));
 
-	private UIMenu show_instruction = new UIMenu("");
+	private UIMenu show_instruction;
 	private UILabel show_instruction_label = new UILabel(rm.getString(
 			ResourceIDs.STR_INSTRUCTIONS).toUpperCase());
 
 	private UILabel show_desc_label = new UILabel(rm.getString(
 			ResourceIDs.STR_DESC).toUpperCase());
 
-	private UIMenu instruction_menu = new UIMenu(rm
-			.getString(ResourceIDs.STR_INSTRUCTIONS));
+	private UIMenu instruction_menu = null;
 	private UIMenu desc_menu = new UIMenu("");
 	private UILabel si_instructions = new UILabel("");
 
@@ -157,7 +156,7 @@ public class DataFormScreen extends UIScreen {
 	/*
 	 * To construct the "Expand" support
 	 */
-	UIMenu zoomSubmenu = new UIMenu("");
+	UIMenu zoomSubmenu;
 	UILabel zoomLabel = new UILabel("EXPAND");
 
 	public DataFormScreen(DataForm df, DataFormListener dfl) {
@@ -174,30 +173,20 @@ public class DataFormScreen extends UIScreen {
 		UIMenu menu = getMenu();
 		menu.append(menu_cancel);
 		//menu.append(cmd_delay);
-
 		actions = DataFormListener.CMD_SUBMIT | DataFormListener.CMD_CANCEL;
-
-		instruction_menu.setAbsoluteX(10);
-		instruction_menu.setAbsoluteY(20);
-		instruction_menu.setWidth(this.getWidth() - 10);
-
+		instruction_menu = UIMenu.easyMenu(rm
+				.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 20, this
+				.getWidth() - 10, null);
 		//		desc_menu.setAbsoluteX(10);
 		//		desc_menu.setAbsoluteY(20);
 		//		desc_menu.setWidth(this.getWidth() - 10);
 		desc_menu.append(show_desc_label);
-
-		show_instruction.setAbsoluteX(10);
-		show_instruction.setAbsoluteY(20);
-		show_instruction.setWidth(this.getWidth() - 10);
-		show_instruction.append(show_instruction_label);
-
+		show_instruction = UIMenu.easyMenu("", 10, 20, this.getWidth() - 10,
+				show_instruction_label);
 		// prepare zoomSubMenu
-		zoomSubmenu.append(this.zoomLabel);
+		zoomSubmenu = UIMenu.easyMenu("", 10, 10, this.getWidth() - 30,
+				zoomLabel);
 		zoomLabel.setAnchorPoint(Graphics.HCENTER);
-		zoomSubmenu.setAbsoluteX(10);
-		zoomSubmenu.setAbsoluteY(10);
-		zoomSubmenu.setWidth(this.getWidth() - 30);
-
 		createControls();
 	}
 
@@ -444,16 +433,14 @@ public class DataFormScreen extends UIScreen {
 			UITextField selLabel = (UITextField) this.getSelectedItem();
 			selLabel.handleScreen();
 		} else if (cmd == show_desc_label) {
-			UIMenu descriptionMenu = new UIMenu(rm
-					.getString(ResourceIDs.STR_DESC));
-			descriptionMenu.setAbsoluteX(10);
-			descriptionMenu.setAbsoluteY(20);
-			descriptionMenu.setWidth(this.getWidth() - 20);
 			int index = this.getSelectedIndex();
 			String desc = ((DataForm.Field) this.df.fields.elementAt(index)).desc;
 			UITextField descField = new UITextField("", desc, desc.length(),
 					TextField.UNEDITABLE);
 			descField.setWrappable(true);
+			UIMenu descriptionMenu = UIMenu.easyMenu(rm
+					.getString(ResourceIDs.STR_DESC), 10, 20,
+					this.getWidth() - 20, descField);
 			//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
 			descriptionMenu.append(descField);
 			descriptionMenu.cancelMenuString = "";

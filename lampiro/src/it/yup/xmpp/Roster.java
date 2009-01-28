@@ -1,15 +1,17 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: Roster.java 1136 2009-01-28 11:25:30Z luca $
 */
 
 package it.yup.xmpp;
 
 // #ifdef UI 
 import it.yup.ui.UICanvas;
+import it.yup.util.Utils;
 import lampiro.screens.RegisterScreen;
 import lampiro.screens.RosterScreen;
+import lampiro.screens.SubscribeScreen;
 
 // #endif
 // #ifndef UI
@@ -38,6 +40,7 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+import javax.microedition.content.ActionNameMap;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.rms.InvalidRecordIDException;
 import javax.microedition.rms.RecordStore;
@@ -46,6 +49,80 @@ import javax.microedition.rms.RecordStoreNotFoundException;
 import com.sun.perseus.model.Set;
 
 public class Roster implements PacketListener {
+	
+	class RosterX implements PacketListener {
+		public RosterX() {
+			
+		}
+
+		public void associateWithStream(BasicXmlStream stream) {
+			EventQuery q = new EventQuery("message", null, null);
+			EventQuery x = new EventQuery("x", new String[] { "xmlns" },
+					new String[] { XMPPClient.NS_ROSTERX });
+			q.child = x;
+			stream.addEventListener(q, this);
+
+			XMPPClient.getInstance().registerListener(q, this);
+			q = new EventQuery("iq", new String[] { Iq.ATT_TYPE },
+					new String[] { Iq.T_SET });
+			q.child = x;
+			stream.addEventListener(q, this);
+		}
+
+		public void packetReceived(Element e) {
+			//System.out.println(new String(e.toXml()));
+			// check the packet sender
+			// check what to do with contacts 
+			// answer in case it is an Iq
+			Contact fromContact = Roster.this.getContactByJid(e.getAttribute(Iq.ATT_FROM));
+			if (fromContact == null) { return; }
+			Element x = e.getChildByName(null, "x");
+			Element[] items = x.getChildrenByName(null, "item");
+			SubscribeScreen sScreen = new SubscribeScreen(fromContact);
+			boolean rosterModified = false;
+			for (int i = 0; i < items.length; i++) {
+				Element ithItem = items[i];
+				String name = ithItem.getAttribute("name");
+				String jid = ithItem.getAttribute("jid");
+				String group = ithItem.getChildByName(null, "group").content;
+				String groups[] = null;
+				if (group != null && group.length() > 0) {
+					groups = new String[] { group };
+				}
+				String action = ithItem.getAttribute("action");
+				Contact c = Roster.this.getContactByJid(Contact.userhost(jid));
+				if (c!=null && action.compareTo("delete")==0)
+					rosterModified|=sScreen.addSubscription (c,SubscribeScreen.DELETE);
+				if (c== null && action.compareTo("add")==0){
+					c = new Contact(jid, name, null, groups);
+					rosterModified|=sScreen.addSubscription (c,SubscribeScreen.ADD);
+				}
+					
+			}
+			if (e.name.compareTo(Iq.IQ) == 0) {
+				Element answer = e;
+				String temp = e.getAttribute(Iq.ATT_TO);
+				e.setAttribute(Iq.ATT_TO, e.getAttribute(Iq.ATT_FROM));
+				e.setAttribute(Iq.ATT_FROM, temp);
+				e.setAttribute(Iq.ATT_TYPE, Iq.T_RESULT);
+				e.children.removeAllElements();
+				XMPPClient.getInstance().sendPacket(answer);
+				//System.out.println(new String(answer.toXml()));
+			}
+			Config cfg = Config.getInstance();
+			String agString = cfg.getProperty(Config.ACCEPTED_GATEWAYS, "");
+			Vector agStrings = Utils.tokenize(agString, '<');
+			boolean accepted = agStrings.contains(fromContact.jid.trim());
+			if (accepted){
+				sScreen.itemAction(sScreen.acceptAll);
+			}
+			else if (rosterModified){
+				// if the SubscribeScreen has been modified
+				// show it otherwise forget it: it had nothing to show
+				UICanvas.getInstance().open(sScreen,true);
+			}
+		}
+	}
 
 	/** All contacts */
 	public Hashtable contacts = new Hashtable();
@@ -55,10 +132,13 @@ public class Roster implements PacketListener {
 
 	private XMPPClient client;
 
+	private RosterX rosterX;
+
 	public static String NS_IQ_ROSTER = "jabber:iq:roster";
 
 	Roster(XMPPClient _client) {
 		client = _client;
+		this.rosterX = new RosterX();
 	}
 
 	protected void associateWithStream(BasicXmlStream stream) {
@@ -68,6 +148,8 @@ public class Roster implements PacketListener {
 		eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
 				new String[] { NS_IQ_ROSTER });
 		stream.addEventListener(eq, this);
+		if (this.rosterX!= null)
+			rosterX.associateWithStream(stream);
 	}
 
 	/**
@@ -167,7 +249,7 @@ public class Roster implements PacketListener {
 	 */
 	public void retrieveRoster(final boolean go_online) {
 		Iq iq_roster = new Iq(null, Iq.T_GET);
-		iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY, NS_IQ_ROSTER);
+		iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY);
 		client.sendIQ(iq_roster, new IQResultListener() {
 			public void handleError(Element e) {
 				System.out.println(e.toXml());
@@ -207,15 +289,14 @@ public class Roster implements PacketListener {
 	public void subscribeContact(Contact c) {
 		contacts.put(c.jid, c);
 		Iq iq_roster = new Iq(null, Iq.T_SET);
-		Element query = iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY,
-				NS_IQ_ROSTER);
-		Element item = query.addElement(NS_IQ_ROSTER, "item", null);
+		Element query = iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY);
+		Element item = query.addElement(NS_IQ_ROSTER, "item");
 		item.setAttribute("jid", c.jid);
 		if (c.name.length() > 0) {
 			item.setAttribute("name", c.name);
 		}
 		for (int i = 0; i < c.groups.length; i++) {
-			item.addElement(NS_IQ_ROSTER, "group", NS_IQ_ROSTER).content = c.groups[i];
+			item.addElement(NS_IQ_ROSTER, "group").content = c.groups[i];
 		}
 		client.sendIQ(iq_roster, null);
 
@@ -233,9 +314,8 @@ public class Roster implements PacketListener {
 
 		RosterScreen.getInstance().removeContact(c);
 		Iq iq_roster = new Iq(null, Iq.T_SET);
-		Element query = iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY,
-				NS_IQ_ROSTER);
-		Element item = query.addElement(NS_IQ_ROSTER, "item", null);
+		Element query = iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY);
+		Element item = query.addElement(NS_IQ_ROSTER, "item");
 		item.setAttribute("jid", c.jid);
 		item.setAttribute("subscription", "remove");
 		client.sendPacket(iq_roster);
@@ -270,7 +350,7 @@ public class Roster implements PacketListener {
 		// XXX: is it correct to do it here ?
 		// and/or is it the nicest way to do it
 		XMPPClient me = XMPPClient.getInstance();
-		Element serverEl = new Element("", "serverEl", "");
+		Element serverEl = new Element("", "serverEl");
 		serverEl.setAttribute(Iq.ATT_TO, me.my_jid);
 		String myDomain = Contact.domain(me.my_jid);
 		serverEl.setAttribute("jid", myDomain);
