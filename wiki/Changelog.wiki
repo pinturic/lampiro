@@ -1,6 +1,4 @@
-#summary Lampiro updates
-
-= Introduction =
+#summary Lampiro Updates
 
 When updates are available this page will describe the improvements or additions with respect to the previous version
 
