@@ -5,6 +5,10 @@ When updates are available this page will describe the improvements or additions
 
 = Details =
 
+Lampiro 9.1.1:
+ * *Improved*:  Simplified and clarified the registration process 
+ * *Improved*:  Gateway registration and interaction 
+
 Lampiro 9.1:
   * *Added*:    Roster push from known contacts
   * *Added*:    Automatic recognition of phone platform and key autoconfiguration
