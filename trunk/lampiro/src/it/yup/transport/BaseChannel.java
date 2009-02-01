@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BaseChannel.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: BaseChannel.java 1144 2009-01-30 17:26:43Z luca $
 */
 
 package it.yup.transport;
@@ -78,10 +78,10 @@ public abstract class BaseChannel {
 						try {
 							if (this.exiting) { return; }
 							// #mdebug							
-							//@																					Logger.log(
-							//@																								"Sender: waiting for packets to send. Data: "
-							//@																										,
-							//@																								Logger.DEBUG);
+//@																												Logger.log(
+//@																															"Sender: waiting for packets to send. Data: "
+//@																																	,
+//@																															Logger.DEBUG);
 							// #enddebug							
 							channel.packets.wait();
 
@@ -90,7 +90,7 @@ public abstract class BaseChannel {
 
 							if (!channel.pollAlive()) {
 								// #debug								
-								//@																								Logger.log("send exited");
+//@																																Logger.log("send exited");
 								return;
 							}
 
@@ -110,7 +110,7 @@ public abstract class BaseChannel {
 
 				try {
 					// #debug
-					//@															Logger.log("[SEND] " + new String(pkt));
+//@																				Logger.log("[SEND] " + new String(pkt));
 
 					// #ifndef BXMPP					
 					channel.outputStream.write(pkt);
@@ -141,13 +141,13 @@ public abstract class BaseChannel {
 					// #endif
 				} catch (IOException e) {
 					// #debug
-					//@															Logger.log("[SEND] IOException:" + e.getMessage());
+//@																				Logger.log("[SEND] IOException:" + e.getMessage());
 					close();
 				}
 
 			}
 			// #debug
-			//@									Logger.log("Sender: exiting", Logger.DEBUG);
+//@												Logger.log("Sender: exiting", Logger.DEBUG);
 
 		}
 	}

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: RegisterScreen.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package lampiro.screens;
@@ -10,11 +10,11 @@ import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
 import it.yup.ui.UICombobox;
+import it.yup.ui.UIConfig;
 import it.yup.ui.UIGauge;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
-import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
@@ -35,6 +35,7 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.HttpConnection;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Canvas;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
@@ -45,9 +46,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
 			"en");
+	
+	private UILabel tf_jid_label = new UILabel(rm
+			.getString(ResourceIDs.STR_JABBER_ID)+" (?)");
 
-	private UITextField tf_jid = new UITextField(rm
-			.getString(ResourceIDs.STR_JABBER_ID), null, 128,
+	private UITextField tf_jid = new UITextField("", null, 128,
 			TextField.EMAILADDR | TextField.NON_PREDICTIVE);
 
 	private UITextField tf_pwd = new UITextField(rm
@@ -72,6 +75,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			.getString(ResourceIDs.STR_ADVANCED_OPTIONS));
 
 	private UITextField resource = null;
+	
+	private UILabel loginLabel;
+
+	private UIMenu loginMenu;
+	
+	private UIMenu scaryGmail;
+	
 
 	// #ifdef COMPRESSION
 	//@					private UICheckbox cb_compression = new UICheckbox(rm
@@ -101,6 +111,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			ResourceIDs.STR_CHANGE_STATUS).toUpperCase());
 
 	private UITextField last_status = null;
+	
+	private UIMenu instructionsSubMenu;
 
 	/*
 	 * The subMenu deputed to open the status screen
@@ -127,6 +139,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	private static RegisterScreen _registerScreen = null;
 	
+	private UILabel instructionLabel = new UILabel(rm
+			.getString(ResourceIDs.STR_INSTRUCTIONS).toUpperCase());
+	
 	public void keyRepeated(int key) {
 		if (key == Canvas.KEY_POUND) {
 			KeyScreen ks = new KeyScreen();
@@ -139,6 +154,18 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private RegisterScreen() {
 		resource = new UITextField(rm.getString(ResourceIDs.STR_RESOURCE), cfg
 				.getProperty(Config.YUP_RESOURCE, "Lampiro"), 50, TextField.ANY);
+		instructionsSubMenu = UIMenu.easyMenu("", 20, 20, UICanvas
+				.getInstance().getWidth(), instructionLabel);
+		tf_jid_label.setSubmenu(instructionsSubMenu);
+		Font xFont = UIConfig.font_body;
+		Font lFont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+				.getSize());
+		tf_jid_label.setFont(lFont);
+		tf_jid_label.setFocusable(true);
+		loginLabel = new UILabel(rm
+				.getString(ResourceIDs.STR_LOGIN).toUpperCase());
+		loginMenu = UIMenu.easyMenu("", -1, -1, -1, loginLabel);
+		
 		UIMenu mainMenu = new UIMenu("");
 		this.setMenu(mainMenu);
 		mainMenu.append(this.cmd_exit);
@@ -167,14 +194,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			tf_pwd.setText(cfg.getProperty(Config.PASSWORD, ""));
 			tf_server.setText(cfg.getProperty(Config.CONNECTING_SERVER, ""));
 			//#ifdef COMPRESSION
-			//@															boolean enable_compression = Short.parseShort(cfg.getProperty(
-			//@																	Config.COMPRESSION, "0")) == 1;
-			//@															cb_compression.setChecked(enable_compression);
+			//@			boolean enable_compression = Short.parseShort(cfg.getProperty(
+			//@			Config.COMPRESSION, "1")) == 1;
+			//@			cb_compression.setChecked(enable_compression);
 			//#endif
 			//#ifdef TLS
-			//@												boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
-			//@														"0")) == 1;
-			//@												cb_TLS.setChecked(enable_TLS);
+			//@		boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
+			//@			"0")) == 1;
+			//@		cb_TLS.setChecked(enable_TLS);
 			//#endif
 			// append(btn_login);
 		}
@@ -184,7 +211,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		// #debug
 //@				this.append(cmd_debug);
 	}
-
+	
 	/** Called to notify that the {@link UIScreen} has become visible */
 	public void showNotify() {
 		setStatusLabel();
@@ -195,11 +222,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		String show = cfg.getProperty(Config.LAST_PRESENCE_SHOW, "");
 		String msg = cfg.getProperty(Config.LAST_STATUS_MESSAGE, "");
 		String statusText = "";
-		statusText += (show.length() > 0 ? "Presence: " + show + "\n" : "");
-		statusText += (msg.length() > 0 ? "Message: " + msg : "");
+		statusText += (show.length() > 0 ? show + "\n" : "");
+		statusText += (msg.length() > 0 ? msg : "");
 		if (statusText.length() > 0) {
-			this.last_status = new UITextField("Last Status", statusText, 1000,
-					TextField.UNEDITABLE);
+			this.last_status = new UITextField(rm
+					.getString(ResourceIDs.STR_DISPLAYED_STATUS), statusText,
+					1000, TextField.UNEDITABLE);
 			this.last_status.setWrappable(true);
 			this.last_status.setSubmenu(setStatus);
 		} else {
@@ -226,8 +254,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		this.setFreezed(true);
 		removeAll();
 
-		append(grp_new_account);
+		append(tf_jid_label);
 		append(tf_jid);
+		append(grp_new_account);
 		append(tf_pwd);
 		if (this.last_status != null) append(this.last_status);
 		if (grp_new_account.isChecked()) {
@@ -257,10 +286,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	public void menuAction(UIMenu menu, UIItem c) {
 		if (c == cmd_exit) {
 			LampiroMidlet.exit();
+		} else if (c == instructionLabel) {
+			int labelWidth = UICanvas.getInstance().getWidth() - 20;
+			UILabel hint = new UILabel(rm.getString(ResourceIDs.STR_HINT));
+			UIMenu instructionsMenu = UIMenu.easyMenu(rm
+					.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 30,
+					labelWidth, hint);
+			instructionsMenu.cancelMenuString = "";
+			instructionsMenu.selectMenuString = rm
+					.getString(ResourceIDs.STR_CONTINUE).toUpperCase();
+			hint.setWrappable(true, labelWidth);
+			this.addPopup(instructionsMenu);
 		} else if (c == cmd_state) {
 			StatusScreen ssc = new StatusScreen();
 			UICanvas.getInstance().open(ssc, true);
+		} else if (c == loginLabel) {
+			this.itemAction(this.btn_login);
 		}
+		
 	}
 
 	private void login() {
@@ -340,6 +383,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		if (BasicXmlStream.STREAM_ERROR.equals(event)
 				|| BasicXmlStream.CONNECTION_FAILED.equals(event)
 				|| BasicXmlStream.REGISTRATION_FAILED.equals(event)
+				|| BasicXmlStream.NOT_AUTHORIZED.equals(event)
 				|| BasicXmlStream.CONNECTION_LOST.equals(event)) {
 
 			reg.remove();
@@ -353,11 +397,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 			String description = null;
 			if (BasicXmlStream.CONNECTION_FAILED.equals(event)) {
-				description = "Connection failed";
+				description = rm.getString(ResourceIDs.STR_CONNECTION_FAILED);
 			} else if (BasicXmlStream.CONNECTION_LOST.equals(event)) {
-				description = "Connection lost";
+				description = rm.getString(ResourceIDs.STR_CONNECTION_LOST);
 			} else if (BasicXmlStream.REGISTRATION_FAILED.equals(event)) {
 				description = rm.getString(ResourceIDs.STR_REG_UNALLOWED);
+			} else if (BasicXmlStream.NOT_AUTHORIZED.equals(event)) {
+				description = rm.getString(ResourceIDs.STR_WRONG_USERNAME);
 			} else {
 				description = (String) source;
 			}
@@ -404,7 +450,6 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 //@						DebugScreen debugScreen = new DebugScreen();
 //@						UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
-
 		} else if (item == but_cancel) {
 			try {
 				XMPPClient.getInstance().closeStream();
@@ -468,6 +513,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 					remove(tf_server);
 				}
 			}
+			if (item == tf_jid) {
+				if (scaryGmail != null) {
+					this.removePopup(scaryGmail);
+				}
+				if (tf_jid.getText().indexOf("gmail.com") >= 0) {
+					UILabel gatewayHint = new UILabel(rm
+							.getString(ResourceIDs.STR_SCARY_GMAIL));
+					int canvasWidth = UICanvas.getInstance().getWidth() - 20;
+					scaryGmail = UIMenu.easyMenu(rm
+							.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 30,
+							canvasWidth, gatewayHint);
+					scaryGmail.cancelMenuString = "";
+					scaryGmail.selectMenuString = rm.getString(
+							ResourceIDs.STR_CONTINUE).toUpperCase();
+					gatewayHint.setWrappable(true, canvasWidth);
+					this.addPopup(scaryGmail);
+				}
+			}
 			checkLogin();
 		} else if (item == btn_login) {
 			String resourceString = this.resource.getText();
@@ -488,17 +551,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	 */
 	private void checkLogin() {
 
-		String items[] = new String[4];
-		boolean checkmail[] = new boolean[] { true, false, true, false };
+		String items[] = new String[3];
+		boolean checkmail[] = new boolean[] { true, false, false };
 
 		items[0] = tf_jid.getText();
 		items[1] = tf_pwd.getText();
 
-		if (register) {
-			items[2] = tf_email.getText();
-		}
 		if (grp_server.getSelectedIndex() == 1) {
-			items[3] = tf_server.getText();
+			items[2] = tf_server.getText();
 		}
 
 		boolean complete = true;
@@ -522,6 +582,21 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		} else if (!complete && idx != -1) {
 			remove(idx);
 		}
+		UIMenu tempSubmenu = (complete == true ? loginMenu : null);
+		tf_jid.setSubmenu(tempSubmenu);
+		grp_new_account.setSubmenu(tempSubmenu);
+		tf_pwd.setSubmenu(tempSubmenu);
+		btn_login.setSubmenu(tempSubmenu);
+		grp_advanced.setSubmenu(tempSubmenu);
+		resource.setSubmenu(tempSubmenu);
+		tf_server.setSubmenu(tempSubmenu);
+		grp_server.setSubmenu(tempSubmenu);
+		// #ifdef COMPRESSION
+		//@	cb_compression.setSubmenu(tempSubmenu);
+		// #endif
+		// #ifdef TLS
+//@		////@	cb_TLS.setSubmenu(tempSubmenu);
+		// #endif
 	}
 
 	private String srvQuery() {

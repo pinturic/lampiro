@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: XMPPClient.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package it.yup.xmpp;
@@ -78,13 +78,15 @@ public class XMPPClient {
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
 			"en");
+	
+	private Config cfg = Config.getInstance();
 
 	/*
-	 * The features published by Lampiro ordered as specified here:
+	 * The features published by Lampiro are ordered as specified here:
 	 * http://tools.ietf.org/html/rfc4790#section-9.3
 	 */
-	private String[] features = new String[] { MIDP_PLATFORM, NS_COMMANDS,
-			NS_IQ_DISCO_INFO, NS_MUC,NS_ROSTERX, JABBER_X_DATA };
+	private String[] features = new String[] { MIDP_PLATFORM,NS_CAPS, NS_COMMANDS,
+			NS_IQ_DISCO_INFO,NS_IBB, NS_MUC,NS_ROSTERX ,JABBER_X_DATA };
 
 	/** the client instance */
 	private static XMPPClient xmppInstance;
@@ -152,6 +154,8 @@ public class XMPPClient {
 	public static String NS_IQ_DISCO_ITEMS = "http://jabber.org/protocol/disco#items";
 	public static String NS_COMMANDS = "http://jabber.org/protocol/commands";
 	public static String NS_CAPS = "http://jabber.org/protocol/caps";
+	public static String NS_BLUENDO_CAPS = "http://bluendo.com/protocol/caps";
+	public static String NS_IBB = "http://jabber.org/protocol/ibb";
 	public static String NS_MUC = "http://jabber.org/protocol/muc";
 	public static String NS_ROSTERX = "http://jabber.org/protocol/rosterx";
 	public static String NS_MUC_USER = "http://jabber.org/protocol/muc#user";
@@ -161,8 +165,6 @@ public class XMPPClient {
 	public static String JABBER_IQ_GATEWAY = "jabber:iq:gateway";
 
 	private XMPPClient() {
-		Config cfg = Config.getInstance();
-
 		roster = new Roster(this);
 
 		volume = Integer.parseInt(cfg.getProperty(Config.TONE_VOLUME, "50"));
@@ -194,6 +196,49 @@ public class XMPPClient {
 			xmppInstance = new XMPPClient();
 		}
 		return xmppInstance;
+	}
+	
+	public static Vector getCapabilities (String node, String ver){
+		String combi = node+ver;
+		String capsString = xmppInstance.cfg.getProperty(Config.KNOWN_CAPS, "");
+		Vector capsVector = Utils.tokenize(capsString, '<');
+		Enumeration en = capsVector.elements();
+		try {
+			while (en.hasMoreElements()) {
+				String index = (String) en.nextElement();
+				if (en.hasMoreElements() == false) return null;
+				String caps = (String) en.nextElement();
+				if (index.compareTo(combi) == 0) {
+					Vector res = Utils.tokenize(caps, '>');
+					return res;
+				}
+			}
+		} catch (Exception e) {
+			// corrupted configuration reset it
+			xmppInstance.cfg.setProperty(Config.KNOWN_CAPS, "");
+			xmppInstance.cfg.saveToStorage();
+		}
+		return null;
+	}
+	
+	public static void saveCapabilities (String node,String ver,Element [] features){
+		if (getCapabilities(node, ver)!=null){
+			return;
+		}
+		String combi = node+ver;
+		String featuresString = "";
+		for (int i = 0; i < features.length; i++) {
+			Element element = features[i];
+			featuresString+= (element.getAttribute("var")+">");
+		}
+		String capsString = xmppInstance.cfg.getProperty(Config.KNOWN_CAPS,"");
+		if (capsString.length()>0)
+			capsString+="<";
+		capsString+=combi;
+		capsString+="<";
+		capsString+=featuresString;
+		xmppInstance.cfg.setProperty(Config.KNOWN_CAPS,capsString);
+		xmppInstance.cfg.saveToStorage();
 	}
 
 	public void startClient() {
@@ -362,7 +407,6 @@ public class XMPPClient {
 	 * Build the low level connection based on plain sockets
 	 */
 	private void buildSocketConnection() {
-		Config cfg = Config.getInstance();
 		xmlStream = new SocketStream();
 		// #ifndef BT_PLAIN_SOCKET
 		connection = new SocketChannel("socket://"
@@ -374,11 +418,9 @@ public class XMPPClient {
 
 
 	public void openStream() {
-		Config config = Config.getInstance();
-
-		String resource = config.getProperty(Config.YUP_RESOURCE, "Lampiro");
-		xmlStream.initialize(config.getProperty(Config.USER) + "@"
-				+ config.getProperty(Config.SERVER) + "/" + resource, config
+		String resource = cfg.getProperty(Config.YUP_RESOURCE, "Lampiro");
+		xmlStream.initialize(cfg.getProperty(Config.USER) + "@"
+				+ cfg.getProperty(Config.SERVER) + "/" + resource, cfg
 				.getProperty(Config.PASSWORD));
 
 
@@ -400,9 +442,6 @@ public class XMPPClient {
 	 * XMPPClient diventi una libreria...
 	 */
 	public void stream_authenticated(boolean new_credentials) {
-
-		Config cfg = Config.getInstance();
-
 		// create the self contact and setup the initialial presence
 		my_jid = xmlStream.jid;
 
@@ -420,7 +459,7 @@ public class XMPPClient {
 		// set capabilities
 		String uri = NS_CAPS;
 		Element cap = p.addElement(uri, "c");
-		cap.setAttribute("node", "http://bluendo.com/lampiro/caps");
+		cap.setAttribute("node", XMPPClient.NS_BLUENDO_CAPS);
 		cap.setAttribute("hash", "sha-1");
 		cap.setAttribute("ver", getCapVer());
 
@@ -476,7 +515,6 @@ public class XMPPClient {
 	}
 
 	private String getCapVer() {
-		Config cfg = Config.getInstance();
 		Vector ss = new Vector();
 		ss.addElement("client/");
 		ss.addElement("phone/");
@@ -556,7 +594,7 @@ public class XMPPClient {
 					}
 
 					if (u == null) {
-						if (type.compareTo(Presence.T_UNAVAILABLE)==0)
+						if (type != null && type.compareTo(Presence.T_UNAVAILABLE)==0)
 							return;
 						// XXX Guess the subscription
 						u = new Contact(Contact.userhost(from), null, "both",
@@ -660,14 +698,14 @@ public class XMPPClient {
 			reply.setAttribute(Stanza.ATT_ID, p.getAttribute(Stanza.ATT_ID));
 			String node = q.getAttribute("node");
 			Element qr = reply.addElement(NS_IQ_DISCO_INFO, Iq.QUERY);
-
-			if (node == null) {
+			String capDisco = XMPPClient.NS_BLUENDO_CAPS+"#"+XMPPClient.this.getCapVer();
+			if (node == null || node == capDisco ) {
 				Element identity = qr.addElement(NS_IQ_DISCO_INFO, "identity");
 				identity.setAttribute("category", "client");
 				identity.setAttribute("type", "phone");
 				identity.setAttribute("name", "Lampiro");
 				for (int i = 0; i < features.length; i++) {
-					Element feature = identity.addElement(NS_IQ_DISCO_INFO,
+					Element feature = qr.addElement(NS_IQ_DISCO_INFO,
 							"feature");
 					feature.setAttribute("var", features[i]);
 				}
@@ -681,6 +719,9 @@ public class XMPPClient {
 				field.addElement(JABBER_X_DATA, "value").content = System
 						.getProperty("microedition.platform");
 
+			}
+			if (node == capDisco){
+				reply.setAttribute("node", capDisco);
 			}
 			sendPacket(reply);
 		}

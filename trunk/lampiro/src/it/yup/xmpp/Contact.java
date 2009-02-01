@@ -1,27 +1,31 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: Contact.java 1144 2009-01-30 17:26:43Z luca $
 */
 
 package it.yup.xmpp;
 
+import it.yup.util.Utils;
 import it.yup.xmlstream.Element;
+import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
+import it.yup.xmpp.packets.IQResultListener;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Vector;
 
 /**
  * Un contatto.
  */
-public class Contact {
+public class Contact extends IQResultListener{
 
 	/* possible availability status */
 	public static final int AV_CHAT = 0;
@@ -348,6 +352,31 @@ public class Contact {
 		// cache the new availability
 		availability = mapAvailability(resources[0].getShow());
 	}
+	
+	public Vector getCapabilities (){
+		if (this.resources[0] == null)
+			return null;
+		Element c = this.resources[0].getChildByName(XMPPClient.NS_CAPS,"c");
+		if (c== null){
+			return null;
+		}
+		String node = c.getAttribute("node");
+		String ver = c.getAttribute("ver");
+		return XMPPClient.getCapabilities(node, ver);
+	}
+	
+	public void askCapabilities() {
+		Element c = null;
+		if (this.resources[0] != null) {
+			c = this.resources[0].getChildByName(XMPPClient.NS_CAPS, "c");
+		}
+		Iq iq = new Iq(this.getFullJid(), Iq.T_GET);
+		Element query = iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
+		if (c != null) {
+			query.setAttribute("node", c.getAttribute("node")+"#"+c.getAttribute("ver"));
+		}
+		XMPPClient.getInstance().sendIQ(iq, this);
+	}
 
 	protected void updateExistingPresence(Presence p) {
 		// More than one resource, remove only that resource (if
@@ -488,5 +517,23 @@ public class Contact {
 			if (availability_mapping[i].equals(s)) { return i; }
 		}
 		return -1;
+	}
+
+	public void handleError(Element e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public void handleResult(Element e) {
+		Element query = e.getChildByName(XMPPClient.NS_IQ_DISCO_INFO,Iq.QUERY);
+		String fullNode = query.getAttribute("node");
+		Element[] features = query.getChildrenByName(null, "feature");
+		if (fullNode != null){
+			Vector fn = Utils.tokenize(fullNode, '#');
+			String node = (String)fn.elementAt(0);
+			String ver = (String)fn.elementAt(1);
+			XMPPClient.saveCapabilities (node,ver,features);
+		}
+		
 	}
 }

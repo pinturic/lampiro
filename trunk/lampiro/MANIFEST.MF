@@ -1,7 +1,7 @@
 MIDlet-1: Lampiro,/icons/lampiro_icon_mini.png,lampiro.LampiroMidlet
 MIDlet-Name: Lampiro
 MIDlet-Vendor: Bluendo
-MIDlet-Version: 9.1
+MIDlet-Version: 9.1.1
 MIDlet-Icon: icons/lampiro_icon.png
 Manifest-Version: 1.0
 Lampiro-BOSH-Host: bosh.bluendo.com

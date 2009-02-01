@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1135 2009-01-27 23:07:46Z luca $
+ * $Id: ResourceIDs.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 /**
@@ -21,6 +21,7 @@ public class ResourceIDs {
 	public static final int STR_LOGIN = 5;
 	public static final int STR_EXIT = 6;
 	public static final int STR_DEBUG = 7;
+	public static final int STR_CONTINUE = 8;
 	public static final int STR_YES = 9;
 	public static final int STR_NO = 10;
 	public static final int STR_SEND = 11;
@@ -61,6 +62,10 @@ public class ResourceIDs {
 	public static final int STR_HELP_TEXT = 48;
 	public static final int STR_DESC = 49;
 	public static final int STR_REG_ERROR = 50;
+	public static final int STR_HINT = 51;
+	public static final int STR_GATEWAY_HINT = 52;
+	public static final int STR_DISPLAYED_STATUS = 53;
+	public static final int STR_SCARY_GMAIL = 54;
 
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;
@@ -107,6 +112,9 @@ public class ResourceIDs {
 	public static final int STR_KEY_PRESS_LEFT= 235;
 	public static final int STR_KEY_PRESS_RIGHT = 236;
 	public static final int STR_KEY_CONFIGURE = 237;
+	public static final int STR_CONNECTION_FAILED = 238;
+	public static final int STR_CONNECTION_LOST = 239;
+	public static final int STR_WRONG_USERNAME = 240;
 	
 	public static final int STR_MESSAGE_TO = 300;
 	public static final int STR_FILL_FORM = 500;

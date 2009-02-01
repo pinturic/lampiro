@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: UICanvas.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 /**
@@ -151,8 +151,8 @@ public class UICanvas extends GameCanvas {
 	private void setupdefaultKeyCode() {
 		String platform = System.getProperty("microedition.platform");
 		
-		// hack to detectd if is a "strange motorola"
-		if (platform.indexOf("otorola") == -1 && isMotorola()) {
+		// hack to detect if is a "strange motorola"
+		if (platform.indexOf("otorola") != -1 || isMotorola()) {
 			platform = "Motorola";
 		}
 		
