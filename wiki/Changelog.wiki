@@ -1,4 +1,5 @@
 #summary Lampiro Updates
+#labels Featured
 
 When updates are available this page will describe the improvements or additions with respect to the previous version
 
@@ -6,8 +7,10 @@ When updates are available this page will describe the improvements or additions
 = Details =
 
 Lampiro 9.1.1:
+ * *Added*:  Added many popups helps and alerts to guide first-time-users
  * *Improved*:  Simplified and clarified the registration process 
  * *Improved*:  Gateway registration and interaction 
+ * *Fixed*:     Fixed a bug in handling gateway registration
 
 Lampiro 9.1:
   * *Added*:    Roster push from known contacts
