@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: Roster.java 1159 2009-02-01 10:04:07Z fabio $
 */
 
 package it.yup.xmpp;
@@ -268,7 +268,7 @@ public class Roster implements PacketListener {
 				if (c == null || !"both".equals(c.subscription)) {
 					c = new Contact(Config.LAMPIRO_AGENT, "Lampiro Agent",
 							null, null);
-					subscribeContact(c);
+					subscribeContact(c, false);
 				}
 				// #ifdef UI 
 				UICanvas.getInstance().open(RosterScreen.getInstance(), true);
@@ -285,8 +285,10 @@ public class Roster implements PacketListener {
 	 * Subscribe to a contact. Adding a contact fires the transmission of two
 	 * messages: an iq of type set for updating the roster, and a presence of
 	 * type subscribe
+	 * @param c: the contact to be subscribed
+	 * @param accept: true if this is a response to a subscribe request
 	 */
-	public void subscribeContact(Contact c) {
+	public void subscribeContact(Contact c, boolean accept) {
 		contacts.put(c.jid, c);
 		Iq iq_roster = new Iq(null, Iq.T_SET);
 		Element query = iq_roster.addElement(NS_IQ_ROSTER, Iq.QUERY);
@@ -300,7 +302,13 @@ public class Roster implements PacketListener {
 		}
 		client.sendIQ(iq_roster, null);
 
-		Presence psub = new Presence(Presence.T_SUBSCRIBE, null, null, -1);
+		Presence psub;
+		if(accept) {
+			psub = new Presence(Presence.T_SUBSCRIBED, null, null, -1);
+			psub.setAttribute(Stanza.ATT_TO, c.jid);
+			client.sendPacket(psub);
+		}
+		psub = new Presence(Presence.T_SUBSCRIBE, null, null, -1);
 		psub.setAttribute(Stanza.ATT_TO, c.jid);
 		client.sendPacket(psub);
 		// recreateGroups();

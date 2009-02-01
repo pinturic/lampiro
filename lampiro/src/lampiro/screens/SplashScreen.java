@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: SplashScreen.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package lampiro.screens;
@@ -94,16 +94,18 @@ public class SplashScreen extends UIScreen {
 					TextField.UNEDITABLE);
 			helpField.setAutoUnexpand(false);
 			helpField.setWrappable(true);
+			//helpField.unExpand();
 			helpMenu = UIMenu.easyMenu(rm.getString(ResourceIDs.STR_HELP), 1,
 					30, UICanvas.getInstance().getWidth() - 2, helpField);
 			helpMenu.selectMenuString = "";
+			((UIItem)helpMenu.getItemList().elementAt(0)).setFocusable(true);
 			helpMenu.setSelectedIndex(1);
 			helpMenu.cancelMenuString = "";
 			UIHLayout uhl = UIHLayout.easyCenterLayout(close, 80);
 			helpMenu.append(uhl);
 			this.addPopup(helpMenu);
 			this.askRepaint();
-			helpField.expand();
+			//helpField.expand();
 		}
 	}
 	

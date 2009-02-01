@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: RosterScreen.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package lampiro.screens;
@@ -111,6 +111,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT));
 	// #mdebug
 //@		private UILabel cmd_debug = new UILabel(rm.getString(ResourceIDs.STR_DEBUG));
+//@		private UILabel cmd_ask_capabilities = new UILabel("Ask capabilities");
 	// #enddebug
 	private UILabel cmd_about = new UILabel(rm.getString(ResourceIDs.STR_ABOUT));
 	private UILabel cmd_querycmd = new UILabel(rm
@@ -195,6 +196,8 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	 * the contextual menu associated to a user
 	 */
 	UIMenu optionsMenu = new UIMenu("");
+	
+	private XMPPClient xmppClient= XMPPClient.getInstance();
 
 	// #ifdef SCREENSAVER
 	// @ private long last_key_time;
@@ -228,20 +231,19 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		}
 
 		public void updateContactData() {
-			XMPPClient xmpp = XMPPClient.getInstance();
 			String uname = c.getPrintableName();
 			Image pimg = null;
-			if (c instanceof MUC == false) pimg = xmpp.getPresenceIcon(c
+			if (c instanceof MUC == false) pimg = xmppClient.getPresenceIcon(c
 					.getAvailability());
 			else {
 				try {
 					pimg = Image.createImage("/icons/muc.png");
 				} catch (IOException e) {
-					pimg = xmpp.getPresenceIcon(c.getAvailability());
+					pimg = xmppClient.getPresenceIcon(c.getAvailability());
 				}
 			}
 			if (pimg==null)
-				pimg = xmpp.getPresenceIcon(Contact.AV_UNAVAILABLE);
+				pimg = xmppClient.getPresenceIcon(Contact.AV_UNAVAILABLE);
 			// setup the status text label
 			String status = null;
 			Presence[] resources = c.getAllPresences();
@@ -371,7 +373,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		EventQuery invite = new EventQuery("invite", null, null);
 		x.child = invite;
 
-		XMPPClient.getInstance().registerListener(q, this);
+		xmppClient.registerListener(q, this);
 
 		// setting the
 		optionsMenu.append(cmd_chat);
@@ -389,12 +391,51 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		q = new EventQuery("message", new String[] { Iq.ATT_TYPE },
 				new String[] { "groupchat" });
 		q.child = new EventQuery("subject", null, null);
-		XMPPClient.getInstance().registerListener(q, this);
+		xmppClient.registerListener(q, this);
 		this.rosterPanel.setSelectedIndex(0);
+		// check first login
+		Config cfg = Config.getInstance();
+		if (Config.FALSE.equals(cfg.getProperty(Config.CLIENT_INITIALIZED))) {
+			cfg.setProperty(Config.CLIENT_INITIALIZED, Config.TRUE);
+			cfg.saveToStorage();
+			UILabel gatewayHint = new UILabel(rm
+					.getString(ResourceIDs.STR_GATEWAY_HINT)
+					+ " " + rm.getString(ResourceIDs.STR_SCARY_GMAIL));
+			int canvasWidth = UICanvas.getInstance().getWidth() - 20;
+			UIMenu firstLogin = UIMenu.easyMenu(rm
+					.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 30,
+					canvasWidth, gatewayHint);
+			firstLogin.cancelMenuString = "";
+			firstLogin.selectMenuString = rm
+					.getString(ResourceIDs.STR_CONTINUE).toUpperCase();
+			gatewayHint.setWrappable(true, canvasWidth);
+			UIHLayout gatewayLayout = new UIHLayout(5);
+			Vector images = new Vector(5);
+			images.addElement(UICanvas
+					.getUIImage("/transport/msn.png"));
+			images.addElement(UICanvas
+					.getUIImage("/transport/icq.png"));
+			images.addElement(UICanvas
+					.getUIImage("/transport/aim.png"));
+			images.addElement(UICanvas
+					.getUIImage("/transport/yahoo.png"));
+			images.addElement(UICanvas
+					.getUIImage("/transport/transport.png"));
+			Enumeration en = images.elements();
+			int i =0;
+			while (en.hasMoreElements()){
+				UILabel ithLabel = new UILabel((Image)en.nextElement());
+				ithLabel.setAnchorPoint(Graphics.HCENTER);
+				gatewayLayout.insert(ithLabel, i, 25, UILayout.CONSTRAINT_PERCENTUAL);
+				i++;
+			}
+			
+			firstLogin.append(gatewayLayout);
+			this.addPopup(firstLogin);
+		}
 	}
 
 	private void updateHeader() {
-		XMPPClient client = XMPPClient.getInstance();
 		int bytes[] = XMPPClient.getTraffic();
 		String byteTrans = rm.getString(ResourceIDs.STR_TRAFFIC) + ": "
 				+ (bytes[0] + bytes[1]);
@@ -404,7 +445,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		if (sel_pattern.length() > 0) {
 			this.connData.setText("sel: " + sel_pattern);
 		}
-		Image pimg = client.getPresenceIcon(client.getMyContact()
+		Image pimg = xmppClient.getPresenceIcon(xmppClient.getMyContact()
 				.getAvailability());
 		// contacts with unread messages are always at the top
 		if (rosterPanel != null
@@ -485,8 +526,9 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		Contact c = getSelectedContact();
 		UIMenu menu = getMenu();
 		menu.clear();
-		// #debug
+		// #mdebug
 //@				menu.append(cmd_debug);
+		// #enddebug
 		menu.append(cmd_addc);
 		if (this.mucJid != null) menu.append(cmd_mucs);
 		menu.append(cmd_state);
@@ -502,6 +544,11 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			this.optionsMenu.remove(cmd_querycmd);
 			this.optionsMenu.remove(cmd_tasks);
 			this.optionsMenu.remove(cmd_close_muc);
+			
+			// #mdebug
+//@			this.optionsMenu.remove(cmd_ask_capabilities);
+//@			this.optionsMenu.append(cmd_ask_capabilities);
+			// #enddebug
 			if (c.cmdlist != null) {
 				optionsMenu.append(cmd_listcmd);
 			} else {
@@ -660,7 +707,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		if (c == cmd_exit) {
 			LampiroMidlet.exit();
 		} else if (c == this.deleteQuestion) {
-			XMPPClient.getInstance().getRoster().unsubscribeContact(
+			xmppClient.getRoster().unsubscribeContact(
 					this.delContact);
 		} else if (c == cmd_delc) {
 			Contact cont = getSelectedContact();
@@ -743,13 +790,11 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			this.askRepaint();
 		} else if (c == gateways_discovery) {
 			this.setFreezed(true);
-			gatewaysMenu = new UIMenu(rm.getString(ResourceIDs.STR_GATEWAYS));
-			gatewaysMenu.setAbsoluteX(10);
-			gatewaysMenu.setAbsoluteY(20);
-			gatewaysMenu.setWidth(this.getWidth() - 20);
-			gatewaysMenu.setDirty(true);
-			((UIItem) gatewaysMenu.getItemList().elementAt(0))
-					.setFocusable(true);
+			gatewaysMenu = UIMenu.easyMenu(rm.getString(ResourceIDs.STR_GATEWAYS), 
+					10, 20, this.getWidth() - 20, null);
+			// why ?
+			//((UIItem) gatewaysMenu.getItemList().elementAt(0))
+			//		.setFocusable(true);
 			gatewaysMenu.selectMenuString = rm.getString(
 					ResourceIDs.STR_REGISTER).toUpperCase();
 			this.addPopup(gatewaysMenu);
@@ -777,8 +822,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 				this.show_offlines = !this.show_offlines;
 				this.setDirty(true);
 				this.setFreezed(true);
-				Enumeration en = XMPPClient.getInstance().roster.contacts
-						.elements();
+				Enumeration en = xmppClient.roster.contacts.elements();
 				while (en.hasMoreElements()) {
 					Contact ithContact = (Contact) en.nextElement();
 					this.reorganizeContact(ithContact, Contact.CH_STATUS);
@@ -802,9 +846,13 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			StatusScreen ssc = new StatusScreen();
 			UICanvas.getInstance().open(ssc, true);
 			// #mdebug
-//@					} else if (c == cmd_debug) {
-//@						DebugScreen debugScreen = new DebugScreen();
-//@						UICanvas.getInstance().open(debugScreen, true);
+//@		} else if (c == cmd_debug) {
+//@			DebugScreen debugScreen = new DebugScreen();
+//@			UICanvas.getInstance().open(debugScreen, true);
+//@		} else if (c == cmd_ask_capabilities) {
+//@			Contact usr = getSelectedContact();
+//@			usr.getCapabilities();
+//@			usr.askCapabilities();
 			// #enddebug
 		} else if (c == cmd_querycmd) {
 			Contact usr = getSelectedContact();
@@ -814,7 +862,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 					Iq.QUERY);
 			query.setAttribute("node", "http://jabber.org/protocol/commands");
 			AdHocCommandsHandler handler = new AdHocCommandsHandler();
-			XMPPClient.getInstance().sendIQ(iq, handler);
+			xmppClient.sendIQ(iq, handler);
 		} else if (c == cmd_listcmd) {
 			CommandListScreen cmdscr = new CommandListScreen(
 					getSelectedContact());
@@ -852,14 +900,13 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			}
 		} else if (c == muc_button) {
 			String mucName = this.muc_name_field.getText().replace(' ', '_');
-			XMPPClient client = XMPPClient.getInstance();
-			Contact myContact = client.getMyContact();
+			Contact myContact = xmppClient.getMyContact();
 			Presence pres = myContact.getPresence();
 			pres.setAttribute(Stanza.ATT_TO, mucName + "@" + this.mucJid + "/"
 					+ Contact.user(myContact.getPrintableName()));
 			Element el = new Element(XMPPClient.NS_MUC, DataForm.X);
 			pres.children.addElement(el);
-			client.sendPacket(pres);
+			xmppClient.sendPacket(pres);
 
 			Iq iq = new Iq(mucName + "@" + this.mucJid + "/", "set");
 			Element query = new Element(XMPPClient.NS_MUC_OWNER, Iq.QUERY);
@@ -867,31 +914,29 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			Element x = new Element(DataForm.NAMESPACE, DataForm.X);
 			x.setAttribute("type", "submit");
 			query.children.addElement(x);
-			client.sendPacket(iq);
+			xmppClient.sendPacket(iq);
 			this.muc_name_field.setText("");
 		} else if (c == this.acceptButton) {
 			UIHLayout buttons = (UIHLayout) this.groupInviteMenu.getItemList()
 					.lastElement();
 			UILabel groupChatLabel = (UILabel) buttons.getItem(2);
 			String invitedChatJid = groupChatLabel.getText();
-			XMPPClient client = XMPPClient.getInstance();
-			Contact myContact = client.getMyContact();
+			Contact myContact = xmppClient.getMyContact();
 			Presence pres = myContact.getPresence();
 			pres.setAttribute(Stanza.ATT_TO, invitedChatJid + "/"
 					+ Contact.user(myContact.getPrintableName()));
 			Element el = new Element(XMPPClient.NS_MUC, DataForm.X);
 			pres.children.addElement(el);
-			client.sendPacket(pres);
+			xmppClient.sendPacket(pres);
 			this.removePopup(this.groupInviteMenu);
 		} else if (c == this.denyButton) {
 			this.removePopup(this.groupInviteMenu);
 		} else if (c == this.cmd_close_muc) {
-			XMPPClient client = XMPPClient.getInstance();
 			Presence pres = new Presence();
 			MUC muc = (MUC) this.getSelectedContact();
 			pres.setAttribute(Stanza.ATT_TO, muc.jid);
 			pres.setAttribute(Stanza.ATT_TYPE, Presence.T_UNAVAILABLE);
-			client.sendPacket(pres);
+			xmppClient.sendPacket(pres);
 			rosterPanel.removeItem(rosterPanel.getSelectedItem());
 			this.askRepaint();
 		} else if (menu == this.gatewaysMenu) {
@@ -908,7 +953,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			RegisterHandler rh = new RegisterHandler();
 			Iq iq = new Iq(from, Iq.T_GET);
 			iq.addElement(IQ_REGISTER, Iq.QUERY);
-			XMPPClient.getInstance().sendIQ(iq, rh);
+			xmppClient.sendIQ(iq, rh);
 		}
 	}
 
@@ -985,9 +1030,13 @@ public class RosterScreen extends UIScreen implements PacketListener {
 													e1.printStackTrace();
 												}
 											}
-											RosterScreen.this.gateways.put(
-													from, new Object[] { name,
-															img });
+
+											String category = identity
+													.getAttribute("category");
+											if (category.compareTo("gateway") == 0) {
+												RosterScreen.this.addGateway(
+														name, from, img,type);
+											}
 										}
 									}
 								}
@@ -996,7 +1045,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 						};
 						Iq iq = new Iq(ithJid, Iq.T_GET);
 						iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-						XMPPClient.getInstance().sendIQ(iq, dih);
+						xmppClient.sendIQ(iq, dih);
 					}
 				}
 			}
@@ -1004,11 +1053,36 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			public void handleError(Element e) {
 			}
 		};
-		String myJid = XMPPClient.getInstance().my_jid;
+		String myJid = xmppClient.my_jid;
+		
+		//first search my domain
 		String domain = Contact.domain(myJid);
 		Iq iq = new Iq(domain, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
-		XMPPClient.getInstance().sendIQ(iq, dih);
+		xmppClient.sendIQ(iq, dih);
+		
+		// then bluendo
+		domain = Config.BLUENDO_SERVER;
+		iq = new Iq(domain, Iq.T_GET);
+		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
+		xmppClient.sendIQ(iq, dih);
+	}
+	
+	private void addGateway(String name, String from, Image img, String type) {
+		Enumeration en = gateways.keys();
+		while (en.hasMoreElements()) {
+			String ithFrom = (String) en.nextElement();
+			Object[] ithData = (Object[]) gateways.get(ithFrom);
+			String ithType = (String) ithData[2];
+			if (ithType.compareTo(type) == 0) {
+				if (from.indexOf(Config.BLUENDO_SERVER) >= 0) return;
+				else {
+					gateways.remove(from);
+					break;
+				}
+			}
+		}
+		gateways.put(from, new Object[] { name, img, type });
 	}
 
 	private Contact getSelectedContact() {
@@ -1062,7 +1136,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		}
 
 		public void handleResult(Element e) {
-			XMPPClient.getInstance().handleClientCommands(e, true);
+			RosterScreen.this.xmppClient.handleClientCommands(e, true);
 		}
 	}
 
@@ -1132,7 +1206,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 				DataForm df = registerHandler.df;
 				df.type = DataForm.TYPE_SUBMIT;
 				query.children.addElement(df.getResultElement());
-				XMPPClient.getInstance().sendPacket(reply);
+				xmppClient.sendPacket(reply);
 				UICanvas.getInstance().close(registerHandler.dfs);
 				Object[] nameImg = (Object[]) gateways.get(from);
 				String name = (String) nameImg[0];
@@ -1309,7 +1383,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		String userHost = Contact.userhost(e.getAttribute(Iq.ATT_FROM));
 		if (e.name.compareTo("message") == 0) {
 			Element subject = e.getChildByName(null, "subject");
-			Contact muc = XMPPClient.getInstance().roster
+			Contact muc = xmppClient.roster
 					.getContactByJid(userHost);
 			if (muc != null) {
 				MUCScreen mucScreen = (MUCScreen) chatScreenList.get(muc);
@@ -1334,8 +1408,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		String mucName = Contact.user(invitedMuc);
 		String inviterName = e.getChildByName(XMPPClient.NS_MUC_USER, "x")
 				.getChildByName(null, "invite").getAttribute(Message.ATT_FROM);
-		XMPPClient client = XMPPClient.getInstance();
-		Contact c = client.roster.getContactByJid(inviterName);
+		Contact c = xmppClient.roster.getContactByJid(inviterName);
 		String printableName = "";
 		if (c != null) printableName = c.getPrintableName();
 		else

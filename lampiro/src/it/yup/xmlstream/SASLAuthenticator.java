@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SASLAuthenticator.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: SASLAuthenticator.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package it.yup.xmlstream;
@@ -226,7 +226,13 @@ public class SASLAuthenticator extends Initializer {
 					} else if ("challenge".equals(e.name)) {
 						gotChallenge(e);
 					} else if ("failure".equals(e.name)) {
-						stream.dispatchEvent(
+						Element child = e.getChildByName(null, "not-authorized");
+						if (child != null)
+							stream.dispatchEvent(
+									BasicXmlStream.NOT_AUTHORIZED,
+									"Cannot authenticate");
+						else
+							stream.dispatchEvent(
 								BasicXmlStream.REGISTRATION_FAILED,
 								"Cannot registrate");
 					} else {

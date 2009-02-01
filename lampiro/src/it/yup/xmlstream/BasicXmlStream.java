@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: BasicXmlStream.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package it.yup.xmlstream;
@@ -39,6 +39,7 @@ public abstract class BasicXmlStream implements TransportListener {
 	// public static String AUTHENTICACTION_FAILED = "_09";
 	public static String REGISTRATION_FAILED = "_10";
 	public static String CONNECTION_FAILED = "_11";
+	public static String NOT_AUTHORIZED= "_12";
 	//public static String STREAM_REGISTRATION_ERROR = "_08";
 
 	/** Session ID for this stream */

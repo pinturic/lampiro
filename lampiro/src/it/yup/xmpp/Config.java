@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1135 2009-01-27 23:07:46Z luca $
+ * $Id: Config.java 1164 2009-02-01 21:00:07Z luca $
 */
 
 package it.yup.xmpp;
@@ -26,7 +26,7 @@ import javax.microedition.rms.RecordStoreNotFoundException;
  */
 public class Config {
 
-	private static String version = "00.03";
+	private static String version = "9.1.1";
 
 	/** name of the record store */
 	public static final String RMS_NAME = "yuprms";
@@ -55,6 +55,8 @@ public class Config {
 
 	/** path of the GPRS/HTTP gateway */
 	public static final String SRV_QUERY_PATH = "http://services.bluendo.com/srv/?domain=";
+	
+	public static final String BLUENDO_SERVER = "jabber.bluendo.com";
 
 	/**
 	 * time the server should wait before sending a response if no data is
@@ -155,6 +157,11 @@ public class Config {
 	 * The accepted gateways
 	 */
 	public static short ACCEPTED_GATEWAYS = 0x0022;
+	
+	/*
+	 * 
+	 */
+	public static short KNOWN_CAPS = 0x0023;
 
 	/** the bluendo assistent */
 	public static final String LAMPIRO_AGENT = "lampiro@golem.jabber.bluendo.com";
@@ -303,9 +310,9 @@ public class Config {
 			rms.setRecord(RNUM_CONFIG, data, 0, data.length);
 		} catch (Exception e) {
 			// #mdebug
-			//@						Logger.log("Error in saving to storage: " + e.getMessage(),
-			//@									Logger.DEBUG);
-			//@			
+//@									Logger.log("Error in saving to storage: " + e.getMessage(),
+//@												Logger.DEBUG);
+//@						
 			// #enddebug
 			XMPPClient.getInstance().showAlert(AlertType.ERROR, "Config Error",
 					"Error while saving config:\n" + e.getMessage(), null);
