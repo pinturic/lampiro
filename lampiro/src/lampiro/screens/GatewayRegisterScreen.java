@@ -14,13 +14,9 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.xmlstream.Element;
-import it.yup.xmlstream.EventQuery;
-import it.yup.xmlstream.PacketListener;
-import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.packets.IQResultListener;
 import it.yup.xmpp.packets.Iq;
-import it.yup.ui.UITextField;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 
@@ -43,6 +39,8 @@ public class GatewayRegisterScreen extends UIScreen {
 			Graphics cg = GatewayRegisterScreen.this.getGraphics();
 			int offset = (cg.getClipHeight() - resPopup.getHeight(cg)) / 2;
 			resPopup.setAbsoluteY(offset);
+			resPopup.selectMenuString =rm.getString(ResourceIDs.STR_CONTINUE);
+			resPopup.cancelMenuString = "";
 		}
 
 		public void handleError(Element e) {

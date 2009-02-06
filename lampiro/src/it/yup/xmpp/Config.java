@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: Config.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package it.yup.xmpp;
@@ -26,7 +26,7 @@ import javax.microedition.rms.RecordStoreNotFoundException;
  */
 public class Config {
 
-	private static String version = "9.1.1";
+	private static String version = "9.1.2";
 
 	/** name of the record store */
 	public static final String RMS_NAME = "yuprms";
@@ -159,9 +159,14 @@ public class Config {
 	public static short ACCEPTED_GATEWAYS = 0x0022;
 	
 	/*
-	 * 
+	 * The db of all the known capabilities
 	 */
 	public static short KNOWN_CAPS = 0x0023;
+	
+	/*
+	 * All the gateways to which I am registered
+	 */
+	public static short REGISTERED_GATEWAYS = 0x0024;
 
 	/** the bluendo assistent */
 	public static final String LAMPIRO_AGENT = "lampiro@golem.jabber.bluendo.com";

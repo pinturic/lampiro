@@ -1,15 +1,13 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: SplashScreen.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package lampiro.screens;
 
-import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIConfig;
-import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UILayout;
@@ -22,9 +20,9 @@ import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
 import it.yup.xmpp.Config;
 
-import java.io.IOException;
 import java.util.TimerTask;
 
+import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
@@ -35,7 +33,7 @@ public class SplashScreen extends UIScreen {
 	"en");
 	
 	private UIMenu helpMenu; 
-	private UIButton close;
+	//private UIButton close;
 	
 	public SplashScreen() {
 		try {
@@ -68,8 +66,30 @@ public class SplashScreen extends UIScreen {
 			}
 		}, 3000);
 	}
+	
+	public boolean keyPressed(int kc) {
+		if (helpMenu == null)
+			return super.keyPressed(kc);
+		
+		int ga = UICanvas.getInstance().getGameAction(kc);
+		switch (ga) {
+			case Canvas.UP:
+			case Canvas.DOWN:
+			case Canvas.LEFT:
+			case Canvas.RIGHT:
+				return super.keyPressed(kc);
+			case Canvas.FIRE:
+				this.removePopup(this.helpMenu);
+				this.helpMenu = null;
+				UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
+				UICanvas.getInstance().close(SplashScreen.this);
+				return true;
+		}
+		return super.keyPressed(kc);
+	}
+	
 
-	void checkKeys() {
+	private void checkKeys() {
 		int q;
 		String keys = Config.getInstance().getProperty(Config.CANVAS_KEYS);
 		if (keys != null && (q = keys.indexOf(',')) != -1) {
@@ -82,7 +102,7 @@ public class SplashScreen extends UIScreen {
 		else
 		{
 			// save actual configuration
-			SplashScreen.this.close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
+			//SplashScreen.this.close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
 			keys = UICanvas.MENU_LEFT + "," + UICanvas.MENU_RIGHT;
 			Config.getInstance().setProperty(Config.CANVAS_KEYS, keys);
 			Config.getInstance().saveToStorage();
@@ -92,20 +112,20 @@ public class SplashScreen extends UIScreen {
 
 			UITextField helpField = new UITextField("", help, help.length(),
 					TextField.UNEDITABLE);
-			helpField.setAutoUnexpand(false);
 			helpField.setWrappable(true);
+			helpField.setAutoUnexpand(false);
 			//helpField.unExpand();
 			helpMenu = UIMenu.easyMenu(rm.getString(ResourceIDs.STR_HELP), 1,
-					30, UICanvas.getInstance().getWidth() - 2, helpField);
+					20, UICanvas.getInstance().getWidth() - 2, helpField);
 			helpMenu.selectMenuString = "";
 			((UIItem)helpMenu.getItemList().elementAt(0)).setFocusable(true);
 			helpMenu.setSelectedIndex(1);
 			helpMenu.cancelMenuString = "";
-			UIHLayout uhl = UIHLayout.easyCenterLayout(close, 80);
-			helpMenu.append(uhl);
+			//UIHLayout uhl = UIHLayout.easyCenterLayout(close, 80);
+			//helpMenu.append(uhl);
 			this.addPopup(helpMenu);
 			this.askRepaint();
-			//helpField.expand();
+			helpField.expand();
 		}
 	}
 	

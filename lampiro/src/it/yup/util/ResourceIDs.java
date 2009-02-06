@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: ResourceIDs.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 /**
@@ -66,6 +66,8 @@ public class ResourceIDs {
 	public static final int STR_GATEWAY_HINT = 52;
 	public static final int STR_DISPLAYED_STATUS = 53;
 	public static final int STR_SCARY_GMAIL = 54;
+	public static final int STR_CONTACT_ID = 55;
+	public static final int STR_SERVER_EXPLORE = 56;
 
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;

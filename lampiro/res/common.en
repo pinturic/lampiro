@@ -10,8 +10,8 @@
 10	No
 11	Send
 12	Save
-13	Address
-14	Nickname
+13	Enter jabber id or google talk address
+14	Displayed nickname
 15	Group
 16	Instructions
 17	Submit
@@ -39,9 +39,9 @@
 39	Show offline
 40	IM Gateways
 41	Gateways
-42	registration succeded
+42	registration data sent, existing contacts will be auto imported. Should the registration fail please check username and password and register again.
 43	Hide offline
-44	Contact type
+44	Im network
 45	Refresh
 46	Traffic
 47	Help
@@ -49,9 +49,11 @@
 49	Description
 50	Error during registration
 51	Choose a username and your favourite jabber server. You can use gmail.com, jabber.bluendo.com, jabber.org or any other jabber server, e.g. myname@gmail.com .
-52	This is your first login! To connect to MSN, Yahoo, ICQ and Aim select "IM Gateways" from the menu. You can add gmail contacts using add contact from the menu.
+52	This is your first login!< To connect to MSN, Yahoo, ICQ and Aim select "IM Gateways" from the menu.< You can add gmail contacts using add contact from the menu.
 53	Displayed Status
-54	Due to an annoying bug of google talk you cannot use external gateways with a gmail account; use jabber.bluendo.com or any other server. We will inform you as soon as the bug is fixed.   
+54	Due to an annoying bug of google talk you cannot use external gateways with a gmail account; use jabber.bluendo.com or any other server. We will inform you as soon as the bug is fixed.
+55	Contact id
+56	Explore server
 100	Write message
 101	Chat with
 102	Clear Chat
@@ -85,7 +87,7 @@
 224	Note
 225	Enable TLS
 226	Stop login
-227	It appears that this is the first time you run Lampiro.<If the menu keys do not work  keep the "#" button pressed in the next screen to show the configuration tool.< To setup font size and other options you can use the setup screen in the roster screen.
+227	It appears that this is the first time you run Lampiro.<If the menu keys do not work  keep the "#" button pressed in the next screen to show the configuration tool.< To setup font size and other options you can use the setup screen in the roster screen.< Press FIRE to continue.
 228	Please press the button you wish to associate to the left menu
 229	Please press the button you wish to associate to the right menu
 230	Please confirm the left key

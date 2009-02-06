@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIScreen.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: UIScreen.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package it.yup.ui;
@@ -9,7 +9,6 @@ package it.yup.ui;
 import it.yup.util.ResourceIDs;
 
 import java.util.Enumeration;
-import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.lcdui.Canvas;
@@ -335,7 +334,22 @@ public class UIScreen extends UIMenu implements UIIContainer {
 				/* open menu */
 				if (menu != null) {
 					int menuSize = menu.getItemList().size();
-					if (menuSize > 1) {
+					UIMenu contMenu = null;
+					UIItem selItem = null;
+					if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
+						selItem = ((UIItem) this.getItemList().elementAt(
+							selectedIndex)).getSelectedItem();
+					}
+					if (selItem != null) contMenu = selItem.getSubmenu();
+					else if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
+						contMenu = ((UIItem) this.getItemList().elementAt(
+								selectedIndex)).getSubmenu();
+					}
+					if (menuSize == 2 && contMenu == null) {
+						this.menuAction(menu, (UIItem) menu.getItemList()
+								.elementAt(0));
+					}
+					else if (menuSize > 1) {
 						menu.setOpenedState(true);
 						this.askRepaint();
 					} else if (menuSize == 1) {
@@ -344,27 +358,44 @@ public class UIScreen extends UIMenu implements UIIContainer {
 					}
 				}
 				return true;
-			} else if (key == UICanvas.MENU_LEFT && selectedIndex >= 0
-					&& selectedIndex < this.itemList.size()) {
-				// A "contextual menu" has been asked
-				UIItem selItem = ((UIItem) this.getItemList().elementAt(
-						selectedIndex)).getSelectedItem();
-				// An UIitem like UICombobox can have no selectedItem but a subMenu
-				UIMenu contMenu = null;
-				if (selItem != null) contMenu = selItem.getSubmenu();
-				else
-					contMenu = ((UIItem) this.getItemList().elementAt(
-							selectedIndex)).getSubmenu();
-				if (this.selectedIndex >= 0 && contMenu != null) {
-					// if menu has 0 width centers it on the screen
-					if (contMenu.getWidth() == 0) contMenu.width = UICanvas
-							.getInstance().getWidth()
-							- contMenu.getAbsoluteX() * 2;
-					if (contMenu.getItemList().size() > 1) this
-							.addPopup(contMenu);
-					else if (contMenu.getItemList().size() == 1) menuAction(
-							contMenu, (UIItem) contMenu.getItemList()
-									.elementAt(0));
+			} else if (key == UICanvas.MENU_LEFT) {
+				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
+					// A "contextual menu" has been asked
+					UIItem selItem = ((UIItem) this.getItemList().elementAt(
+							selectedIndex)).getSelectedItem();
+					// An UIitem like UICombobox can have no selectedItem but a subMenu
+					UIMenu contMenu = null;
+					if (selItem != null) contMenu = selItem.getSubmenu();
+					else
+						contMenu = ((UIItem) this.getItemList().elementAt(
+								selectedIndex)).getSubmenu();
+					if (this.selectedIndex >= 0 && contMenu != null) {
+						// if menu has 0 width centers it on the screen
+						if (contMenu.getWidth() == 0) contMenu.width = UICanvas
+								.getInstance().getWidth()
+								- contMenu.getAbsoluteX() * 2;
+						if (contMenu.getItemList().size() > 1) this
+								.addPopup(contMenu);
+						else if (contMenu.getItemList().size() == 1) menuAction(
+								contMenu, (UIItem) contMenu.getItemList()
+										.elementAt(0));
+					}
+					else {
+						// second items of normal menu has been asked
+						int menuSize = menu.getItemList().size();
+						if (menuSize == 2) {
+							this.menuAction(menu, (UIItem) menu.getItemList()
+									.elementAt(1));
+						}
+					}
+				}
+				else {
+					// second items of normal menu has been asked
+					int menuSize = menu.getItemList().size();
+					if (menuSize == 2) {
+						this.menuAction(menu, (UIItem) menu.getItemList()
+								.elementAt(1));
+					}
 				}
 			}
 
@@ -645,9 +676,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			if (this.getNeedScrollbar() == false) {
 				g.fillRect(1, 0, canvasWidth, gap);
 			} else {
-				g
-						.fillRect(1, 0, canvasWidth - UIConfig.scrollbarWidth
-								- 1, gap);
+				g.fillRect(1, 0, canvasWidth - UIConfig.scrollbarWidth- 1, gap);
 			}
 			// if the gap is filled menu and popups can be dirty
 			// and must be redrawn
@@ -674,8 +703,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			int translatedX = g.getTranslateX();
 			int translatedY = g.getTranslateY();
 			g.translate(-translatedX, -translatedY);
-			g
-					.setClip(0, headerHeight, canvasWidth, canvasHeight
+			g.setClip(0, headerHeight, canvasWidth, canvasHeight
 							- headerHeight);
 			// I choose a maximum height for the menus
 			int menuHeight = menu.getHeight(g);
@@ -706,8 +734,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 					- ithPopup.getAbsoluteY();
 			// set a clip for the popup in order to avoid overprinting
 			// header and footer;
-			g
-					.setClip(0, headerHeight, canvasWidth, canvasHeight
+			g.setClip(0, headerHeight, canvasWidth, canvasHeight
 							- headerHeight);
 			g.translate(ithPopup.getAbsoluteX(), ithPopup.getAbsoluteY());
 			// if a popup is dirty must be redrawn and
@@ -731,8 +758,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 
 		g.translate(-g.getTranslateX(), -g.getTranslateY());
 		/* footer height */
-		g
-				.translate(0 - g.getTranslateX(), canvasHeight + 1
+		g.translate(0 - g.getTranslateX(), canvasHeight + 1
 						- g.getTranslateY());
 
 		/* draw menu buttons - LEFT */
@@ -770,6 +796,12 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		if (menu != null && !menu.isOpenedState() && !hasPopup) {
 			if (menu.getItemList().size() == 1) right = ((UILabel) menu
 					.getItemList().elementAt(0)).getText();
+			else if (menu.getItemList().size() == 2 && left.length()==0){
+				right = ((UILabel) menu
+					.getItemList().elementAt(0)).getText();
+				left = ((UILabel) menu
+						.getItemList().elementAt(1)).getText();
+			}
 			else
 				right = rm.getString(ResourceIDs.STR_MENU);
 		} else if ((menu != null && menu.isOpenedState()) || hasPopup) {
@@ -783,6 +815,10 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		}
 		if (right.compareTo(this.footerRight.getText()) != 0) {
 			this.footerRight.setText(right);
+			changed = true;
+		}
+		if (left.compareTo(this.footerLeft.getText()) != 0) {
+			this.footerLeft.setText(left);
 			changed = true;
 		}
 

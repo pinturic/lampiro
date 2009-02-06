@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICombobox.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UICombobox.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 /**
@@ -201,6 +201,11 @@ public class UICombobox extends UILabel {
 			uimi = new UICheckbox(comboItem);
 		}
 		comboMenu.append(uimi);
+	}
+	
+	public void append(UILabel comboItem) {
+		comboMenu.append(comboItem);
+		comboItem.setWrappable(false, -1);
 	}
 
 	public void removeAt(int index) {
