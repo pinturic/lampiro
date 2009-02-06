@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 1159 2009-02-01 10:04:07Z fabio $
+ * $Id: Roster.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package it.yup.xmpp;
@@ -40,16 +40,16 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import javax.microedition.content.ActionNameMap;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.rms.InvalidRecordIDException;
 import javax.microedition.rms.RecordStore;
 import javax.microedition.rms.RecordStoreNotFoundException;
 
-import com.sun.perseus.model.Set;
-
 public class Roster implements PacketListener {
 	
+	/*
+	 *	Implements the XEP for roster push 
+	 */
 	class RosterX implements PacketListener {
 		public RosterX() {
 			
@@ -135,12 +135,20 @@ public class Roster implements PacketListener {
 	private RosterX rosterX;
 
 	public static String NS_IQ_ROSTER = "jabber:iq:roster";
+	
+	public Hashtable registeredGateways= new Hashtable(5);
 
 	Roster(XMPPClient _client) {
+		loadGateways();
 		client = _client;
 		this.rosterX = new RosterX();
 	}
-
+	
+	/*
+	 * The configuration instance
+	 */
+	private Config cfg = Config.getInstance();
+	
 	protected void associateWithStream(BasicXmlStream stream) {
 		// Register the handler for roster packets of type 'set'
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "type" },
@@ -256,7 +264,7 @@ public class Roster implements PacketListener {
 			}
 
 			// XXX I don't link this method, we should study some events for
-			// oing this
+			// doing this
 			public void handleResult(Element e) {
 				recreateRoster(e);
 				if (go_online) {
@@ -406,7 +414,6 @@ public class Roster implements PacketListener {
 				c.name = name;
 			}
 			c.groups = groups;
-
 		}
 
 		RosterScreen rosterScreen = RosterScreen.getInstance();
@@ -421,7 +428,102 @@ public class Roster implements PacketListener {
 		}
 
 		contacts.put(c.jid, c);
+		// check if this contact is one of my registered gateways
+		updateGateways(c);
 		rosterScreen.updateContact(c, Contact.CH_STATUS);
+	}
+	
+	
+	/*
+	 * Load the registered gateways from recordStore
+	 */
+	private void loadGateways(){
+		String gwString = cfg.getProperty(Config.REGISTERED_GATEWAYS, "");
+		Vector gwVector = Utils.tokenize(gwString, '>');
+		Enumeration en = gwVector.elements();
+		try {
+			while (en.hasMoreElements()) {
+				String ithFrom = (String) en.nextElement();
+				if (ithFrom.length()>0){
+					String ithType = (String) en.nextElement();
+					String ithName = (String) en.nextElement();
+					this.registeredGateways.put(ithFrom, new String[]{ithType,ithName});
+				}
+				else break;
+			}
+		} catch (Exception e) {
+			// corrupted configuration reset it
+			cfg.setProperty(Config.REGISTERED_GATEWAYS, "");
+			cfg.saveToStorage();
+		}
+	}
+	
+	/*
+	 * save the registered gateways to recordStore
+	 */
+	private void saveGateways(){
+		StringBuffer gwBuffer = new StringBuffer();
+		Enumeration en = this.registeredGateways.keys();
+		while (en.hasMoreElements()) {
+			String ithFrom = (String) en.nextElement();
+			String[] data = (String[]) this.registeredGateways.get(ithFrom);
+			String ithType = data[0];
+			String ithName = data[1];
+			gwBuffer.append(ithFrom);
+			gwBuffer.append(">");
+			gwBuffer.append(ithType);
+			gwBuffer.append(">");
+			gwBuffer.append(ithName);
+			gwBuffer.append(">");
+		}
+		cfg.setProperty(Config.REGISTERED_GATEWAYS, gwBuffer.toString());
+		cfg.saveToStorage();
+	}
+
+	/*
+	 * Check if contact is a gateway and in case 
+	 * start the procedure to add it to the registered gateways
+	 * 
+	 * @param c
+	 * 		The contact to check for
+	 */
+	private void updateGateways(Contact c) {
+		if (c.jid.indexOf('@')>=0)
+			return;
+		if (registeredGateways.containsKey(Contact.userhost(c.jid)))
+			return;
+		
+		IQResultListener gw = new IQResultListener() {
+			public void handleError(Element e) {
+			}
+			public void handleResult(Element e) {
+				Element q = e.getChildByName(
+						XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
+				if (q != null) {
+					String type = null;
+					String name = "";
+					String from = e.getAttribute("from");
+					Element identity = q.getChildByName(
+							XMPPClient.NS_IQ_DISCO_INFO,
+							"identity");
+					if (identity != null) {
+						type = identity.getAttribute("type");
+						String category = identity
+								.getAttribute("category");
+						name = identity.getAttribute("name");
+						if (category.compareTo("gateway")==0){
+							Roster.this.registeredGateways.put(from,
+									new String []{type,name});
+							saveGateways();
+						}
+					} 
+				}
+			}
+		};
+		
+		Iq iq = new Iq(c.jid, Iq.T_GET);
+		iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
+		XMPPClient.getInstance().sendIQ(iq, gw);
 	}
 
 	public Contact getContactByJid(String jid) {

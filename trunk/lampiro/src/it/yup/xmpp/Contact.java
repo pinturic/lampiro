@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 1144 2009-01-30 17:26:43Z luca $
+ * $Id: Contact.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package it.yup.xmpp;
@@ -19,7 +19,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.Vector;
 
 /**
@@ -277,7 +276,20 @@ public class Contact extends IQResultListener{
 	 * @param p
 	 */
 	public void updatePresence(Presence p) {
-
+		// look for nickname
+		// many gw have wrong nickname!
+		if (p.getAttribute(Iq.ATT_FROM).indexOf("@") >= 0) {
+			Element x = p.getChildByName(XMPPClient.NS_VCARD_UPDATE, "x");
+			if (x != null) {
+				Element nickname = x.getChildByName(null, "nickname");
+				if (nickname != null && nickname.content != null
+						&& nickname.content.length() > 0) {
+					this.name = nickname.content;
+				}
+			}
+		}
+			
+			
 		if (Presence.T_UNAVAILABLE.equals(p.getAttribute(Stanza.ATT_TYPE))) {
 			if (resources == null) {
 				return;

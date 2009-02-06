@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILabel.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UILabel.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 /**
@@ -262,7 +262,7 @@ public class UILabel extends UIItem {
 			g.translate(0, (h - (reservedHeight * this.textLines.size())) / 2);
 			for (int i = 0; i < textLines.size(); i++) {
 				String subStr = (String) textLines.elementAt(i);
-				paintLine(g, w, reservedHeight, null, subStr);
+				paintLine(g, w, reservedHeight, img, subStr);
 				g.translate(0, reservedHeight);
 			}
 			g.translate(0, originalY - g.getTranslateY());
@@ -384,7 +384,10 @@ public class UILabel extends UIItem {
 			if (textLines == null) {
 				computeTextLines(usedFont, this.width);
 			}
-			this.height = (fontHeight + 2) * this.textLines.size();
+			if (img != null) this.height = img.getHeight() + 2;
+			int tempHeight = (fontHeight + 2) * this.textLines.size();
+			if (tempHeight>this.height)
+				this.height = tempHeight;
 		}
 
 		return height;

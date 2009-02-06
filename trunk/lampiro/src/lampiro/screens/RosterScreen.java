@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: RosterScreen.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package lampiro.screens;
@@ -73,9 +73,14 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	private int infoedComponents = 0;
 
 	/*
-	 * the MUC component jid
+	 * The MUC component jid
 	 */
 	private String mucJid = null;
+	
+	/*
+	 * The server used to explore gateways 
+	 */
+	private String serverGateways = Contact.domain(XMPPClient.getInstance().my_jid);
 
 	/*
 	 * If true the offline contacts are shown.
@@ -198,6 +203,9 @@ public class RosterScreen extends UIScreen implements PacketListener {
 	UIMenu optionsMenu = new UIMenu("");
 	
 	private XMPPClient xmppClient= XMPPClient.getInstance();
+	
+	// The input text field used to explore a server for gateways
+	private UITextField serverGatewayInput;
 
 	// #ifdef SCREENSAVER
 	// @ private long last_key_time;
@@ -398,17 +406,22 @@ public class RosterScreen extends UIScreen implements PacketListener {
 		if (Config.FALSE.equals(cfg.getProperty(Config.CLIENT_INITIALIZED))) {
 			cfg.setProperty(Config.CLIENT_INITIALIZED, Config.TRUE);
 			cfg.saveToStorage();
-			UILabel gatewayHint = new UILabel(rm
+			String hintText = rm
 					.getString(ResourceIDs.STR_GATEWAY_HINT)
-					+ " " + rm.getString(ResourceIDs.STR_SCARY_GMAIL));
+					+ "<" + rm.getString(ResourceIDs.STR_SCARY_GMAIL);
+			hintText = hintText.replace('<', '\n');
+			UITextField gatewayHint = new UITextField("",hintText,hintText.length(),
+					TextField.UNEDITABLE);
+			gatewayHint.setWrappable(true);
+			gatewayHint.setAutoUnexpand(false);
 			int canvasWidth = UICanvas.getInstance().getWidth() - 20;
 			UIMenu firstLogin = UIMenu.easyMenu(rm
-					.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 30,
+					.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 20,
 					canvasWidth, gatewayHint);
+			firstLogin.setSelectedIndex(1);
 			firstLogin.cancelMenuString = "";
 			firstLogin.selectMenuString = rm
 					.getString(ResourceIDs.STR_CONTINUE).toUpperCase();
-			gatewayHint.setWrappable(true, canvasWidth);
 			UIHLayout gatewayLayout = new UIHLayout(5);
 			Vector images = new Vector(5);
 			images.addElement(UICanvas
@@ -430,8 +443,11 @@ public class RosterScreen extends UIScreen implements PacketListener {
 				i++;
 			}
 			
-			firstLogin.append(gatewayLayout);
+			firstLogin.replace(0,gatewayLayout);
 			this.addPopup(firstLogin);
+			UICanvas.getInstance().open(this,true);
+			this.askRepaint();
+			gatewayHint.expand();
 		}
 	}
 
@@ -761,6 +777,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			UICanvas.getInstance().open(ms, true);
 		} else if (c == refresh_gateways) {
 			this.gateways.clear();
+			this.serverGateways = this.serverGatewayInput.getText();
 			this.getIMGateways();
 			this.setFreezed(true);
 			gatewaysMenu.remove(refresh_gateways);
@@ -795,10 +812,14 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			// why ?
 			//((UIItem) gatewaysMenu.getItemList().elementAt(0))
 			//		.setFocusable(true);
+			serverGatewayInput = new UITextField(
+					rm.getString(ResourceIDs.STR_SERVER_EXPLORE),
+					this.serverGateways,
+					255,TextField.ANY);
 			gatewaysMenu.selectMenuString = rm.getString(
 					ResourceIDs.STR_REGISTER).toUpperCase();
 			this.addPopup(gatewaysMenu);
-
+			gatewaysMenu.append(serverGatewayInput);
 			Enumeration en = this.gateways.keys();
 			while (en.hasMoreElements()) {
 				String from = (String) en.nextElement();
@@ -953,6 +974,10 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			RegisterHandler rh = new RegisterHandler();
 			Iq iq = new Iq(from, Iq.T_GET);
 			iq.addElement(IQ_REGISTER, Iq.QUERY);
+			// from this point on all the subscription 
+			// "from" and "username@from"
+			// will be autoaccepted from this 
+			xmppClient.autoAcceptGateways.addElement(from);
 			xmppClient.sendIQ(iq, rh);
 		}
 	}
@@ -1053,17 +1078,7 @@ public class RosterScreen extends UIScreen implements PacketListener {
 			public void handleError(Element e) {
 			}
 		};
-		String myJid = xmppClient.my_jid;
-		
-		//first search my domain
-		String domain = Contact.domain(myJid);
-		Iq iq = new Iq(domain, Iq.T_GET);
-		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
-		xmppClient.sendIQ(iq, dih);
-		
-		// then bluendo
-		domain = Config.BLUENDO_SERVER;
-		iq = new Iq(domain, Iq.T_GET);
+		Iq iq = new Iq(this.serverGateways, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
 		xmppClient.sendIQ(iq, dih);
 	}

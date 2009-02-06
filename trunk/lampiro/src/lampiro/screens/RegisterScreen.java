@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: RegisterScreen.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package lampiro.screens;
@@ -150,7 +150,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			UICanvas.getInstance().close(this);
 		}
 	}
-
+	
 	private RegisterScreen() {
 		resource = new UITextField(rm.getString(ResourceIDs.STR_RESOURCE), cfg
 				.getProperty(Config.YUP_RESOURCE, "Lampiro"), 50, TextField.ANY);

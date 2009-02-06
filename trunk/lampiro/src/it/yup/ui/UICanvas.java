@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: UICanvas.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 /**
@@ -84,15 +84,19 @@ public class UICanvas extends GameCanvas {
 	 */
 	private Semaphore sem = new Semaphore(1);
 
-	/*
-	 * The time at which the pointer is pressed
-	 */
-	private long pressedTime;
-
-	/*
-	 * The time at which the pointer is released
-	 */
-	private long releasedTime;
+	// #mdebug
+//@	/*
+//@	 * The time at which the pointer is pressed
+//@	 */
+//@	private long pressedTime;
+//@
+//@	/*
+//@	 * The time at which the pointer is released
+//@	 */
+//@	private long releasedTime;
+//@	
+	// #enddebug
+	
 	private int pressedX;
 	private int pressedY;
 
@@ -139,8 +143,14 @@ public class UICanvas extends GameCanvas {
 	{
 		try {
 			String imei = System.getProperty("IMEI");
+			// #mdebug
+//@			Logger.log("IMEI :" + imei);
+			//#enddebug
 			if (imei != null) return true;
 			imei = System.getProperty("com.motorola.IMEI");
+			// #mdebug
+//@			Logger.log("com.motorola.IMEI :" + imei);
+			//#enddebug
 			if (imei != null) return true;
 		} catch (Exception e) {
 
@@ -156,6 +166,9 @@ public class UICanvas extends GameCanvas {
 			platform = "Motorola";
 		}
 		
+		// #mdebug
+//@			Logger.log("platform:" + platform);
+// 		#enddebug
 		for(int i =0 ;i< keyMaps.length;++i)
 		{
 			String manufacturer = (String)keyMaps[i][0];
@@ -248,7 +261,11 @@ public class UICanvas extends GameCanvas {
 	boolean longPressRun = false;
 
 	public void pointerPressed(int x, int y) {
-		this.pressedTime = System.currentTimeMillis();
+		// #mdebug
+//@
+//@		this.pressedTime = System.currentTimeMillis();
+//@		
+		// #enddebug
 		this.pressedX = x;
 		this.pressedY = y;
 		this.dragged = false;
@@ -378,7 +395,12 @@ public class UICanvas extends GameCanvas {
 	 * @return <code>true</code> if the screen will keep the selection
 	 */
 	public void pointerReleased(int x, int y) {
-		this.releasedTime = System.currentTimeMillis();
+		// #mdebug
+//@
+//@		this.releasedTime = System.currentTimeMillis();
+//@		
+		// #enddebug
+		
 
 		// #mdebug
 //@				Logger.log("pointerReleased:" + x + " " + y + ":");
@@ -586,8 +608,7 @@ public class UICanvas extends GameCanvas {
 		UIScreen s0 = (UIScreen) screenList.elementAt(viewedIndex);
 		if (key == Canvas.KEY_STAR) {
 			if (s0.popupIsPresent(this.wlist) == false) {
-				wlist = UIMenu.easyMenu("", 20, (this.getClipHeight() - wlist
-						.getHeight(canvasGraphics/* getGraphics() */)) / 2,
+				wlist = UIMenu.easyMenu("", 20, this.getClipHeight() / 4,
 						getWidth() - 40, null);
 				for (int i = 0; i < screenList.size(); i++) {
 					UIScreen si = (UIScreen) screenList.elementAt(i);

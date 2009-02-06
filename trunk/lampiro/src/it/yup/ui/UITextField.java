@@ -1,12 +1,10 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITextField.java 1134 2009-01-27 13:37:18Z luca $
+ * $Id: UITextField.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package it.yup.ui;
-
-import gov.nist.siplite.header.Header;
 
 import java.util.Vector;
 

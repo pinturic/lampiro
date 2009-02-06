@@ -1,0 +1,7 @@
+1) check the release version in :
+	- manifest.mf 
+	- lampiro.jad
+	- Config.java -> Config.version
+2) build all
+3) release a branch (with the name version)
+4) submit on web sites 

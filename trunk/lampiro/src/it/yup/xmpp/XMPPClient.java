@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: XMPPClient.java 1176 2009-02-06 16:53:35Z luca $
 */
 
 package it.yup.xmpp;
@@ -39,10 +39,6 @@ import java.util.Enumeration;
 import java.util.Vector;
 import it.yup.util.ResourceManager;
 import org.bouncycastle.util.encoders.Base64;
-
-import com.sun.perseus.j2d.Point;
-
-import javab.math.BigInteger;
 
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
@@ -141,6 +137,13 @@ public class XMPPClient {
 	 */
 	public boolean addTLS = false;
 
+	/*
+	 * the gateways whose contacts must be autoaccepted
+	 * i.e. the gateways whose presence has been subscripted 
+	 * within the current session
+	 */
+	public Vector autoAcceptGateways= new Vector();
+
 	/**
 	 * Get the total amount of traffic on the GPRS connection
 	 * 
@@ -160,6 +163,8 @@ public class XMPPClient {
 	public static String NS_ROSTERX = "http://jabber.org/protocol/rosterx";
 	public static String NS_MUC_USER = "http://jabber.org/protocol/muc#user";
 	public static String NS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
+	public static String NS_VCARD_UPDATE = "vcard-temp:x:update";
+	public static String NS_NICK = "http://jabber.org/protocol/nick";
 	public static String MIDP_PLATFORM = "http://bluendo.com/midp#platform";
 	public static String JABBER_X_DATA = "jabber:x:data";
 	public static String JABBER_IQ_GATEWAY = "jabber:iq:gateway";
@@ -171,7 +176,7 @@ public class XMPPClient {
 		play_flags = Utils.str2flags(cfg.getProperty(
 				Config.VIBRATION_AND_TONE_SETTINGS, "1"), 0, 4);
 
-		// preoload the presence icons
+		// preload the presence icons
 		String mapping[] = Contact.availability_mapping;
 		presence_icons = new Image[mapping.length];
 		for (int i = 0; i < presence_icons.length; i++) {
@@ -182,7 +187,6 @@ public class XMPPClient {
 				presence_icons[i] = Image.createImage(16, 16);
 			}
 		}
-
 	}
 
 	/**
@@ -621,7 +625,6 @@ public class XMPPClient {
 		}
 
 		private void handleSubscribe(Presence p) {
-
 			// try getting the contact (we may already have it)
 			String jid = p.getAttribute(Stanza.ATT_FROM);
 			Contact u = roster.getContactByJid(jid);
@@ -662,19 +665,33 @@ public class XMPPClient {
 				 * confirmMenu.setAbsoluteY(offset); this.confirmContact =
 				 * contact; currentScreen.addPopup(confirmMenu);
 				 */
+				
+				// add a nick only if a previous name has been added
+				Element nick = p.getChildByName(XMPPClient.NS_NICK, "nick");
+				if (nick != null && nick.content != null && nick.content.length()>0 
+						&& (u.name == null || u.name.length()==0)){
+					u.name = nick.content;
+				}
 
+				Enumeration en = XMPPClient.this.autoAcceptGateways.elements();
+				while (en.hasMoreElements()) {
+					String ithGateway = (String) en.nextElement();
+					if (u.jid.indexOf(ithGateway) >= 0) {
+						XMPPClient.this.roster.subscribeContact(u, true);
+						return;
+					}
+				}
 				// #ifdef UI
 				SubscribeScreen scs = SubscribeScreen.getUserSubscription();
 				scs.addSubscription(u, SubscribeScreen.ADD);
 				UICanvas.getInstance().open(scs, true);
 				// #endif
 // #ifndef UI
-				//@								Display d = Display.getDisplay(LampiroMidlet._lampiro);
-				//@								SubscriptionConfirmAlert scf = new SubscriptionConfirmAlert(u,
-				//@										d.getCurrent());
-				//@								d.setCurrent(scf);
+				//@	Display d = Display.getDisplay(LampiroMidlet._lampiro);
+				//@	SubscriptionConfirmAlert scf = new SubscriptionConfirmAlert(u,
+				//@		d.getCurrent());
+				//@	d.setCurrent(scf);
 				// #endif
-
 			}
 		}
 	}
