@@ -11,7 +11,7 @@ Lampiro 9.1.2:
  * *Added*:     Explore and use gateways on other servers
  * *Added*:     The use of nick in roster screen
  * *Added*:     Registered gateways caching
- * *Improved*:  Add contact screen: with the chances to select gateway easily
+ * *Improved*:  Add contact screen: with the chances to select gateways easily
  * *Fixed*:     Popups painted correctly within the screen
 
 Lampiro 9.1.1:
