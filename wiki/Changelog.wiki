@@ -6,6 +6,9 @@ When updates are available this page will describe the improvements or additions
 
 = Details =
 
+Lampiro 9.1.3:
+ * Due to an error in packaging, the 9.1.2 version zip files are invalid. 9.1.3 has the same modifications as 9.1.2, but download files are correct.
+
 Lampiro 9.1.2:
 
  * *Added*:     Explore and use gateways on other servers
