@@ -18,8 +18,6 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
-import it.yup.ui.UITextPanel;
-import it.yup.util.Logger;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
@@ -48,7 +46,6 @@ import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
-import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 
 import lampiro.LampiroMidlet;
@@ -121,7 +118,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	private UILabel closeLabel;
 
 	// #mdebug
-//@		 private UILabel cmd_debug = new UILabel("Debug");
+	//@		 private UILabel cmd_debug = new UILabel("Debug");
 	// #enddebug
 
 	private Hashtable cmd_urls = new Hashtable();
@@ -183,7 +180,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
 		// #debug
-//@				 menu.append(cmd_debug);
+		//@				 menu.append(cmd_debug);
 		menu.append(cmd_exit);
 		menu.append(cmd_write);
 		menu.append(cmd_clear);
@@ -507,17 +504,17 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			cmd_urls.clear();
 			this.setDirty(true);
 			// #mdebug
-//@						 } else if (cmd == cmd_debug) {
-//@						 Logger.log(
-//@						
-//@						 "h:" + UICanvas.getInstance().getHeight() + "w:"
-//@						 + UICanvas.getInstance().getWidth() + "ch:");
-//@						 Logger.log(this.getGraphics().getClipHeight() + "cw:"
-//@						 + this.getGraphics().getClipWidth() + "ph:"
-//@						 + this.chatPanel.getHeight(getGraphics()));
-//@						 //
-//@						 DebugScreen debugScreen = new DebugScreen();
-//@						 UICanvas.getInstance().open(debugScreen, true);
+			//@						 } else if (cmd == cmd_debug) {
+			//@						 Logger.log(
+			//@						
+			//@						 "h:" + UICanvas.getInstance().getHeight() + "w:"
+			//@						 + UICanvas.getInstance().getWidth() + "ch:");
+			//@						 Logger.log(this.getGraphics().getClipHeight() + "cw:"
+			//@						 + this.getGraphics().getClipWidth() + "ph:"
+			//@						 + this.chatPanel.getHeight(getGraphics()));
+			//@						 //
+			//@						 DebugScreen debugScreen = new DebugScreen();
+			//@						 UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 		} else if (cmd == this.zoomLabel) {
 			UICutLabel selLabel = (UICutLabel) this.chatPanel.getSelectedItem();
@@ -533,7 +530,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			UITextField expField = new UITextField("", selText, selText
 					.length(), TextField.UNEDITABLE);
 			expField.setWrappable(true);
-			UIMenu zoomedMenu = UIMenu.easyMenu("Expanded", 10, 20, this.getWidth() - 20, expField);
+			UIMenu zoomedMenu = UIMenu.easyMenu("Expanded", 10, 20, this
+					.getWidth() - 20, expField);
 			zoomedMenu.append(expField);
 			zoomedMenu.cancelMenuString = "";
 			zoomedMenu.selectMenuString = rm.getString(ResourceIDs.STR_CLOSE)
@@ -622,7 +620,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		// avoid useless repaint when computing conversation
 		this.setFreezed(true);
 		// check if it is a msg for myself so the img_msg is not shown
-		// and avoid carotti/fast bot problem
+		// and avoid fast bot problem
 		String fullJid = user.getFullJid();
 		// fullJid could be null for offline contact
 		// so let's use in that case the userhost and nothing more
