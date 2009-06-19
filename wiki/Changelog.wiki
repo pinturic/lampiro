@@ -6,6 +6,16 @@ When updates are available this page will describe the improvements or additions
 
 = Details =
 
+Lampiro 9.6.0:
+
+
+ * *Added*:     Multimedia related functions: camera , voice recording, multimedia album and file transfer
+ * *Added*:     Group management functions in roster screen
+ * *Improved*:  Improved user interface experience
+ * *Improved*:  Stunning graphics and theming support
+ * *Improved*:  Improved usability
+
+
 Lampiro 9.1.3:
  * Due to an error in packaging, the 9.1.2 version zip files are invalid. 9.1.3 has the same modifications as 9.1.2, but download files are correct.
 
