@@ -1,11 +1,12 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILayout.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: UILayout.java 1471 2009-05-13 21:35:41Z luca $
 */
 
 package it.yup.ui;
 
+import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
 
 public abstract class UILayout extends UIItem implements UIIContainer {
@@ -31,6 +32,12 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 	 * The layout elements.
 	 */
 	protected UIItem[] layoutItems;
+
+	/*
+	 * The keys used by subclasses to move (Canvas.LEFT, Canvas.RIGHT , etc...)
+	 */
+	protected int dirKey1 = 0;
+	protected int dirKey2 = 1;
 
 	public UILayout(int elemNumber) {
 		this.layoutItems = new UIItem[elemNumber];
@@ -136,7 +143,7 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		for (int i = 0; i < this.layoutItems.length; i++) {
 			if (layoutItems[i].isFocusable()) { return true; }
 		}
-		return false;
+		return focusable;
 	}
 
 	int traverseFocusable(int startingIndex, boolean directionDown) {
@@ -166,15 +173,19 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 	protected void drawSegmentedBorder(Graphics g, int w, int h) {
 		g.setColor(0x223377);
 		// g.setColor(UIScreen.bg_color);
-		int segmentLength = 5;
-		for (int i = 0; i < w; i += 2 * segmentLength) {
-			g.drawLine(i, 0, i + segmentLength, 0);
-			g.drawLine(i, h - 1, i + segmentLength, h - 1);
-		}
-		for (int i = 0; i < h; i += 2 * segmentLength) {
-			g.drawLine(0, i, 0, i + segmentLength);
-			g.drawLine(w - 1, i, w - 1, i + segmentLength);
-		}
+		//                int segmentLength = 2;
+		//                for (int i = 0; i < w; i += 2 * segmentLength) {
+		//                        g.drawLine(i, 0, i + segmentLength, 0);
+		//                        g.drawLine(i, h - 1, i + segmentLength, h - 1);
+		//                }
+		//                for (int i = 0; i < h; i += 2 * segmentLength) {
+		//                        g.drawLine(0, i, 0, i + segmentLength);
+		//                        g.drawLine(w - 1, i, w - 1, i + segmentLength);
+		//                }
+		int oldSTroke = g.getStrokeStyle();
+		g.setStrokeStyle(Graphics.DOTTED);
+		g.drawRect(0, 0, w - 1, h - 1);
+		g.setStrokeStyle(oldSTroke);
 	}
 
 	/**
@@ -212,6 +223,13 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		}
 	}
 
+	public void setSelectedIndex(int index) {
+		if (index >= 0 && index < this.layoutItems.length) this
+				.setSelectedItem(this.layoutItems[index]);
+		else
+			this.selectedIndex = index;
+	}
+
 	/**
 	 * Return the selected UIItem within the UIItem itself; usually it is the
 	 * UIItem itself but in the subclasses (like UIVLayout) it could be one of
@@ -236,4 +254,79 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 			this.getContainer().setSelectedItem(this);
 		}
 	}
+
+	public boolean contains(UIItem item) {
+		for (int i = 0; i < this.layoutItems.length; i++) {
+			UIItem ithItem = layoutItems[i];
+			if (ithItem == item) return true;
+			if (ithItem instanceof UIIContainer) {
+				UIIContainer iic = (UIIContainer) ithItem;
+				if (iic.contains(item)) return true;
+			}
+		}
+		return false;
+	}
+
+	public void setBg_color(int bg_color) {
+		this.bg_color = bg_color;
+		for (int i = 0; i < layoutItems.length; i++) {
+			UIItem ithLayout = layoutItems[i];
+			ithLayout.setBg_color(bg_color);
+		}
+	}
+
+	public boolean keyPressed(int key) {
+		// first forward the keyPressed!!!!
+		if (selectedIndex >= 0 && selectedIndex < this.layoutItems.length
+				&& layoutFocused && layoutItems[selectedIndex].keyPressed(key)) {
+			// this is needed since we cannot know if anything below has been
+			// repainted
+			updateChildren();
+			return true;
+		}
+
+		int ga = UICanvas.getInstance().getGameAction(key);
+		if (layoutFocused) {
+			if (ga == dirKey1) {
+				if (this.selectedIndex > 0) {
+					int newSelectedIndex = this.selectedIndex - 1;
+					if (this.isFocusable()) newSelectedIndex = traverseFocusable(
+							newSelectedIndex, false);
+					if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
+					else
+						return false;
+					updateChildren();
+					return true;
+				}
+				return false;
+			} else if (ga == dirKey2) {
+				if (this.selectedIndex < this.layoutItems.length - 1) {
+					int newSelectedIndex = this.selectedIndex + 1;
+					if (this.isFocusable()) newSelectedIndex = traverseFocusable(
+							newSelectedIndex, true);
+					if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
+					else
+						return false;
+					updateChildren();
+					return true;
+				}
+				return false;
+			}
+		}
+
+		if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)) {
+			if (this.isFocusable()) {
+				this.layoutFocused = true;
+				int oldSelectedIndex = selectedIndex;
+				selectedIndex = traverseFocusable(selectedIndex, true);
+				if (selectedIndex >= 0 && oldSelectedIndex != selectedIndex) {
+					this.layoutItems[selectedIndex].setSelected(true);
+					updateChildren();
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 }

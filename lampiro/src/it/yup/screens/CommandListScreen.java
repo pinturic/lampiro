@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandListScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: CommandListScreen.java 1318 2009-03-26 14:01:04Z luca $
 */
 
 package it.yup.screens;
@@ -33,7 +33,12 @@ public class CommandListScreen extends List implements CommandListener {
 
 	private Contact usr;
 
-	public CommandListScreen(Contact _usr) {
+	/*
+	 * The chosen resource for this command   
+	 */
+	private String chosenResource;
+	
+	public CommandListScreen(Contact _usr,String chosenResource) {
 		super(rm.getString(ResourceIDs.STR_CMDSCREEN_TITLE), Choice.IMPLICIT);
 		usr = _usr;
 		for (int i = 0; i < usr.cmdlist.length; i++) {
@@ -54,7 +59,7 @@ public class CommandListScreen extends List implements CommandListener {
 			int idx = getSelectedIndex();
 			String[] selcmd = usr.cmdlist[idx];
 			/* not the most beautiful way of programming, creating a floating object*/
-			new CommandExecutor(usr, selcmd);
+			new CommandExecutor(selcmd,usr.getFullJid());
 			LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());
 			return;
 		}

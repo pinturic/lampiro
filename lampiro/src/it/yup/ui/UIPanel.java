@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIPanel.java 1135 2009-01-27 23:07:46Z luca $
+ * $Id: UIPanel.java 1577 2009-06-15 14:38:27Z luca $
 */
 
 package it.yup.ui;
@@ -11,6 +11,7 @@ import java.util.Vector;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
+import javax.microedition.lcdui.Image;
 
 /**
  * A panel that stacks vertically items vertically. If the container height is
@@ -22,16 +23,33 @@ public class UIPanel extends UIItem implements UIIContainer {
 	private Vector items;
 
 	/** real height */
-	protected int maxHeight;
+	int maxHeight;
 
 	/** the first visible item */
-	protected int firstVisible;
+	private int firstVisible;
 
 	/** the last visible item */
 	protected int lastVisible;
 
 	/** the selected item */
 	protected int selectedIdx;
+
+	private boolean listMode = false;
+
+	private Image pointer = UICanvas.getUIImage("/icons/menuarrow.png");
+
+	private int reverseColor = UIUtils.colorize(UIConfig.bg_color, -10);
+
+	/*
+	 * If it is equal to true the panel support "roll up" and "roll down"
+	 */
+	private boolean modal = false;
+
+	public UIPanel(boolean modal, boolean listMode) {
+		this();
+		this.modal = modal;
+		this.listMode = listMode;
+	}
 
 	public UIPanel() {
 		selectedIdx = -1;
@@ -46,35 +64,38 @@ public class UIPanel extends UIItem implements UIIContainer {
 			UIItem uit = (UIItem) en.nextElement();
 			uit.setScreen(_us);
 		}
-
 	}
 
 	protected void paint(Graphics g, int w, int h) {
-
 		int rh = computeRealHeight(g);
-
 		if (rh > h) {
 			w -= UIConfig.scrollbarWidth; // + 1;
 		}
-
 		int otx = g.getTranslateX();
 		int oty = g.getTranslateY();
-
-		// if selectedIndex is after lastVisible or before firstVisible I could
+		// if selectedIndex is after lastVisible or before firstVisible I could do
 		// need many redraw
 		boolean needRedraw = true;
 		while (needRedraw) {
 			needRedraw = false;
 			int th = 0;
-			for (int i = firstVisible; i < items.size() && th < h; i++) {
-				UIItem ui = ((UIItem) items.elementAt(i));
-				int ih = ui.getHeight(g);
-				if (ui.isDirty()) {
-					ui.paint0(g, w, ih);
+
+			// an optimisation extremely useful especially for the UIaccordion
+			int l = 0;
+			Enumeration en = this.items.elements();
+			int size = items.size();
+			while (en.hasMoreElements() && th < h) {
+				UIItem ui = (UIItem) en.nextElement();
+				if (l >= firstVisible && l < size) {
+					int ih = ui.getHeight(g);
+					if (ui.isDirty()) {
+						paintIthItem(g, w, ui, ih,l);
+					}
+					g.translate(0, ih);
+					th += ih;
+					lastVisible = l;
 				}
-				g.translate(0, ih);
-				th += ih;
-				lastVisible = i;
+				l++;
 			}
 			g.translate(otx - g.getTranslateX(), oty - g.getTranslateY());
 			if (th > h) {
@@ -89,10 +110,9 @@ public class UIPanel extends UIItem implements UIIContainer {
 				g.fillRect(0, th, w, h - th);// - 1);
 				g.setColor(oc);
 			}
-
 			/* scroll down -> need to calculate space */
 			if (selectedIdx != -1 && selectedIdx > lastVisible
-					&& this.selectedIdx > this.firstVisible) {
+					&& this.selectedIdx > this.firstVisible && selectedIdx<items.size()) {
 				int delta = 0;
 				for (int i = lastVisible + 1; i <= selectedIdx; i++) {
 					delta += ((UIItem) items.elementAt(i)).getHeight(g);
@@ -117,14 +137,36 @@ public class UIPanel extends UIItem implements UIIContainer {
 				needRedraw = true;
 			}
 		}
-
 		if (rh > h) {
 			w += UIConfig.scrollbarWidth;// + 1;
 			drawScrollBar(g, w, h, rh);
 		}
-
 		/* resets origin to old value */
 		g.translate(otx - g.getTranslateX(), oty - g.getTranslateY());
+	}
+
+	private void paintIthItem(Graphics g, int w, UIItem ui, int ih,int l) {
+		if (listMode == false) {
+			ui.paint0(g, w, ih);
+			return;
+		}
+
+		int oc = g.getColor();
+		boolean changeColor = (l%2 ==1);
+		int xOffset = pointer.getWidth() + 1;
+		if (changeColor) g.setColor(reverseColor);
+		else
+			g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
+		g.fillRect(0, 0, xOffset, ih);
+		if (ui.isSelected()) g.drawImage(pointer, 0,
+				(ih - pointer.getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
+		g.setColor(oc);
+		g.translate(xOffset, 0);
+		int oldBgColor = ui.getBg_color();
+		if (changeColor) ui.setBg_color(reverseColor);
+		ui.paint0(g, w - xOffset, ih);
+		ui.setBg_color(oldBgColor);
+		g.translate(-xOffset, 0);
 	}
 
 	/**
@@ -155,7 +197,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 		}
 
 		g.setColor(UIConfig.scrollbar_fg);
-		g.fillRect(0, sy, UIConfig.scrollbarWidth, sh);
+		g.fillRect(1, sy, UIConfig.scrollbarWidth - 2, sh);
 		/* resets origin to old value */
 		g.translate(otx - g.getTranslateX(), oty - g.getTranslateY());
 		g.setColor(oc);
@@ -176,9 +218,14 @@ public class UIPanel extends UIItem implements UIIContainer {
 	}
 
 	public void setDirty(boolean _dirty) {
-		for (int i = 0; i < items.size(); i++) {
-			UIItem ui = (UIItem) items.elementAt(i);
-			ui.setDirty(_dirty);
+		//              for (int i = 0; i < items.size(); i++) {
+		//                      UIItem ui = (UIItem) items.elementAt(i);
+		//                      ui.setDirty(_dirty);
+		//              }
+		Enumeration en = this.items.elements();
+		while (en.hasMoreElements()) {
+			UIItem ui = (UIItem) en.nextElement();
+			ui.setDirty(true);
 		}
 		dirty = _dirty;
 		// so that it will be computed again !
@@ -203,8 +250,9 @@ public class UIPanel extends UIItem implements UIIContainer {
 		 */
 		int otx = g.getTranslateX();
 		int oty = g.getTranslateY();
-		for (int i = 0; i < items.size(); i++) {
-			int ih = ((UIItem) items.elementAt(i)).getHeight(g);
+		Enumeration en = this.getItems().elements();
+		while (en.hasMoreElements()) {
+			int ih = ((UIItem) en.nextElement()).getHeight(g);
 			g.translate(0, ih);
 			realHeight += ih;
 		}
@@ -247,6 +295,9 @@ public class UIPanel extends UIItem implements UIIContainer {
 		UIItem ui = null;
 
 		if (items.size() == 0) { return false; }
+		
+		int tempIndex = 0;
+		Enumeration en=null;
 
 		switch (ga) {
 			case Canvas.DOWN:
@@ -257,19 +308,41 @@ public class UIPanel extends UIItem implements UIIContainer {
 				keepFocus = false;
 				// if none of the following items can be focused
 				// the UIPanel looses the focus
-				for (int i = selectedIdx + 1; i < items.size(); i++) {
+				for (int i = selectedIdx + 1; i < items.size() && items.size()>0; i++) {
 					if (((UIItem) this.items.elementAt(i)).isFocusable() == true) {
 						keepFocus = true;
 						break;
 					}
 				}
-				if (selectedIdx >= items.size() - 1) {
+				
+				int lastSelectableIndex = -1;
+				tempIndex = 0;
+				en = this.items.elements();
+				while (en.hasMoreElements()) {
+					UIItem ithObject = (UIItem) en.nextElement();
+					if (ithObject.isFocusable())
+						lastSelectableIndex = tempIndex;
+					tempIndex++;
+				}
+				
+				if (selectedIdx >= lastSelectableIndex) {
 					/*
 					 * end of list, won't go further: will lose selection if there's
 					 * another item after
 					 */
-					keepFocus = false;
-					break;
+					if (modal == false) {
+						keepFocus = false;
+						break;
+					} else {
+						// restart selection from start
+						ui = (UIItem) items.elementAt(selectedIdx);
+						ui.setSelected(false);
+						for (int i =0 ; i < firstVisible;i++){
+							((UIItem) items.elementAt(i)).setDirty(true);
+						}
+						firstVisible=0;
+						selectedIdx = -1;
+					}
 				}
 				dirty = true;
 				/* set selection on next item (if exists) */
@@ -278,6 +351,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 					ui = (UIItem) items.elementAt(nsi);
 					if (ui.isFocusable()) {
 						ui.setSelected(true);
+						keepFocus = true;
 						/* breaks out of loop not from switch */
 						break;
 					}
@@ -299,8 +373,12 @@ public class UIPanel extends UIItem implements UIIContainer {
 					 * so it can be shown
 					 */
 					firstVisible++;
+					for (int i = firstVisible; i < items.size(); i++) {
+						((UIItem) items.elementAt(i)).setDirty(true);
+					}
 				}
-				for (int i = firstVisible; i < items.size(); i++) {
+				
+				for (int i = Math.max(selectedIdx, 0); i < items.size(); i++) {
 					((UIItem) items.elementAt(i)).setDirty(true);
 				}
 				break;
@@ -310,6 +388,9 @@ public class UIPanel extends UIItem implements UIIContainer {
 					// selectedIdx = lastVisible + 1;
 				}
 				keepFocus = false;
+				if (selectedIdx == -1 && modal == true) {
+					selectedIdx = this.getItems().size();
+				}
 				// if none of the previous items can be focused
 				// the UIPanel looses the focus
 				for (int i = 0; i < selectedIdx; i++) {
@@ -318,13 +399,31 @@ public class UIPanel extends UIItem implements UIIContainer {
 						break;
 					}
 				}
-				if (selectedIdx == 0) {
+				int firstSelectableIndex = -1;
+				tempIndex = 0;
+				en = this.items.elements();
+				while (en.hasMoreElements()) {
+					UIItem ithObject = (UIItem) en.nextElement();
+					if (ithObject.isFocusable()) {
+						firstSelectableIndex = tempIndex;
+						break;
+					}
+					tempIndex++;
+				}
+				if (selectedIdx >= 0 && selectedIdx == firstSelectableIndex) {
 					/* start of list, won't go further */
 					// selectedIdx = -1;
 					// ui = (UIItem) items.elementAt(0);
 					// ui.setSelected(false);
-					keepFocus = false;
-					break;
+					if (modal == false) {
+						keepFocus = false;
+						break;
+					} else {
+						// restart selection from the end
+						ui = (UIItem) items.elementAt(selectedIdx);
+						ui.setSelected(false);
+						selectedIdx = this.items.size();
+					}
 				}
 
 				dirty = true;
@@ -335,25 +434,40 @@ public class UIPanel extends UIItem implements UIIContainer {
 					ui = (UIItem) items.elementAt(nsi);
 					if (ui.isFocusable()) {
 						ui.setSelected(true);
+						keepFocus = true;
 						/* breaks out of loop not from switch */
 						break;
 					}
 				}
 				if (nsi >= 0) {
 					/* found another selectable item, remove selection from old item */
-					ui = (UIItem) items.elementAt(selectedIdx);
-					ui.setSelected(false);
+					if (selectedIdx < this.items.size()) {
+						ui = (UIItem) items.elementAt(selectedIdx);
+						ui.setSelected(false);
+					}
 					selectedIdx = nsi;
 				} else if (firstVisible > 0) {
 					/* move up anyway */
 					firstVisible--;
+					for (int i = firstVisible; i < items.size(); i++) {
+						((UIItem) items.elementAt(i)).setDirty(true);
+					}
 				}
-				for (int i = firstVisible; i < items.size(); i++) {
+				for (int i = Math.max(selectedIdx, 0); i < items.size(); i++) {
 					((UIItem) items.elementAt(i)).setDirty(true);
 				}
 				break;
 			default:
 				break;
+		}
+
+		// If I am loosing the focus reset the selection to the first index
+		if (keepFocus == false && this.getSelectedIndex() >= 0
+				&& this.getSelectedIndex() < this.getItems().size()) {
+			((UIItem) this.getItems().elementAt(this.getSelectedIndex()))
+					.setSelected(false);
+			this.setSelectedIndex(-1);
+			dirty=true;
 		}
 
 		if (key == UICanvas.MENU_LEFT || key == UICanvas.MENU_RIGHT) {
@@ -386,8 +500,12 @@ public class UIPanel extends UIItem implements UIIContainer {
 	public void setSelected(boolean _selected) {
 		super.setSelected(_selected);
 		if (_selected && selectedIdx == -1 && items.size() > 0) {
-			selectedIdx = 0;
-			((UIItem) items.elementAt(0)).setSelected(_selected);
+			// try to select an Item (normally)
+			UIItem firstItem = ((UIItem) items.elementAt(0));
+			if (firstItem.isFocusable()) {
+				selectedIdx = 0;
+				firstItem.setSelected(_selected);
+			}
 		}
 		if (selectedIdx >= 0 && selectedIdx < items.size()) {
 			((UIItem) items.elementAt(selectedIdx)).setSelected(_selected);
@@ -441,6 +559,10 @@ public class UIPanel extends UIItem implements UIIContainer {
 		return this.items;
 	}
 
+	public void setItems(Vector v) {
+		this.items = v;
+	}
+
 	/**
 	 * Removes an item from the panel
 	 * 
@@ -464,7 +586,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 */
 	public void removeItemAt(int idx) {
 		if (idx < 0 || idx > items.size()) { return; }
-		if (selectedIdx >= idx) {
+		if (selectedIdx > idx) {
 			/* clear selection */
 			selectedIdx -= 1;
 		}
@@ -474,16 +596,19 @@ public class UIPanel extends UIItem implements UIIContainer {
 		if (this.screen != null) {
 			this.screen.removePaintedItem(ithItem);
 		}
-		if (selectedIdx > 0 && selectedIdx < this.items.size()) ((UIItem) items
-				.elementAt(selectedIdx)).setDirty(true);
-		boolean newSelected = false;
-		for (int i = idx; i < items.size(); i++) {
+		if (selectedIdx < 0 || selectedIdx >= this.items.size()) selectedIdx = idx - 1;
+		int startDirty = (selectedIdx >= 0 ? Math.min(idx, selectedIdx) : idx);
+		for (int i = startDirty; i < items.size(); i++) {
 			UIItem ithElem = ((UIItem) items.elementAt(i));
 			ithElem.setDirty(true);
-			if (newSelected == false && ithElem.isFocusable()){
-				this.setSelectedItem(ithElem);
-				this.selectedIdx = idx;
-				newSelected = true;
+		}
+		if (idx == selectedIdx) {
+			for (int i = selectedIdx; i < items.size(); i++) {
+				UIItem ithElem = ((UIItem) items.elementAt(i));
+				if (ithElem.isFocusable()) {
+					this.setSelectedItem(ithElem);
+					break;
+				}
 			}
 		}
 		this.dirty = true;
@@ -497,15 +622,22 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 */
 	public void insertItemAt(UIItem it, int idx) {
 		if (idx < 0 || idx > items.size()) { return; }
-		if (selectedIdx >= idx) {
+		if (selectedIdx >= idx && selectedIdx < items.size()) {
 			/* move selection after */
-			selectedIdx++;
+			((UIItem) this.getItems().elementAt(selectedIdx))
+					.setSelected(false);
+			if (selectedIdx < items.size()) {
+				selectedIdx++;
+			}
 		}
 		items.insertElementAt(it, idx);
+		if (selectedIdx >= 0) ((UIItem) this.getItems().elementAt(selectedIdx))
+				.setSelected(true);
 		for (int i = idx + 1; i < items.size(); i++) {
 			((UIItem) items.elementAt(i)).setDirty(true);
 		}
 		it.setContainer(this);
+		it.setScreen(this.screen);
 		this.dirty = true;
 	}
 
@@ -536,13 +668,15 @@ public class UIPanel extends UIItem implements UIIContainer {
 			return;
 		}
 		if (selectedIdx != -1) {
-			((UIItem) items.elementAt(selectedIdx)).setSelected(false);
-			((UIItem) items.elementAt(selectedIdx)).setDirty(true);
+			UIItem selItem = ((UIItem) items.elementAt(selectedIdx));
+			selItem.setSelected(false);
+			selItem.setDirty(true);
 		}
 		selectedIdx = idx;
 		if (selectedIdx != -1) {
-			((UIItem) items.elementAt(idx)).setSelected(true);
-			((UIItem) items.elementAt(idx)).setDirty(true);
+			UIItem ithItem = ((UIItem) items.elementAt(idx));
+			ithItem.setSelected(true);
+			ithItem.setDirty(true);
 		}
 		if (selectedIdx > lastVisible) {
 			// forcing it to be the last visible to avoid useless
@@ -571,6 +705,52 @@ public class UIPanel extends UIItem implements UIIContainer {
 	public void setSelectedItem(UIItem item) {
 		int index = this.items.indexOf(item);
 		this.setSelectedIndex(index);
-		
+	}
+
+	public boolean contains(UIItem item) {
+		if (this.items.contains(item)) return true;
+		Enumeration en = this.items.elements();
+		while (en.hasMoreElements()) {
+			UIItem ithItem = (UIItem) en.nextElement();
+			if (ithItem instanceof UIIContainer) {
+				UIIContainer iic = (UIIContainer) ithItem;
+				if (iic.contains(item)) return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param modal the modal to set
+	 */
+	public void setModal(boolean modal) {
+		this.modal = modal;
+	}
+
+	/**
+	 * @return the modal
+	 */
+	public boolean isModal() {
+		return modal;
+	}
+
+	public int getSelectedIndex() {
+		return this.selectedIdx;
+	}
+
+	public void setFirstVisible(int firstVisible) {
+		this.firstVisible = firstVisible;
+	}
+
+	public int getFirstVisible() {
+		return firstVisible;
+	}
+
+	public void setListMode(boolean listMode) {
+		this.listMode = listMode;
+	}
+
+	public boolean isListMode() {
+		return listMode;
 	}
 }

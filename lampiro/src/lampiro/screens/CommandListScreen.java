@@ -1,14 +1,18 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandListScreen.java 913 2008-10-21 10:47:46Z luca $
+ * $Id: CommandListScreen.java 1578 2009-06-16 11:07:59Z luca $
 */
 
 package lampiro.screens;
 
 import javax.microedition.lcdui.Canvas;
+import javax.microedition.lcdui.Gauge;
+
+import lampiro.screens.RosterScreen.WaitScreen;
 
 import it.yup.ui.UICanvas;
+import it.yup.ui.UIGauge;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
@@ -22,59 +26,62 @@ import it.yup.xmpp.Contact;
 /**
  * XXX: maybe not necessary anymore with submenus
  */
-public class CommandListScreen extends UIScreen {
+public class CommandListScreen extends UIScreen implements WaitScreen {
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
 			"en");
 
-	private UILabel cmd_select = new UILabel(rm
-			.getString(ResourceIDs.STR_EXECUTE));
-	private UILabel cmd_cancel = new UILabel(rm
-			.getString(ResourceIDs.STR_CANCEL));
+	private UILabel cmd_select = new UILabel(rm.getString(
+			ResourceIDs.STR_EXECUTE).toUpperCase());
+	private UILabel cmd_cancel = new UILabel(rm.getString(
+			ResourceIDs.STR_CLOSE).toUpperCase());
 
 	private Contact usr;
 
-	private UIPanel mainPanel = new UIPanel();
+	private UIPanel mainList = new UIPanel(true, true);
 
-	public CommandListScreen(Contact _usr) {
+	/*
+	 * The chosen resource for this command   
+	 */
+	private String chosenResource;
+
+	UIGauge progress_gauge = new UIGauge(rm.getString(ResourceIDs.STR_WAIT),
+			false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING);
+
+	public CommandListScreen(Contact _usr, String chosenResource) {
+		setMenu(new UIMenu(""));
+		UIMenu menu = getMenu();
+		menu.append(cmd_select);
+		menu.append(cmd_cancel);
+		
 		setTitle(rm.getString(ResourceIDs.STR_CMDSCREEN_TITLE));
 		usr = _usr;
+		this.chosenResource = chosenResource;
 		for (int i = 0; i < usr.cmdlist.length; i++) {
 			String[] cmd = usr.cmdlist[i];
 			UILabel ithCommLabel = new UILabel(cmd[1]);
 			ithCommLabel.setFocusable(true);
-			append(ithCommLabel);
+			mainList.addItem(ithCommLabel);
 		}
 		if (usr.cmdlist.length == 0) {
 			UILabel ithCommLabel = new UILabel(rm
 					.getString(ResourceIDs.STR_NO_COMMAND));
 			ithCommLabel.setFocusable(true);
-			append(ithCommLabel);
+			mainList.addItem(ithCommLabel);
+			menu.remove(cmd_select);
 		}
-		mainPanel.setMaxHeight(-1);
-		this.append(mainPanel);
-		setMenu(new UIMenu(""));
-		UIMenu menu = getMenu();
-		menu.append(cmd_select);
-		menu.append(cmd_cancel);
+		
+		mainList.setMaxHeight(-1);
+		this.append(mainList);
+		
+		
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_cancel) {
-			UICanvas.getInstance().close(this);
+			stopWaiting();
 		} else if (cmd == cmd_select) {
-			String idx = ((UILabel) getSelectedItem()).getText();
-			for (int i = 0; i < usr.cmdlist.length; i++) {
-				String[] selcmd = usr.cmdlist[i];
-				if (idx.equals(selcmd[1])) {
-					/*
-					 * not the most beautiful way of programming, creating a
-					 * floating object
-					 */
-					new CommandExecutor(usr, selcmd);
-				}
-			}
-			UICanvas.getInstance().close(this);
+			this.itemAction(mainList.getSelectedItem());
 		}
 	}
 
@@ -100,6 +107,8 @@ public class CommandListScreen extends UIScreen {
 	}
 
 	public void itemAction(UIItem item) {
+		if (item == null || mainList.contains(item) ==false)
+			return;
 		String idx = ((UILabel) item).getText();
 		for (int i = 0; i < usr.cmdlist.length; i++) {
 			String[] selcmd = usr.cmdlist[i];
@@ -108,9 +117,20 @@ public class CommandListScreen extends UIScreen {
 				 * not the most beautiful way of programming, creating a
 				 * floating object
 				 */
-				new CommandExecutor(usr, selcmd);
+				new CommandExecutor(selcmd, chosenResource);
 			}
 		}
-		UICanvas.getInstance().close(this);
+		this.getMenu().remove(cmd_select);
+		cmd_cancel.setText(rm.getString(ResourceIDs.STR_CLOSE).toUpperCase());
+		mainList.removeAllItems();
+		mainList.addItem(progress_gauge);
+		progress_gauge.start();
+		RosterScreen.getInstance().setWaitingDF(this);
+		this.askRepaint();
+	}
+
+	public void stopWaiting() {
+		progress_gauge.cancel();
+		RosterScreen.closeAndOpenRoster(this);
 	}
 }

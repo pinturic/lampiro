@@ -1,13 +1,15 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Task.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: Task.java 1272 2009-03-13 14:05:51Z luca $
 */
 
 package it.yup.xmpp;
 
-import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Displayable;
+// #ifndef UI 
+//@import javax.microedition.lcdui.Display;
+//@import javax.microedition.lcdui.Displayable;
+// #endif
 
 /**
  * An object with some actions involved (e.g. an ad hoc command or a data form).
@@ -54,7 +56,7 @@ public interface Task {
 
 	// #endif
 // #ifndef UI
-	//@		public void display(Display disp, Displayable next_screen);
+//@			public void display(Display disp, Displayable next_screen);
 	//#endif
 
 	/** Get the label that must be displayed when listing the tasks */

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1144 2009-01-30 17:26:43Z luca $
+ * $Id: RegisterScreen.java 1564 2009-06-09 14:17:08Z luca $
 */
 
 package it.yup.screens;
@@ -123,7 +123,7 @@ public class RegisterScreen extends Form implements CommandListener,
 			String tempUser = cfg.getProperty(Config.USER, "") + "@"
 					+ cfg.getProperty(Config.SERVER, "");
 			if (tempUser.compareTo("@") == 0) {
-				tempUser = "@jabber.bluendo.com";
+				tempUser = "@" + Config.BLUENDO_SERVER;
 				this.grp_new_account.setSelectedFlags(new boolean[] { true });
 			} else
 				grp_server.setSelectedIndex(1, true);
@@ -137,7 +137,7 @@ public class RegisterScreen extends Form implements CommandListener,
 		addCommand(cmd_exit);
 		setCommandListener(this);
 		// #debug        
-//@						        addCommand(new Command("debug", Command.SCREEN, 1));
+//@		addCommand(new Command("debug", Command.SCREEN, 1));
 	}
 
 	public static RegisterScreen getInstance() {
@@ -172,10 +172,10 @@ public class RegisterScreen extends Form implements CommandListener,
 		if (c == cmd_exit) {
 			LampiroMidlet.exit();
 			// #mdebug        	
-//@									        } else if ("debug".equals(c.getLabel())) {        	
-//@									        	DebugScreen debugScreen = new DebugScreen();
-//@									        	debugScreen.setReturnScreen(this);
-//@									        	LampiroMidlet.disp.setCurrent(debugScreen);
+//@		} else if ("debug".equals(c.getLabel())) {
+//@			DebugScreen debugScreen = new DebugScreen();
+//@			debugScreen.setReturnScreen(this);
+//@			LampiroMidlet.disp.setCurrent(debugScreen);
 			// #enddebug        	
 		} else if (c == cmd_login) {
 			login();
@@ -220,11 +220,14 @@ public class RegisterScreen extends Form implements CommandListener,
 				try {
 					// Get the XMPP client
 					XMPPClient xmpp = XMPPClient.getInstance();
-					xmpp.createStream(register);
+					boolean newCredentials = Config.FALSE.equals(cfg
+							.getProperty(Config.CLIENT_INITIALIZED));
+					xmpp.createStream(register, newCredentials);
 
 					EventQuery qAuth = new EventQuery(EventQuery.ANY_EVENT,
 							null, null);
-					reg = xmpp.registerListener(qAuth, RegisterScreen.this);
+					reg = BasicXmlStream.addEventListener(qAuth,
+							RegisterScreen.this);
 					xmpp.openStream();
 
 				} catch (Exception e) {
@@ -265,9 +268,7 @@ public class RegisterScreen extends Form implements CommandListener,
 
 		} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
 			reg.remove();
-			Config cfg = Config.getInstance();
-			client.stream_authenticated(Config.FALSE.equals(cfg
-					.getProperty(Config.CLIENT_INITIALIZED)));
+			client.stream_authenticated();
 		}
 	}
 

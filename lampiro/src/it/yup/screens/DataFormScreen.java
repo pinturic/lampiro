@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: DataFormScreen.java 1273 2009-03-13 15:57:53Z luca $
 */
 
 /**
@@ -12,6 +12,7 @@ package it.yup.screens;
 import lampiro.LampiroMidlet;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.xmpp.DataFormListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.DataForm.Field;
 
@@ -79,36 +80,6 @@ import javax.microedition.lcdui.TextField;
  */
 public class DataFormScreen extends Form implements CommandListener,
 		ItemCommandListener, ItemStateListener {
-
-	/**
-	 * This interface is used to notify of an action that the user invoked on 
-	 * the form.
-	 */
-	public interface DataFormListener {
-
-		/** available actions */
-		/** next button pressed (aka SUBMIT) available for ad hoc commands */
-		public static final int CMD_NEXT = 0x01;
-		/** prev button pressed, available for ad ho commands */
-		public static final int CMD_PREV = 0x02;
-		/** submit form */
-		public static final int CMD_SUBMIT = 0x04;
-		/** cancel form */
-		public static final int CMD_CANCEL = 0x08;
-		/** keep form for future use */
-		public static final int CMD_DELAY = 0x10;
-		/** destroy form (don't send anything to other peer) */
-		public static final int CMD_DESTROY = 0x20;
-
-		/** executes an action for the given dataForm. Available actions are 
-		 * one of the CMD_*  constansts.
-		 * @param cmd
-		 * 		The command to execute (one of the CMD_* constants)
-		 * @param df
-		 * 		The data form containing the data.
-		 */
-		public void execute(int cmd);
-	}
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
 			"en");

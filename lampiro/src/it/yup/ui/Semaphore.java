@@ -1,7 +1,5 @@
 package it.yup.ui;
 
-import java.lang.*;
-
 public class Semaphore {
 	/** current number of available permits **/
 	protected long permits_;

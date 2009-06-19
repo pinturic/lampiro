@@ -1,30 +1,27 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: Contact.java 1597 2009-06-19 11:54:12Z luca $
 */
 
 package it.yup.xmpp;
 
 import it.yup.util.Utils;
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
-import it.yup.xmpp.packets.IQResultListener;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.Vector;
 
 /**
- * Un contatto.
+ * The Xmpp Contact
  */
-public class Contact extends IQResultListener{
+public class Contact extends IQResultListener {
 
 	/* possible availability status */
 	public static final int AV_CHAT = 0;
@@ -40,21 +37,32 @@ public class Contact extends IQResultListener{
 	public static final int CH_STATUS = 2;
 	public static final int CH_TASK_NEW = 3;
 	public static final int CH_TASK_REMOVED = 4;
+	public static final int CH_CONTACT_REMOVED = 5;
+	public static final int CH_GROUP = 6;
 
 	/*
 	 * The last resource associated to this user that sent a message
 	 */
 	/** mapping presence availability constants */
 	public static String availability_mapping[] = { Presence.SHOW_CHAT, // AV_CHAT
-			"online", // AV_ONLINE
+			Presence.SHOW_ONLINE, // AV_ONLINE
 			Presence.SHOW_DND, // AV_DND
 			Presence.SHOW_AWAY, // AV_AWAY
 			Presence.SHOW_XA, // AV_XA
 			Presence.T_UNAVAILABLE // AV_UNAVAILABLE
 	};
 
+	/**
+	 * Get the icon for a presence show
+	 * 
+	 * @param i
+	 *            a {@link@Presence} AV_* constant
+	 * @return
+	 */
+
 	/** the messages history */
-	private Vector conv = null;
+	//private Vector conv = null;
+	Vector convs = new Vector();
 
 	/** pending commands */
 	private Vector tasks = null;
@@ -62,15 +70,29 @@ public class Contact extends IQResultListener{
 	/** the command list; array of String pairs (node/name) */
 	public String cmdlist[][] = null;
 
-	/** if true the conversation has unread messages */
-	public boolean unread_msg = false;
+	private String queryCapNode = null;
+	private String queryCapVer = null;
+
 	public boolean pending_tasks = false;
 
+	public boolean unread_msg() {
+		Enumeration en = this.convs.elements();
+		while (en.hasMoreElements()) {
+			Object[] ithCouple = (Object[]) en.nextElement();
+			if (((Vector) ithCouple[1]).size() > 0) return true;
+		}
+		return false;
+	}
+
+	/*
+	 * A Calendar used to signal the date of message arriving 
+	 */
+	static Calendar cal = Calendar.getInstance();
 	public String jid;
 	public String name;
-	public String groups[];
+	private String[] groups;
 	public String subscription;
-	protected Presence[] resources = null;
+	Presence[] resources = null;
 
 	/** cached availability: cached for speeding up sorting */
 	int availability = AV_UNAVAILABLE;
@@ -102,56 +124,92 @@ public class Contact extends IQResultListener{
 			this.groups = groups;
 		}
 
+		// add mySelf to all my groups
+		// I don't add the "ungrouped" group to myself; I only add myself to the ungrouped group
+		if (this.groups.length == 0) {
+			((Group) Group.getGroup(Roster.unGroupedCode)).addElement(this.jid);
+		} else {
+			for (int i = 0; i < this.groups.length; i++) {
+				((Group) Group.getGroup(this.groups[i])).addElement(this.jid);
+			}
+		}
+
 		// System.out.println("name ---->" + this.name + "(" + this.jid + ")");
 	}
 
-	/**
-	 * Build a contact reading the values from the record store
-	 * 
-	 * @throws IOException
-	 */
-	public Contact(DataInputStream in) throws IOException {
-		this.jid = in.readUTF();
-		this.name = in.readUTF();
-		this.subscription = in.readUTF();
-		this.groups = new String[in.readShort()];
+	public Element store() {
+		Element el = new Element(Roster.NS_IQ_ROSTER, "item");
+		el.setAttributes(new String[] { "jid", "name", "subscription" },
+				new String[] { jid, name, subscription });
 		for (int i = 0; i < this.groups.length; i++) {
-			this.groups[i] = in.readUTF();
+			if (this.groups[i].equals(Roster.unGroupedCode) == false) {
+				el.addElement(null, "group").addText(this.groups[i]);
+			}
 		}
+		// #mdebug
+//@				System.out.println("Dump: " + jid);
+		// #enddebug
+		return el;
 	}
 
-	public void store(DataOutputStream out) throws IOException {
-		out.writeUTF(jid);
-		out.writeUTF(name);
-		out.writeUTF(subscription);
-		out.writeShort(groups.length);
-		for (int i = 0; i < groups.length; i++) {
-			out.writeUTF(groups[i]);
+	public void addMessageToHistory(String preferredResource, Message msg) {
+		// the default presence is the first one
+		if (preferredResource == null) {
+			preferredResource = (resources != null ? this.resources[0]
+					.getAttribute(Message.ATT_FROM) : this.jid);
 		}
+		String type = msg.getAttribute(Message.ATT_TYPE);
+		if (type == null) type = Message.NORMAL;
+
+		Enumeration en = this.convs.elements();
+		boolean found = false;
+		while (en.hasMoreElements()) {
+			Object[] convCouple = (Object[]) en.nextElement();
+			if (((String) convCouple[0]).equals(preferredResource)) found = true;
+		}
+		if (found == false) {
+			convs.addElement(new Object[] { preferredResource, new Vector() });
+		}
+
+		compileMessage(preferredResource, msg, type);
 	}
 
-	public void addMessageToHistory(Message msg) {
-
-		if (conv == null) {
-			conv = new Vector();
-		}
-
+	protected void compileMessage(String preferredResource, Message msg,
+			String type) {
 		String body = msg.getBody();
-		String to = userhost(msg.getAttribute(Stanza.ATT_TO));
+		String to = msg.getAttribute(Stanza.ATT_TO);
 		String from = msg.getAttribute(Stanza.ATT_FROM);
+		Element error = msg.getChildByName(null, Message.ERROR);
+		if (error != null) {
+			String code = error.getAttribute("code");
+			if (code != null) {
+				String mappedCode = XMPPClient.getErrorString (code);
+				body = body + " - Error:" + mappedCode;
+			}
+			Element text = error.getChildByName(null, "text");
+			if (text!=null){
+				body = body + ". "+ text.getText();
+			}
+		}
+		// muc can have a delay child that modifies the from 
+		Element delay = msg.getChildByName(null, XMPPClient.DELAY);
+		if (delay != null) {
+			String delayFrom = delay.getAttribute(Message.ATT_FROM);
+			if (delayFrom != null) {
+				from = Contact.userhost(from) + "/" + Contact.user(delayFrom);
+			}
+
+		}
 		Element subjectEl = msg.getChildByName(null, "subject");
 		String subject = null;
-		if (subjectEl != null) subject = subjectEl.content;
+		if (subjectEl != null) subject = subjectEl.getText();
 		if (subject != null && subject.length() > 0) {
 			body = subject + ": " + body;
 		}
-		// / Should / Could be reused ?
-		Calendar cal;
 		long date;
 		String arriveTime = "";
 
 		date = System.currentTimeMillis();
-		cal = Calendar.getInstance();
 		cal.setTime(new Date(date));
 
 		int hour = cal.get(Calendar.HOUR_OF_DAY);
@@ -159,28 +217,34 @@ public class Contact extends IQResultListener{
 		arriveTime = new String((hour < 10 ? "0" : "") + hour + ":"
 				+ (minute < 10 ? "0" : "") + minute);
 
-		if (from != null) lastResource = resource(from);
+		if (from != null) lastResource = from;
 		if (body != null && body.length() > 0) {
-			if (!this.jid.equals(to)) {
-				unread_msg = true;
-			}
-			conv
-					.addElement(new String[] { to, body, lastResource,
-							arriveTime });
+			getMessageHistory(preferredResource).addElement(
+					new String[] { to, body, lastResource, arriveTime, type });
 		}
 	}
 
-	public Vector getMessageHistory() {
-		return conv;
+	public Vector getMessageHistory(String preferredResource) {
+		Enumeration en = this.convs.elements();
+		while (en.hasMoreElements()) {
+			Object[] convCouple = (Object[]) en.nextElement();
+			if (((String) convCouple[0]).equals(preferredResource)) return (Vector) convCouple[1];
+		}
+		return null;
 	}
 
-	public int getHistoryLength() {
-		if (conv == null) { return 0; }
-		return conv.size();
+	public Vector getAllConvs() {
+		return this.convs;
 	}
 
-	public void resetMessageHistory() {
-		conv = null;
+	public int getHistoryLength(String preferredResource) {
+		Vector messageHistory = getMessageHistory(preferredResource);
+		if (messageHistory == null) { return 0; }
+		return messageHistory.size();
+	}
+
+	public void resetMessageHistory(String preferredResource) {
+		getMessageHistory(preferredResource).removeAllElements();
 	}
 
 	public String getPrintableName() {
@@ -204,17 +268,20 @@ public class Contact extends IQResultListener{
 	}
 
 	public boolean isVisible() {
-		if (unread_msg || (conv != null && conv.size() > 0)) {
+		if (unread_msg()) {
 			/* if the contact has messages in his chat, it will be shown */
 			return true;
 		}
-		if ("none".equals(subscription)) {// || "to".equals(subscription)) {
-			// ignoring the contacts whose status hasn't to be displayed
-			// XXX: we should let the user configure this behavior
-			return false;
-		}
-		if (resources == null) { return false; }
-		return true;
+		if (resources != null) { return true; }
+
+		if (subscription == null) return false;
+		//		if ("none".equals(subscription)) {// || "to".equals(subscription)) {
+		//			// ignoring the contacts whose status hasn't to be displayed
+		//			// XXX: we should let the user configure this behavior
+		//			return false;
+		//		}
+
+		return false;
 	}
 
 	public void addTask(Task t) {
@@ -282,14 +349,15 @@ public class Contact extends IQResultListener{
 			Element x = p.getChildByName(XMPPClient.NS_VCARD_UPDATE, "x");
 			if (x != null) {
 				Element nickname = x.getChildByName(null, "nickname");
-				if (nickname != null && nickname.content != null
-						&& nickname.content.length() > 0) {
-					this.name = nickname.content;
+				if (nickname != null) {
+					String nickNameText = nickname.getText();
+					if (nickNameText != null && nickNameText.length() > 0) {
+						this.name = nickNameText;
+					}
 				}
 			}
 		}
-			
-			
+
 		if (Presence.T_UNAVAILABLE.equals(p.getAttribute(Stanza.ATT_TYPE))) {
 			if (resources == null) {
 				return;
@@ -361,31 +429,57 @@ public class Contact extends IQResultListener{
 			}
 		}
 
+		// check the capabilities
+		// pass them to the roster that checks the db 
+		Element capNode = p.getChildByName(null, "c");
+		if (capNode != null) {
+			queryCapNode = capNode.getAttribute("node");
+			queryCapVer = capNode.getAttribute("ver");
+			Element cap = Config.getInstance().getCapabilities(queryCapNode,
+					queryCapVer);
+			if (cap == null) {
+				this.askCapabilities(p);
+			}
+		}
+
 		// cache the new availability
 		availability = mapAvailability(resources[0].getShow());
-	}
-	
-	public Vector getCapabilities (){
-		if (this.resources[0] == null)
-			return null;
-		Element c = this.resources[0].getChildByName(XMPPClient.NS_CAPS,"c");
-		if (c== null){
-			return null;
+		capNode = p.getChildByName(null, "c");
+		if (capNode != null) {
+			String node = capNode.getAttribute("node");
+			String ver = capNode.getAttribute("ver");
+			Element cap = Config.getInstance().getCapabilities(node, ver);
+			if (cap != null) {
+				Element identity = cap.getChildByName(null, "identity");
+				if (identity != null) {
+					String name = identity.getAttribute("name");
+					if (name != null && name.compareTo("Lampiro") == 0) {
+						p.pType = Presence.PHONE;
+					}
+				}
+			}
 		}
+	}
+
+	public Element getCapabilities(Presence p) {
+		if (p == null) return null;
+		Element c = p.getChildByName(XMPPClient.NS_CAPS, "c");
+		if (c == null) { return null; }
 		String node = c.getAttribute("node");
 		String ver = c.getAttribute("ver");
-		return XMPPClient.getCapabilities(node, ver);
+		return Config.getInstance().getCapabilities(node, ver);
 	}
-	
-	public void askCapabilities() {
+
+	public void askCapabilities(Presence p) {
 		Element c = null;
-		if (this.resources[0] != null) {
-			c = this.resources[0].getChildByName(XMPPClient.NS_CAPS, "c");
+		if (p != null) {
+			c = p.getChildByName(XMPPClient.NS_CAPS, "c");
 		}
-		Iq iq = new Iq(this.getFullJid(), Iq.T_GET);
+		Iq iq = new Iq(p.getAttribute(Message.ATT_FROM), Iq.T_GET);
 		Element query = iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
 		if (c != null) {
-			query.setAttribute("node", c.getAttribute("node")+"#"+c.getAttribute("ver"));
+			query.setAttribute("node", c.getAttribute("node") + "#"
+					+ c.getAttribute("ver"));
 		}
 		XMPPClient.getInstance().sendIQ(iq, this);
 	}
@@ -428,21 +522,33 @@ public class Contact extends IQResultListener{
 	public int compareTo(Contact d) {
 
 		// check first unread messages
-		if (d.unread_msg && !unread_msg) {
+		if (d.unread_msg() && !unread_msg()) {
 			return -1;
-		} else if (unread_msg && !d.unread_msg) { return 1; }
+		} else if (unread_msg() && !d.unread_msg()) { return 1; }
 
 		// then check for pending tasks
 		if (d.pending_tasks && !this.pending_tasks) {
 			return -1;
 		} else if (!d.pending_tasks && this.pending_tasks) { return 1; }
 
-		if (availability != d.availability) { return d.availability
-				- availability; }
+		int avDiff = this.availabilityDiff(this, d);
+		if (avDiff != 0) return avDiff;
 
 		// finally use the name if all the other tests failed
 		return d.getPrintableName().toLowerCase().compareTo(
 				getPrintableName().toLowerCase());
+	}
+
+	private int availabilityDiff(Contact left, Contact right) {
+		if ((right.availability >= 2 && left.availability <= 1)
+				|| (right.availability >= 3 && left.availability <= 2)
+				|| (right.availability == 5 && left.availability <= 4)) return 1;
+
+		if ((right.availability <= 1 && left.availability >= 2)
+				|| (right.availability <= 2 && left.availability >= 3)
+				|| (right.availability <= 4 && left.availability == 5)) return -1;
+
+		return 0;
 	}
 
 	/**
@@ -460,20 +566,21 @@ public class Contact extends IQResultListener{
 	 * @return one of the possible AV_* constants
 	 */
 	public int getAvailability(String jid) {
-		for (int i = 0; i < resources.length; i++) {
-			String ijid = resources[i].getAttribute(Stanza.ATT_FROM);
-			if (jid.equals(ijid)) { return mapAvailability(resources[i]
-					.getShow()); }
+		for (int i = 0; resources != null && i < resources.length; i++) {
+			Presence p = this.getPresence(jid);
+			if (p != null) return mapAvailability(p.getShow());
 		}
 		return AV_UNAVAILABLE;
 	}
 
 	public Presence getPresence(String jid) {
 		if (resources != null) {
+			if (jid == null) return resources[0];
 			for (int i = 0; i < resources.length; i++) {
 				String ijid = resources[i].getAttribute(Stanza.ATT_FROM);
 				if (jid.equals(ijid)) { return resources[i]; }
 			}
+			return resources[0];
 		}
 		return null;
 	}
@@ -533,19 +640,95 @@ public class Contact extends IQResultListener{
 
 	public void handleError(Element e) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void handleResult(Element e) {
-		Element query = e.getChildByName(XMPPClient.NS_IQ_DISCO_INFO,Iq.QUERY);
+		Element query = e.getChildByName(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
 		String fullNode = query.getAttribute("node");
-		Element[] features = query.getChildrenByName(null, "feature");
-		if (fullNode != null){
+		if (fullNode == null) {
+			if (queryCapVer != null && queryCapNode != null) fullNode = queryCapNode
+					+ "#" + queryCapVer;
+		}
+		if (fullNode != null) {
 			Vector fn = Utils.tokenize(fullNode, '#');
-			String node = (String)fn.elementAt(0);
-			String ver = (String)fn.elementAt(1);
-			XMPPClient.saveCapabilities (node,ver,features);
+			String node = (String) fn.elementAt(0);
+			String ver = (String) fn.elementAt(1);
+			Config.getInstance().saveCapabilities(node, ver, query);
+			this.updatePresence(this.resources[0]);
+		}
+
+	}
+
+	/**
+	 * @param groups the groups to set
+	 */
+	public boolean setGroups(String[] newGroups) {
+		// first I check if the new groups are different to the old ones
+		// in that case i re-check the groups structures
+		boolean retVal = false;
+		if (groups.length != newGroups.length) retVal = true;
+		else {
+			for (int i = 0; i < this.groups.length; i++) {
+				String ithOldGroup = groups[i];
+				boolean found = false;
+				for (int j = 0; j < newGroups.length; j++) {
+					String ithNewGroup = newGroups[j];
+					if (ithNewGroup.equals(ithOldGroup)) {
+						found = true;
+						break;
+					}
+				}
+				if (found == retVal) return true;
+			}
+		}
+
+		if (retVal) {
+			for (int i = 0; i < this.groups.length; i++) {
+				Group.getGroup(groups[i]).removeElement(this.jid);
+			}
+			for (int i = 0; i < newGroups.length; i++) {
+				Group.getGroup(newGroups[i]).addElement(this.jid);
+			}
+		}
+
+		this.groups = newGroups;
+		return retVal;
+	}
+
+	/**
+	 * @return the groups
+	 */
+	public String[] getGroups() {
+		return groups;
+	}
+
+	public boolean supportsMUC(Presence p) {
+		if (p == null)
+			return false;
+		/*
+		 * Gmail supports only the old "deprecated" format with CAPS Extension
+		 * 
+		 */
+		Element c = p.getChildByName(XMPPClient.NS_CAPS, "c") ;
+		if (c!=null){
+			String ext = c.getAttribute("ext");
+			if (ext != null && ext.indexOf("pmuc-v1")>=0)
+				return true;
 		}
 		
+		/*
+		 * While this is the suggested one
+		 */
+		Element caps = this.getCapabilities(p);
+		if (caps == null)
+			return false;
+		Element[] features= caps.getChildrenByName(null, "feature");
+		for (int i = 0; i < features.length; i++) {
+			Element ithFeature = features[i];
+			if (ithFeature.getAttribute("var").equals(XMPPClient.NS_MUC))
+				return true;
+		}
+		return false;
 	}
 }

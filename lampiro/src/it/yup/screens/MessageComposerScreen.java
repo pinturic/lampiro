@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MessageComposerScreen.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: MessageComposerScreen.java 1312 2009-03-24 12:04:13Z luca $
 */
 
 package it.yup.screens;
@@ -100,7 +100,7 @@ public class MessageComposerScreen extends Form implements CommandListener {
 				msg = new Message(user.jid, null);
 				String subject = tf_subject.getString();
 				if (subject != null && !"".equals(subject)) {
-					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT).content = subject;
+					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT).addText(subject);
 				}
 			} else {
 				msg = new Message(user.jid, "chat");
@@ -110,7 +110,7 @@ public class MessageComposerScreen extends Form implements CommandListener {
 			if (body == null) body = "";
 			msg.setBody(body);
 			XMPPClient.getInstance().sendPacket(msg);
-			user.addMessageToHistory(msg);
+			user.addMessageToHistory(null,msg);
 			LampiroMidlet.disp.setCurrent(next_screen);
 		} else if (cmd == cmd_cancel) {
 			LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());

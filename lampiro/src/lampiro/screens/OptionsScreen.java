@@ -1,16 +1,21 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: OptionsScreen.java 1075 2008-12-30 16:32:44Z luca $
+ * $Id: OptionsScreen.java 1601 2009-06-19 14:09:03Z luca $
 */
 
 package lampiro.screens;
 
+import java.util.Vector;
+
 import it.yup.ui.UICanvas;
+import it.yup.ui.UICheckbox;
 import it.yup.ui.UICombobox;
+import it.yup.ui.UIConfig;
 import it.yup.ui.UIGauge;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
+import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
@@ -20,10 +25,13 @@ import it.yup.util.Utils;
 import it.yup.xmpp.Config;
 
 import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
 
+// #ifdef UI
 import lampiro.LampiroMidlet;
+// #endif
 
 public class OptionsScreen extends UIScreen {
 
@@ -39,10 +47,13 @@ public class OptionsScreen extends UIScreen {
 	private UICombobox ch_vibrate;
 	private UICombobox ch_tone;
 	public UICombobox color;
+	public UICombobox resolution;
 	public UICombobox font_size;
 
 	private UITextField tf_keepalive;
 	private UITextField history_size;
+	private UICheckbox qwerty;
+	
 	private UIGauge g_volume;
 
 	public OptionsScreen() {
@@ -77,11 +88,25 @@ public class OptionsScreen extends UIScreen {
 		color.append(rm.getString(ResourceIDs.STR_COLOR_BLUE));
 		color.append(rm.getString(ResourceIDs.STR_COLOR_GREEN));
 		color.append(rm.getString(ResourceIDs.STR_COLOR_RED));
+		color.append(rm.getString(ResourceIDs.STR_COLOR_ALEF));
 		append(color);
 		String colorString = Config.getInstance()
 				.getProperty(Config.COLOR, "0");
 		int colorInt = Integer.parseInt(colorString);
 		color.setSelectedIndex(colorInt);
+		
+		resolution = new UICombobox(rm.getString(ResourceIDs.STR_CAMERA_RESOLUTION), false);
+		resolution.setAnchorPoint(Graphics.RIGHT);
+		resolution.append(rm.getString(ResourceIDs.STR_RESOLUTION_DEFAULT));
+		resolution.append(rm.getString(ResourceIDs.STR_CAMERA_LOW));
+		resolution.append(rm.getString(ResourceIDs.STR_CAMERA_MEDIUM));
+		resolution.append(rm.getString(ResourceIDs.STR_CAMERA_HIGH));
+		resolution.append(rm.getString(ResourceIDs.STR_CAMERA_HUGE));
+		append(resolution);
+		String resolutionString = Config.getInstance()
+				.getProperty(Config.CAMERA_RESOLUTION, "0");
+		int resolutionInt = Integer.parseInt(resolutionString);
+		resolution.setSelectedIndex(resolutionInt);
 
 		String font_sizeString = rm.getString(ResourceIDs.STR_FONT_SIZE);
 		font_size = new UICombobox(font_sizeString, false);
@@ -91,7 +116,7 @@ public class OptionsScreen extends UIScreen {
 		font_size.append(rm.getString(ResourceIDs.STR_FONT_BIG));
 		append(font_size);
 		font_sizeString = Config.getInstance().getProperty(Config.FONT_SIZE,
-				"1");
+				"0");
 		font_size.setSelectedIndex(font_sizeString.toCharArray()[0] - '0');
 		// XXX: append(new Spacer(100, 1));
 
@@ -115,7 +140,18 @@ public class OptionsScreen extends UIScreen {
 				.getString(ResourceIDs.STR_HISTORY_SIZE), String.valueOf(hs),
 				5, TextField.NUMERIC);
 		append(history_size);
-
+		
+		qwerty = new UICheckbox(rm
+				.getString(ResourceIDs.STR_QWERTY));
+		//qwerty.setAnchorPoint(Graphics.LEFT);
+		//qwerty.setFlip(true);
+		Font xFont = UICanvas.getInstance().getCurrentScreen().getGraphics().getFont();
+		Font lfont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+				.getSize());
+		qwerty.setFont(lfont);
+		qwerty.setChecked(cfg.getProperty(Config.QWERTY, Config.FALSE).equals(Config.TRUE));
+		append(qwerty);
+		
 		// add the commands
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
@@ -133,10 +169,24 @@ public class OptionsScreen extends UIScreen {
 			Config cfg = Config.getInstance();
 			cfg.setProperty(Config.COLOR, this.color.getSelectedIndex() + "");
 			cfg.saveToStorage();
+			
+			// to update menus and colors of myself
+			titleLabel.setBg_color(UIConfig.header_bg);
+			titleLabel.setFg_color(UIConfig.menu_title);
+			footerLeft.setBg_color(UIConfig.header_bg);
+			footerLeft.setFg_color(UIConfig.menu_title);
+			footerRight.setBg_color(UIConfig.header_bg);
+			footerRight.setFg_color(UIConfig.menu_title);
+			this.color.comboScreen.titleLabel.setBg_color(UIConfig.header_bg);
+			this.color.comboScreen.titleLabel.setFg_color(UIConfig.menu_title);
+			this.color.comboScreen.footerLeft.setBg_color(UIConfig.header_bg);
+			this.color.comboScreen.footerLeft.setFg_color(UIConfig.menu_title);
+			this.color.comboScreen.footerRight.setBg_color(UIConfig.header_bg);
+			this.color.comboScreen.footerRight.setFg_color(UIConfig.menu_title);
 			this.setDirty(true);
 			this.askRepaint();
 		}
-		if (item == this.font_size) {
+		else if (item == this.font_size) {
 			int fontIndex = this.font_size.getSelectedIndex();
 			// #ifdef UI
 			LampiroMidlet.changeFont(fontIndex);
@@ -151,6 +201,9 @@ public class OptionsScreen extends UIScreen {
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
+		// to update the colors of the rosterscreen
+		RosterScreen.getInstance().updateScreen();
+		
 		if (cmd_save == cmd) {
 			saveOptions();
 		} else if (cmd_reset == cmd) {
@@ -165,8 +218,8 @@ public class OptionsScreen extends UIScreen {
 			os.saveOptions();
 		} else if (cmd_cancel == cmd) {
 			UICanvas.getInstance().close(this);
+			UICanvas.getInstance().show(RosterScreen.getInstance());
 		}
-
 	}
 
 	/**
@@ -187,12 +240,22 @@ public class OptionsScreen extends UIScreen {
 				.parseInt(tf_keepalive.getText()) * 1000));
 		cfg.setProperty(Config.HISTORY_SIZE, String.valueOf(Integer
 				.parseInt(history_size.getText())));
+		String qwertyValue= Config.FALSE;
+		if (qwerty.isChecked()){
+			qwertyValue = Config.TRUE;
+			UICanvas.getInstance().setQwerty(true);
+		}
+		else{
+			qwertyValue = Config.FALSE;
+			UICanvas.getInstance().setQwerty(false);
+		}
+		cfg.setProperty(Config.QWERTY, qwertyValue);
+		cfg.setProperty(Config.CAMERA_RESOLUTION, resolution.getSelectedIndex()+"");
 		cfg.saveToStorage();
 
-		UICanvas.getInstance().close(this);
+		RosterScreen.closeAndOpenRoster(this);
 		UICanvas.showAlert(AlertType.WARNING, rm
 				.getString(ResourceIDs.STR_WARNING), rm
 				.getString(ResourceIDs.STR_SETTINGS_EFFECT));
 	}
-
 }

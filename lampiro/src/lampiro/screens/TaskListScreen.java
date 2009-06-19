@@ -1,12 +1,11 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: TaskListScreen.java 869 2008-09-26 14:39:03Z luca $
+ * $Id: TaskListScreen.java 1564 2009-06-09 14:17:08Z luca $
 */
 
 package lampiro.screens;
 
-import it.yup.ui.UICanvas;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
@@ -45,7 +44,7 @@ public class TaskListScreen extends UIScreen {
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_cancel) {
-			UICanvas.getInstance().close(this);
+			RosterScreen.closeAndOpenRoster(this);
 		}
 	}
 

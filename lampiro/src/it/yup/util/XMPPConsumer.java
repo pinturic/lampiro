@@ -5,7 +5,7 @@ package it.yup.util;
 
 import java.util.Vector;
 
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
 import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.packets.Message;
 
@@ -50,10 +50,11 @@ public class XMPPConsumer extends Thread implements LogConsumer {
 					while (messages.size() > 0) {
 						String message = (String) messages.elementAt(0);
 						// avoid sending XMPP traffic for infinite recursion
+						// and useless date lake presencehandler
 						if (message.startsWith("[SEND]")
 								|| message.startsWith("[RECV]")
-								|| message.startsWith("Sender: waiting"))
-
+								|| message.startsWith("Sender: waiting")
+								|| message.startsWith("PresenceHandler"))
 						{
 							;
 						} else {
@@ -65,8 +66,8 @@ public class XMPPConsumer extends Thread implements LogConsumer {
 						messages.removeElementAt(0);
 					}
 				} catch (Exception e) {
-					int a = 0;
-					a++;
+					System.out.println(e.getMessage());
+					e.printStackTrace();
 				}
 			}
 			while (outGoingMessages.size() > 0) {
@@ -76,6 +77,8 @@ public class XMPPConsumer extends Thread implements LogConsumer {
 								.elementAt(0));
 						outGoingMessages.removeElementAt(0);
 					} catch (Exception e) {
+						System.out.println(e.getMessage());
+						e.printStackTrace();
 					}
 				} else
 					break;

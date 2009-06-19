@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: DataResultScreen.java 1545 2009-05-27 07:33:17Z luca $
 */
 
 /**
@@ -10,14 +10,19 @@
 package lampiro.screens;
 
 import it.yup.ui.UICanvas;
+import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
+import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
+import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
+import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.xmpp.DataFormListener;
 import it.yup.xmpp.packets.DataForm;
 
 import java.util.Hashtable;
@@ -25,7 +30,6 @@ import java.util.Hashtable;
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.TextField;
 
-import lampiro.screens.DataFormScreen.DataFormListener;
 
 /**
  * Class that shows the results in a data form.
@@ -51,6 +55,7 @@ public class DataResultScreen extends UIScreen {
 
 	private DataFormListener listener;
 
+	private UIHLayout mainLayout = new UIHLayout(3);
 	private UIPanel mainPanel = new UIPanel();
 
 	private UIMenu desc_menu = new UIMenu("");
@@ -70,9 +75,14 @@ public class DataResultScreen extends UIScreen {
 			pos = -1;
 		}
 
+		UISeparator separator = new UISeparator(0);
+		mainLayout.setGroup(false);
+		mainLayout.insert(separator, 0, 3, UILayout.CONSTRAINT_PIXELS);
+		mainLayout.insert(mainPanel, 1, 100, UILayout.CONSTRAINT_PERCENTUAL);
+		mainLayout.insert(separator, 2, 3, UILayout.CONSTRAINT_PIXELS);
+		this.append(mainLayout);
 		mainPanel.setMaxHeight(-1);
-		this.append(mainPanel);
-
+		
 		desc_menu.append(show_desc_label);
 
 		setMenu(new UIMenu(""));
@@ -97,11 +107,11 @@ public class DataResultScreen extends UIScreen {
 			return;
 		}
 
-		removeAll();
+		mainPanel.removeAllItems();
 
 		if (pos == -1) {
-			append(new UILabel(rm.getString(ResourceIDs.STR_INSTRUCTIONS)));
-			append(si_instructions);
+			mainPanel.addItem(new UILabel(rm.getString(ResourceIDs.STR_INSTRUCTIONS)));
+			mainPanel.addItem(si_instructions);
 		} else {
 			Hashtable res = (Hashtable) df.results.elementAt(pos);
 
@@ -121,10 +131,11 @@ public class DataResultScreen extends UIScreen {
 
 				UIItem ithItem = null;
 				if (fld.type == DataForm.FLT_TXTMULTI
-						|| fld.type == DataForm.FLT_FIXED) {
+						|| fld.type == DataForm.FLT_FIXED
+						|| fld.type == DataForm.FLT_TXTSINGLE) {
 					UITextField uit = new UITextField(lbl, val, 1024,
 							TextField.UNEDITABLE);
-					append(uit);
+					mainPanel.addItem(uit);
 					// must be done after append to have a screen for the uit
 					uit.setWrappable(true);
 					ithItem = uit;
@@ -132,7 +143,7 @@ public class DataResultScreen extends UIScreen {
 				} else {
 					if (lbl.length() > 0) append(new UILabel(lbl));
 					ithItem = new UILabel(val);
-					append(ithItem);
+					mainPanel.addItem(ithItem);
 				}
 				if (fld.desc != null) {
 					ithItem.setSubmenu(desc_menu);
@@ -191,7 +202,7 @@ public class DataResultScreen extends UIScreen {
 			UITextField descField = new UITextField("", desc, desc.length(),
 					TextField.UNEDITABLE);
 			descField.setWrappable(true);
-			UIMenu descriptionMenu = UIMenu.easyMenu(rm
+			UIMenu descriptionMenu = UIUtils.easyMenu(rm
 					.getString(ResourceIDs.STR_DESC), 10, 20, this.getWidth() - 20, descField);
 			//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
 			descriptionMenu.cancelMenuString = "";

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIGauge.java 877 2008-09-29 15:22:02Z luca $
+ * $Id: UIGauge.java 1574 2009-06-11 14:31:59Z luca $
 */
 
 /**
@@ -15,7 +15,6 @@ import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
-import javax.microedition.m3g.Background;
 
 /**
  * Re-implementation of the {@link Gauge} class using our library. Differences:
@@ -95,44 +94,53 @@ public class UIGauge extends UIItem {
 		Font of = g.getFont();
 
 		/* clear area */
-		int tempBgColor = selected ? UIConfig.header_bg
-				: (getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
+		int tempBgColor = (getBg_color() >= 0 ? getBg_color()
+				: UIConfig.bg_color);
 		g.setColor(tempBgColor);
 		g.fillRect(0, 0, w, h);
 
 		/* draw title (XXX: should clip or put ...) */
-		g.setColor(selected ? UIConfig.header_fg : UIConfig.fg_color);
+		g.setColor(UIConfig.fg_color);
 		g.setFont(UIConfig.gauge_body);
 		g.drawString(label, 1, 1, Graphics.LEFT | Graphics.TOP);
 
 		/* border around progress (black) */
-		g.setColor(0x00000000);
-		g.drawRect(1, 2 + UIConfig.gauge_body.getHeight(), w - 3, 16);
+		g.setColor(UIConfig.header_bg);
+		//g.drawRect(1, 2 + UIConfig.gauge_body.getHeight(), w - 3, 16);
+		int gaugeHeight = UIConfig.gauge_body.getHeight();
+		//this.drawBorder(g, 1, 2 + gaugeHeight, w - 2, 18 + gaugeHeight);
+		drawInput(g, 1, 2 + gaugeHeight, w - 2, 18 + gaugeHeight);
 
 		int gw = 0;
 
 		if (maxValue != Gauge.INDEFINITE) {
-			gw = value * (w - 6) / maxValue;
+			gw = value * (w - 8) / maxValue;
 		} else if (behaviour == Gauge.CONTINUOUS_RUNNING
 				|| behaviour == Gauge.INCREMENTAL_UPDATING) {
 			/* value is percentual to width */
-			gw = value * (w - 6) / 100;
+			gw = value * (w - 8) / 100;
 		} else {
-			gw = 1;
+			gw = 2;
 		}
-		if (gw == 0) {
-			gw = 1;
-		}
+		//		if (gw == 0) {
+		//			gw = 2;
+		//		}
 
 		/* fill rect */
-		int blockHeight = 4 + UIConfig.gauge_body.getHeight();
-		int blockColor = (!selected) ? UIConfig.header_bg
-				: (getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-		g.setColor(blockColor);
-		g.fillRect(3, blockHeight, gw, 13);
-		g.setColor(tempBgColor);
-		for (int i = 3; i < gw; i += ((w - 6) / 10)) {
-			g.drawLine(3 + i, blockHeight, 3 + i, blockHeight + 13);
+		int blockHeight = 5 + gaugeHeight;
+		int blockColor = UIConfig.tbs_color;
+
+		int x0 = 4, x1 = gw;
+		float xOffset = ((float) w - 7) / 10;
+		float count = 0;
+		float start = 0;
+		while (count * xOffset < x1) {
+			g.setColor(blockColor);
+			g.fillRect((int) (x0 + start), blockHeight, (int) (start + xOffset)
+					- (int) (start), 11);
+			blockColor = UIUtils.colorize(blockColor, +10);
+			start += xOffset;
+			count++;
 		}
 
 		/* restore state */
@@ -257,12 +265,38 @@ public class UIGauge extends UIItem {
 		this.ticker.cancel();
 	}
 
+	public void start() {
+		this.ticker.cancel();
+		if (!modifiable && behaviour == Gauge.CONTINUOUS_RUNNING) {
+			ticker = new Ticker();
+			UICanvas.getTimer().scheduleAtFixedRate(ticker, 1000, 1000);
+		}
+	}
+
 	/**
 	 * @return the current maximum value
 	 */
 	public int getMaxValue() {
 		return maxValue;
 	}
+
+	public void setOffset(int offset) {
+		if (screen == null)
+			return ;
+		synchronized (screen) {
+			this.offset = offset;
+			if (value < offset) value = offset;
+		}
+	}
+
+	public int getOffset() {
+		return offset;
+	}
+
+	/*
+	 * The offset at which the gauge starts the line
+	 */
+	private int offset = 10;
 
 	/**
 	 * Task used to "tick" the clock on a CONTINUOUS_RUNNING Gauge.
@@ -277,9 +311,13 @@ public class UIGauge extends UIItem {
 		public void run() {
 			if (behaviour == Gauge.CONTINUOUS_RUNNING) {
 				/* ticks in blocks of 10% */
-				value += 10;
-				if (value > 100) {
-					value = 10;
+				if (screen != null) {
+					synchronized (screen) {
+						value += 10;
+						if (value > 100) {
+							value = offset;
+						}
+					}
 				}
 				dirty = true;
 				askRepaint();

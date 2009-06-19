@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UISeparator.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: UISeparator.java 1577 2009-06-15 14:38:27Z luca $
 */
 
 /**
@@ -24,13 +24,19 @@ public class UISeparator extends UIItem {
 		this.height = height;
 	}
 
+	public UISeparator(int height, int color) {
+		this.height= height;
+		this.setFg_color(color);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
 	 * @see it.yup.ui.UIItem#paint(javax.microedition.lcdui.Graphics, int, int)
 	 */
 	protected void paint(Graphics g, int w, int h) {
-		g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-		g.fillRect(0, 0, w, h);
+		g.setColor(getFg_color() >= 0 ? getFg_color() : UIConfig.fg_color);
+		// the separator always uses its imposed height!!! and not the one asked from paint(...) 
+		g.fillRect(0, 0, w, this.height);
 	}
 }

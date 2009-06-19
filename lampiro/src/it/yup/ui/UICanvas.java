@@ -1,15 +1,20 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 1176 2009-02-06 16:53:35Z luca $
-*/
+ * $Id: UICanvas.java 1578 2009-06-16 11:07:59Z luca $
+ */
 
 /**
  * 
  */
 package it.yup.ui;
 
-import it.yup.util.Logger;
+// #mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+// #enddebug
+
 import it.yup.util.Utils;
 import it.yup.xmpp.Config;
 
@@ -40,20 +45,19 @@ import javax.microedition.lcdui.game.GameCanvas;
 public class UICanvas extends GameCanvas {
 
 	/** the key used to activate the left key */
-	public static int MENU_LEFT=-6;
+	public static int MENU_LEFT = -6;
 	/** the key used to activate the right key */
-	public static int MENU_RIGHT=-7;
-	public static int MENU_CANCEL=-8;
-	
+	public static int MENU_RIGHT = -7;
+	public static int MENU_CANCEL = -8;
+
 	private static final Object[][] keyMaps = {
-		{"Nokia",new Integer(-6),new Integer(-7)},
-		{"ricsson",new Integer(-6),new Integer(-7)},
-		{"iemens",new Integer(-1),new Integer(-4)},
-		{"otorola",new Integer(-21),new Integer(-22)},
-		{"harp",new Integer(-21),new Integer(-22)},
-		{"j2me",new Integer(-6),new Integer(-7)},
-		{"SunMicrosystems_wtk",new Integer(-6),new Integer(-7)}
-	};
+			{ "Nokia", new Integer(-6), new Integer(-7) },
+			{ "ricsson", new Integer(-6), new Integer(-7) },
+			{ "iemens", new Integer(-1), new Integer(-4) },
+			{ "otorola", new Integer(-21), new Integer(-22) },
+			{ "harp", new Integer(-21), new Integer(-22) },
+			{ "j2me", new Integer(-6), new Integer(-7) },
+			{ "SunMicrosystems_wtk", new Integer(-6), new Integer(-7) } };
 
 	/** The alert used to show errors (if any) */
 	private static Alert alert;
@@ -68,6 +72,8 @@ public class UICanvas extends GameCanvas {
 	private Vector screenList;
 
 	private int viewedIndex = 0;
+
+	private boolean qwerty = false;
 
 	/**
 	 * @return the screenList
@@ -85,18 +91,18 @@ public class UICanvas extends GameCanvas {
 	private Semaphore sem = new Semaphore(1);
 
 	// #mdebug
-//@	/*
-//@	 * The time at which the pointer is pressed
-//@	 */
-//@	private long pressedTime;
-//@
-//@	/*
-//@	 * The time at which the pointer is released
-//@	 */
-//@	private long releasedTime;
-//@	
+//@			/*
+//@			 * The time at which the pointer is pressed
+//@			 */
+//@			private long pressedTime;
+//@		
+//@			/*
+//@			 * The time at which the pointer is released
+//@			 */
+//@			private long releasedTime;
+//@		
 	// #enddebug
-	
+
 	private int pressedX;
 	private int pressedY;
 
@@ -105,15 +111,22 @@ public class UICanvas extends GameCanvas {
 	 */
 	private boolean dragged = false;
 
+	/*
+	 * A boolean used to know if repeated events are generated.
+	 * If it is false the repeated events are generated artificially. 
+	 */
+	public boolean hasRE = true;
+
 	public static void lock() {
 		if (_instance == null) return;
 		try {
 			_instance.sem.acquire();
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			// #debug
-//@						Logger.log("In locking UI");
-
+			// #mdebug
+//@									Logger.log("In locking UI");
+//@									System.out.println(e.getMessage());
+//@									e.printStackTrace();
+			// #enddebug
 		}
 	}
 
@@ -133,23 +146,22 @@ public class UICanvas extends GameCanvas {
 		super(false);
 		setFullScreenMode(true);
 		screenList = new Vector();
+		this.hasRE = this.hasRepeatEvents();
 		String keys = Config.getInstance().getProperty(Config.CANVAS_KEYS);
 		// not initialized
-		if (keys == null || keys.indexOf(',') == -1)
-			setupdefaultKeyCode();
+		if (keys == null || keys.indexOf(',') == -1) setupdefaultKeyCode();
 	}
-	
-	private boolean isMotorola ()
-	{
+
+	private boolean isMotorola() {
 		try {
 			String imei = System.getProperty("IMEI");
 			// #mdebug
-//@			Logger.log("IMEI :" + imei);
+//@									Logger.log("IMEI :" + imei);
 			//#enddebug
 			if (imei != null) return true;
 			imei = System.getProperty("com.motorola.IMEI");
 			// #mdebug
-//@			Logger.log("com.motorola.IMEI :" + imei);
+//@									Logger.log("com.motorola.IMEI :" + imei);
 			//#enddebug
 			if (imei != null) return true;
 		} catch (Exception e) {
@@ -160,38 +172,35 @@ public class UICanvas extends GameCanvas {
 
 	private void setupdefaultKeyCode() {
 		String platform = System.getProperty("microedition.platform");
-		
+
 		// hack to detect if is a "strange motorola"
 		if (platform.indexOf("otorola") != -1 || isMotorola()) {
 			platform = "Motorola";
 		}
-		
+
 		// #mdebug
-//@			Logger.log("platform:" + platform);
-// 		#enddebug
-		for(int i =0 ;i< keyMaps.length;++i)
-		{
-			String manufacturer = (String)keyMaps[i][0];
-			
-			if(platform.indexOf(manufacturer)!=-1)
-			{
-				if(i==1) 
-				{
-					if(platform.indexOf("P900")!=-1 || platform.indexOf("P908")!=-1)
-					{
-						UICanvas.MENU_LEFT = ((Integer)keyMaps[i][2]).intValue();
-						UICanvas.MENU_RIGHT = ((Integer)keyMaps[i][1]).intValue();
+//@						Logger.log("platform:" + platform);
+		//              #enddebug
+		for (int i = 0; i < keyMaps.length; ++i) {
+			String manufacturer = (String) keyMaps[i][0];
+
+			if (platform.indexOf(manufacturer) != -1) {
+				if (i == 1) {
+					if (platform.indexOf("P900") != -1
+							|| platform.indexOf("P908") != -1) {
+						UICanvas.MENU_LEFT = ((Integer) keyMaps[i][2])
+								.intValue();
+						UICanvas.MENU_RIGHT = ((Integer) keyMaps[i][1])
+								.intValue();
+					} else {
+						UICanvas.MENU_LEFT = ((Integer) keyMaps[i][1])
+								.intValue();
+						UICanvas.MENU_RIGHT = ((Integer) keyMaps[i][2])
+								.intValue();
 					}
-					else
-					{
-						UICanvas.MENU_LEFT = ((Integer)keyMaps[i][1]).intValue();
-						UICanvas.MENU_RIGHT = ((Integer)keyMaps[i][2]).intValue();
-					}
-				}
-				else
-				{
-					UICanvas.MENU_LEFT = ((Integer)keyMaps[i][1]).intValue();
-					UICanvas.MENU_RIGHT = ((Integer)keyMaps[i][2]).intValue();
+				} else {
+					UICanvas.MENU_LEFT = ((Integer) keyMaps[i][1]).intValue();
+					UICanvas.MENU_RIGHT = ((Integer) keyMaps[i][2]).intValue();
 				}
 				break;
 			}
@@ -208,6 +217,19 @@ public class UICanvas extends GameCanvas {
 		return clipHeight; // this.getGraphics().getClipHeight();
 	}
 
+	private long keyReleasedTime = Long.MAX_VALUE;
+	private long keyPressedTime = Long.MAX_VALUE;
+
+	protected void keyReleased(int key) {
+		if (this.hasRE == false) {
+			if (System.currentTimeMillis() - keyPressedTime > 1000) {
+				keyRepeated(key);
+			}
+			keyReleasedTime = System.currentTimeMillis();
+			keyPressedTime = keyReleasedTime - 1;
+		}
+	}
+
 	/**
 	 * <p>
 	 * Handle the key pressure.
@@ -219,8 +241,29 @@ public class UICanvas extends GameCanvas {
 	 */
 	protected void keyPressed(int key) {
 		// #mdebug
-//@				Logger.log("key pressed:" + key);
+//@						//Logger.log("key pressed:" + key);
 		// #enddebug
+
+		if (this.hasRE == false) {
+			if (keyPressedTime < keyReleasedTime) {
+				keyPressedTime = System.currentTimeMillis();
+			}
+			if (System.currentTimeMillis() - keyPressedTime > 1000) {
+				// to be sure the time is reset 
+				try {
+					keyRepeated(key);
+				} catch (Exception e) {
+					// #mdebug
+//@															Logger.log("In key pressed:" + e.getMessage() + " "
+//@																	+ e.getClass().getName());
+//@															e.printStackTrace();
+					// #enddebug
+				}
+				keyPressedTime = Long.MAX_VALUE;
+				keyReleasedTime = 0;
+				return;
+			}
+		}
 
 		if (screenList.size() == 0 || viewedIndex > screenList.size()
 				|| viewedIndex < 0) { return; }
@@ -237,127 +280,122 @@ public class UICanvas extends GameCanvas {
 			}
 		}
 
-		// #mdebug
-//@				if (key == Canvas.KEY_POUND) {
-//@					int x = 66;
-//@					int y = 66;
-//@					pointerPressed(x, y);
-//@					pointerReleased(x, y);
-//@				}
-		// #enddebug
-
 		try {
 			UIMenu writeScreen = (UIMenu) screenList.elementAt(viewedIndex);
 			writeScreen.keyPressed(key);
 		} catch (Exception e) {
 			// #mdebug
-//@						Logger.log("In key pressed:" + e.getMessage() + " "
-//@								+ e.getClass().getName());
+//@									Logger.log("In key pressed:" + e.getMessage() + " "
+//@											+ e.getClass().getName());
+//@									e.printStackTrace();
 			// #enddebug
 		}
 	}
 
-	TimerTask longPressedTask = null;
+	TimerTask longPressedTask = initLongPress(null);
 	boolean longPressRun = false;
 
 	public void pointerPressed(int x, int y) {
 		// #mdebug
-//@
-//@		this.pressedTime = System.currentTimeMillis();
-//@		
+//@				
+//@						this.pressedTime = System.currentTimeMillis();
+//@				
 		// #enddebug
 		this.pressedX = x;
 		this.pressedY = y;
 		this.dragged = false;
 		final UIScreen paintedScreen = getCurrentScreen();
 		if (paintedScreen == null) return;
-		final UIItem foundItem = findItem(x, y, paintedScreen);
 
-		longPressRun = false;
-		longPressedTask = new TimerTask() {
-			public void run() {
-				longPress(paintedScreen, foundItem);
-			}
-		};
-		Utils.tasks.schedule(longPressedTask, 500);
+		boolean hasSubMenu = handlePointEvent(x, y, paintedScreen, false);
+
+		if (hasSubMenu) {
+			longPressRun = false;
+			longPressedTask = initLongPress(paintedScreen);
+			Utils.tasks.schedule(longPressedTask, 750);
+		}
 
 		// #mdebug
-//@				Logger.log("pointerPressed:" + x + " " + y + ":");
+//@						//Logger.log("pointerPressed:" + x + " " + y + ":");
 		// #enddebug
 	}
 
-	private void longPress(UIScreen paintedScreen, UIItem foundItem) {
+	private TimerTask initLongPress(final UIScreen paintedScreen) {
+		return new TimerTask() {
+			public void run() {
+				longPress(paintedScreen);
+			}
+		};
+	}
+
+	private void longPress(UIScreen paintedScreen) {
 		synchronized (longPressedTask) {
 			// #mdebug
-//@						Logger.log("longPressed:");
+//@									Logger.log("longPressed:");
 			// #enddebug
 			longPressRun = true;
-			paintedScreen.longPressed(foundItem);
+			if (paintedScreen != null) paintedScreen
+					.keyPressed(UICanvas.MENU_LEFT);
 		}
 	}
 
 	public void pointerDragged(int x, int y) {
 		// #mdebug
-//@				Logger.log("pointerDragged:" + x + " " + y + ":");
+//@						//Logger.log("pointerDragged:" + x + " " + y + ":");
 		// #enddebug
 		UIScreen paintedScreen = getCurrentScreen();
 		if (paintedScreen == null) return;
 
 		int yOffset = y - pressedY;
+		int xOffset = x - pressedX;
+		UIItem foundItem = findItem(x, y, paintedScreen);
+		//if a little movement is made reset the longpressTask
+		if (Math.abs(yOffset) > 5 || Math.abs(xOffset) > 5) {
+			synchronized (longPressedTask) {
+				longPressedTask.cancel();
+			}
+		}
+
+		if (foundItem != null) if (yOffset >= 5 || yOffset <= -5) paintedScreen
+				.startDrag(foundItem);
+
 		int ka = -1;
-		if (yOffset >= 10) {
+		if (yOffset >= 20) {
 			ka = this.getKeyCode(Canvas.DOWN);
 			this.dragged = true;
 			paintedScreen.keyRepeated(ka);
 			this.pressedX = x;
 			this.pressedY = y;
-			synchronized (longPressedTask) {
-				longPressedTask.cancel();
-			}
 			return;
 		}
-		if (yOffset <= -10) {
+		if (yOffset <= -20) {
 			ka = this.getKeyCode(Canvas.UP);
 			this.dragged = true;
 			paintedScreen.keyRepeated(ka);
 			this.pressedX = x;
 			this.pressedY = y;
-			synchronized (longPressedTask) {
-				longPressedTask.cancel();
-			}
 			return;
 		}
-		if (yOffset >= 5) {
+		if (yOffset >= 15) {
 			ka = this.getKeyCode(Canvas.DOWN);
 			this.dragged = true;
 			paintedScreen.keyPressed(ka);
 			this.pressedX = x;
 			this.pressedY = y;
-			synchronized (longPressedTask) {
-				longPressedTask.cancel();
-			}
 			return;
 		}
-		if (yOffset <= -5) {
+		if (yOffset <= -15) {
 			ka = this.getKeyCode(Canvas.UP);
 			this.dragged = true;
 			paintedScreen.keyPressed(ka);
 			this.pressedX = x;
 			this.pressedY = y;
-			synchronized (longPressedTask) {
-				longPressedTask.cancel();
-			}
 			return;
 		}
 
-		int xOffset = x - pressedX;
 		ka = -1;
-		if (xOffset >= 10) {
+		if (xOffset >= 15) {
 			this.dragged = true;
-			synchronized (longPressedTask) {
-				longPressedTask.cancel();
-			}
-			UIItem foundItem = findItem(x, y, paintedScreen);
 			if (foundItem != null) {
 				ka = this.getKeyCode(Canvas.RIGHT);
 				foundItem.keyPressed(ka);
@@ -366,12 +404,8 @@ public class UICanvas extends GameCanvas {
 			this.pressedY = y;
 			return;
 		}
-		if (xOffset <= -10) {
+		if (xOffset <= -15) {
 			this.dragged = true;
-			synchronized (longPressedTask) {
-				longPressedTask.cancel();
-			}
-			UIItem foundItem = findItem(x, y, paintedScreen);
 			if (foundItem != null) {
 				ka = this.getKeyCode(Canvas.LEFT);
 				foundItem.keyPressed(ka);
@@ -380,7 +414,6 @@ public class UICanvas extends GameCanvas {
 			this.pressedY = y;
 			return;
 		}
-
 	}
 
 	/**
@@ -396,165 +429,194 @@ public class UICanvas extends GameCanvas {
 	 */
 	public void pointerReleased(int x, int y) {
 		// #mdebug
-//@
-//@		this.releasedTime = System.currentTimeMillis();
-//@		
+//@				
+//@						this.releasedTime = System.currentTimeMillis();
+//@				
 		// #enddebug
-		
 
 		// #mdebug
-//@				Logger.log("pointerReleased:" + x + " " + y + ":");
+//@						//Logger.log("pointerReleased:" + x + " " + y + ":");
 		// #enddebug
 
 		synchronized (longPressedTask) {
 			longPressedTask.cancel();
 			if (longPressRun == true) {
 				this.dragged = false;
+				longPressRun = false;
 				return;
 			}
 		}
 
 		UIScreen paintedScreen = getCurrentScreen();
-		if (paintedScreen == null || this.dragged == true) {
+		if (paintedScreen == null) {
 			this.dragged = false;
 			return;
 		}
-
+		if (this.dragged == true) {
+			this.dragged = false;
+			paintedScreen.endDrag();
+			return;
+		}
 		// #mdebug
-//@				Logger.log("paintedScreen found:");
+//@						Logger.log("paintedScreen found:");
 		// #enddebug
+		handlePointEvent(x, y, paintedScreen, true);
+	}
 
+	private boolean handlePointEvent(int x, int y, UIScreen paintedScreen,
+			boolean up) {
 		UIItem foundItem = null;
 		foundItem = findItem(x, y, paintedScreen);
 		if (foundItem != null) {
-
 			// #mdebug
-//@						try {
-//@							Logger.log("Found item in pointerReleased:");
-//@							Logger
-//@									.log("Pression time: " + releasedTime + " "
-//@											+ pressedTime);
-//@							if (foundItem instanceof UILabel) {
-//@								UILabel new_name = (UILabel) foundItem;
-//@								Logger.log("Label: " + new_name.getText()
-//@										+ foundItem.getWidth() + " "
-//@										+ foundItem.getHeight(canvasGraphics));
-//@							} else if (foundItem instanceof UILayout) {
-//@								UILayout new_name = (UILayout) foundItem;
-//@								Logger.log("Layout " + new_name.getWidth() + " "
-//@										+ new_name.getHeight(canvasGraphics));
-//@							} else if (foundItem instanceof UITextField) {
-//@								UITextField new_name = (UITextField) foundItem;
-//@								Logger.log("TextField " + new_name.getText());
-//@							} else if (foundItem instanceof UIPanel) {
-//@								UIPanel new_name = (UIPanel) foundItem;
-//@								Logger.log("Panel " + new_name.getWidth() + " "
-//@										+ new_name.getHeight(canvasGraphics));
-//@							} else if (foundItem instanceof UIMenu) {
-//@								Logger.log("Menu ");
-//@								UIMenu new_name = (UIMenu) foundItem;
-//@								try {
-//@									Logger.log(((UILabel) new_name.getItemList().elementAt(
-//@											0)).getText()
-//@											+ " "
-//@											+ new_name.getWidth()
-//@											+ " "
-//@											+ new_name.getHeight(canvasGraphics));
-//@								} catch (Exception e) {
-//@									Logger.log(e.getMessage() + e.getClass().getName());
-//@								}
-//@							} else {
-//@								Logger.log("Found other ");
-//@								try {
-//@									Logger.log(foundItem.getWidth() + " "
-//@											+ foundItem.getHeight(canvasGraphics));
-//@								} catch (Exception e) {
-//@									Logger.log(e.getMessage() + e.getClass().getName());
-//@								}
-//@							}
-//@						} catch (Exception e) {
-//@						}
+//@									try {
+//@										Logger.log("Found item in pointerReleased:");
+//@										Logger
+//@												.log("Pression time: " + releasedTime + " "
+//@														+ pressedTime);
+//@										if (foundItem instanceof UILabel) {
+//@											UILabel new_name = (UILabel) foundItem;
+//@											Logger.log("Label: " + new_name.getText()
+//@													+ foundItem.getWidth() + " "
+//@													+ foundItem.getHeight(canvasGraphics));
+//@										} else if (foundItem instanceof UILayout) {
+//@											UILayout new_name = (UILayout) foundItem;
+//@											Logger.log("Layout " + new_name.getWidth() + " "
+//@													+ new_name.getHeight(canvasGraphics));
+//@										} else if (foundItem instanceof UITextField) {
+//@											UITextField new_name = (UITextField) foundItem;
+//@											Logger.log("TextField " + new_name.getText());
+//@										} else if (foundItem instanceof UIPanel) {
+//@											UIPanel new_name = (UIPanel) foundItem;
+//@											Logger.log("Panel " + new_name.getWidth() + " "
+//@													+ new_name.getHeight(canvasGraphics));
+//@										} else if (foundItem instanceof UIMenu) {
+//@											Logger.log("Menu ");
+//@											UIMenu new_name = (UIMenu) foundItem;
+//@											try {
+//@												Logger.log(((UILabel) new_name.getItemList().elementAt(
+//@														0)).getText()
+//@														+ " "
+//@														+ new_name.getWidth()
+//@														+ " "
+//@														+ new_name.getHeight(canvasGraphics));
+//@											} catch (Exception e) {
+//@												Logger.log(e.getMessage() + e.getClass().getName());
+//@											}
+//@										} else {
+//@											Logger.log("Found other ");
+//@											try {
+//@												Logger.log(foundItem.getWidth() + " "
+//@														+ foundItem.getHeight(canvasGraphics));
+//@											} catch (Exception e) {
+//@												Logger.log(e.getMessage() + e.getClass().getName());
+//@											}
+//@										}
+//@									} catch (Exception e) {
+//@									}
 			// #enddebug
 
 			if (foundItem == paintedScreen.footerLeft) {
-				this.keyPressed(UICanvas.MENU_LEFT);
-				return;
+				if (up) {
+					this.keyPressed(UICanvas.MENU_LEFT);
+				}
+				return false;
 			}
 			if (foundItem == paintedScreen.footerRight) {
-				this.keyPressed(UICanvas.MENU_RIGHT);
-				return;
+				if (up) {
+					this.keyPressed(UICanvas.MENU_RIGHT);
+				}
+				return false;
 			}
 
 			// check if it is the screen menus list
 			if (wlist != null && wlist.isOpenedState() == true) {
 				int selectedIndex = wlist.getItemList().indexOf(foundItem);
 				if (selectedIndex >= 0) {
-					paintedScreen.removePopup(wlist);
-					change(selectedIndex);
-					return;
+					if (up) {
+						paintedScreen.removePopup(wlist);
+						change(selectedIndex);
+					}
+					return false;
 				}
 			}
 
 			// first check if its a menu
 			UIMenu paintedMenu = paintedScreen.getMenu();
-			if (paintedMenu != null
-					&& paintedMenu.getItemList().contains(foundItem)) {
-				paintedMenu.setSelectedItem(foundItem);
-				paintedScreen.askRepaint();
-				paintedScreen.handleMenuKey(paintedMenu, UICanvas.getInstance()
-						.getKeyCode(UICanvas.FIRE));
-				return;
+			if (paintedMenu != null && paintedMenu.contains(foundItem)) {
+				if (!up) {
+					foundItem.getContainer().setSelectedItem(foundItem);
+					paintedScreen.askRepaint();
+				} else {
+					paintedScreen.handleMenuKey(paintedMenu, UICanvas
+							.getInstance().getKeyCode(UICanvas.FIRE));
+				}
+				return false;
 			} else { // then a popup or an item
 				Enumeration enPopup = paintedScreen.popupList.elements();
 				while (enPopup.hasMoreElements()) {
 					UIMenu ithMenu = (UIMenu) enPopup.nextElement();
-					if (ithMenu.itemList.contains(foundItem)) {
-						ithMenu.setSelectedItem(foundItem);
-						paintedScreen.askRepaint();
-						paintedScreen.handleMenuKey(ithMenu, UICanvas
-								.getInstance().getKeyCode(UICanvas.FIRE));
-						return;
+					if (ithMenu.contains(foundItem)) {
+						if (!up) {
+							foundItem.getContainer().setSelectedItem(foundItem);
+							paintedScreen.askRepaint();
+						} else {
+							paintedScreen.handleMenuKey(ithMenu, UICanvas
+									.getInstance().getKeyCode(UICanvas.FIRE));
+						}
+						return false;
 					}
-
 				}
 			}
 			// then the title
 			if (foundItem == paintedScreen.titleLabel) {
-				this.keyRepeated(UICanvas.KEY_STAR);
+				if (up) {
+					this.keyRepeated(UICanvas.KEY_STAR);
+				}
 			}
-			if (foundItem.isFocusable() == false) return;
+			if (foundItem.isFocusable() == false) return false;
 
 			// if any kind of menu is opened return (menus are modals)
 			if ((paintedMenu != null && paintedMenu.isOpenedState())
-					|| paintedScreen.popupList.size() > 0) { return; }
+					|| paintedScreen.popupList.size() > 0) { return false; }
 
 			if (foundItem.getContainer() != null) {
-				foundItem.getContainer().setSelectedItem(foundItem);
-				paintedScreen.askRepaint();
-				paintedScreen.keyPressed(UICanvas.getInstance().getKeyCode(
-						UICanvas.FIRE));
+				if (!up) {
+					// #mdebug
+//@															Logger.log("pressed");
+					// #enddebug
+					foundItem.getContainer().setSelectedItem(foundItem);
+					paintedScreen.askRepaint();
+					return true;
+				} else {
+					// #mdebug
+//@															Logger.log("released");
+					// #enddebug
+					paintedScreen.keyPressed(UICanvas.getInstance().getKeyCode(
+							UICanvas.FIRE));
+					return false;
+				}
 			}
 		} else {
 			// check if it is the menucursor
-			if (screenList.size() > 1) {
-				if (x < this.leftImage.getWidth()
-						&& y < this.leftImage.getHeight()) {
+			if (screenList.size() > 1 && up) {
+				if (x < this.lag.getWidth() && y < this.lag.getHeight()) {
 					// check if it is the screen right or left cursor
 					int la = UICanvas.getInstance().getKeyCode(Canvas.LEFT);
 					paintedScreen.keyPressed(la);
-					return;
+					return false;
 				}
-				if (x > canvasGraphics.getClipWidth() - 2
-						* this.leftImage.getWidth()
+				if (x > canvasGraphics.getClipWidth() - 2 * this.lag.getWidth()
 						&& y < canvasGraphics.getClipHeight() - 2
-								* this.leftImage.getHeight()) {
+								* this.lag.getHeight()) {
 					// check if it is the screen right or left cursor
 					int ra = UICanvas.getInstance().getKeyCode(Canvas.RIGHT);
 					paintedScreen.keyPressed(ra);
-					return;
+					return false;
 				}
 			}
 		}
+		return false;
 	}
 
 	private UIItem findItem(int x, int y, UIScreen paintedScreen) {
@@ -586,8 +648,8 @@ public class UICanvas extends GameCanvas {
 			retVal = super.getGameAction(keyCode);
 		} catch (Exception e) {
 			// #mdebug
-//@						Logger.log("In getGameAction:" + keyCode + " "
-//@								+ e.getClass().getName());
+//@									Logger.log("In getGameAction:" + keyCode + " "
+//@											+ e.getClass().getName());
 			// #enddebug
 		}
 		return retVal;
@@ -607,8 +669,8 @@ public class UICanvas extends GameCanvas {
 				|| viewedIndex >= screenList.size()) { return; }
 		UIScreen s0 = (UIScreen) screenList.elementAt(viewedIndex);
 		if (key == Canvas.KEY_STAR) {
-			if (s0.popupIsPresent(this.wlist) == false) {
-				wlist = UIMenu.easyMenu("", 20, this.getClipHeight() / 4,
+			if (s0.popupIsPresent(this.wlist) == false && screenList.size() > 1) {
+				wlist = UIUtils.easyMenu("", 20, this.getClipHeight() / 4,
 						getWidth() - 40, null);
 				for (int i = 0; i < screenList.size(); i++) {
 					UIScreen si = (UIScreen) screenList.elementAt(i);
@@ -636,15 +698,15 @@ public class UICanvas extends GameCanvas {
 	 *            given screen will be checked if it is the screen currently
 	 *            shown.
 	 */
-	public synchronized void askRepaint(UIScreen screen) {
+	public/*synchronized*/void askRepaint(UIScreen screen) {
+		if (screenList.size() == 0) { return; }
+		if (screen == null) {
+			screen = (UIScreen) _instance.screenList.elementAt(viewedIndex);
+			screen.setDirty(true);
+		} else if (screen != (UIScreen) screenList.elementAt(viewedIndex)) { return; }
+
 		try {
 			UICanvas.lock();
-			if (screenList.size() == 0) { return; }
-			if (screen == null) {
-				screen = (UIScreen) _instance.screenList.elementAt(viewedIndex);
-				screen.setDirty(true);
-			} else if (screen != (UIScreen) screenList.elementAt(viewedIndex)) { return; }
-
 			if (screen.isFreezed() == false) {
 				screen.setFreezed(true);
 				Graphics g = canvasGraphics; // this.getGraphics();
@@ -659,32 +721,43 @@ public class UICanvas extends GameCanvas {
 				int originalClipY = g.getClipY();
 				int originalClipWidth = g.getClipWidth();
 				int originalClipHeight = g.getClipHeight();
+				//				g.translate(-g.getTranslateX(), -g.getTranslateY());
+				//				g.setClip(0, 0, this.getWidth(), this.getHeight());
+				// #mdebug
+//@								//				Logger.log(g.getTranslateX() + " " + g.getTranslateY() + " "
+//@								//						+ g.getClipX() + " " + g.getClipY() + " "
+//@								//						+ g.getClipWidth() + " " + g.getClipHeight() + " "
+//@								//						+ this.getWidth() + " " + this.getHeight());
+				// #enddebug
 
 				setTabs();
 				boolean needFlush = screen.paint(g);
+
 				g.translate(originalX - g.getTranslateX(), originalY
 						- g.getTranslateY());
 				g.setClip(originalClipX, originalClipY, originalClipWidth,
 						originalClipHeight);
+				//				g.translate(-g.getTranslateX(), -g.getTranslateY());
+				//				g.setClip(0, 0, this.getWidth(), this.getHeight());
+
 				if (needFlush) {
 					flushGraphics();
 				}
 				screen.setFreezed(false);
 			}
 		} catch (Exception ex) {
-			// #debug
-//@						Logger.log("In painting UI");
+			// #mdebug
+//@									Logger.log("In painting UI");
+//@									System.out.println(ex.getMessage());
+//@									ex.printStackTrace();
+			// #enddebug
 		} finally {
 			UICanvas.unlock();
 		}
 	}
 
-	private Image leftImage = UICanvas.getUIImage("/icons/left.png");
-	private Image rightImage = UICanvas.getUIImage("/icons/right.png");
 	private Image rag = UICanvas.getUIImage("/icons/rag.png");
 	private Image lag = UICanvas.getUIImage("/icons/lag.png");
-	private Image leftRight = UICanvas.getUIImage("/icons/left-right.png");
-	private Image rightLeft = UICanvas.getUIImage("/icons/right-left.png");
 	private Image rab = UICanvas.getUIImage("/icons/rab.png");
 	private Image lab = UICanvas.getUIImage("/icons/lab.png");
 
@@ -692,13 +765,9 @@ public class UICanvas extends GameCanvas {
 		UIScreen cs = this.getCurrentScreen();
 		if (cs == null) return;
 		if (this.screenList.size() <= 1) {
-			cs.leftHeader = leftImage;
-			cs.rightHeader = rightImage;
 			cs.ra = rag;
 			cs.la = lag;
 		} else {
-			cs.leftHeader = leftRight;
-			cs.rightHeader = rightLeft;
 			cs.ra = rab;
 			cs.la = lab;
 		}
@@ -707,27 +776,27 @@ public class UICanvas extends GameCanvas {
 
 	/*
 	private void paintNav(Graphics g) {
-		if (this.screenList.size() == 1) return;
+	        if (this.screenList.size() == 1) return;
 
-		String navString = (this.viewedIndex + 1) + "/"
-				+ this.screenList.size();
-		Font navFont = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD,
-				Font.SIZE_SMALL);
-		g.setFont(navFont);
-		int navWidth = navFont.stringWidth(navString);
-		g.translate(this.getWidth() - g.getTranslateX() - navWidth - 2, 2 - g
-				.getTranslateY());
-		g.setColor(UIConfig.header_bg);
-		g.fillRect(-2, 0, navWidth + 2, navFont.getHeight());
-		g.setColor(0x333333);
-		g.drawString(navString, 0, 0, Graphics.LEFT | Graphics.TOP);
-		g.translate(-1, -1);
-		g.setColor(0xFFFFFF);
-		g.drawString(navString, 0, 0, Graphics.LEFT | Graphics.TOP);
-		g.translate(-g.getTranslateX(), -g.getTranslateY());
+	        String navString = (this.viewedIndex + 1) + "/"
+	                        + this.screenList.size();
+	        Font navFont = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD,
+	                        Font.SIZE_SMALL);
+	        g.setFont(navFont);
+	        int navWidth = navFont.stringWidth(navString);
+	        g.translate(this.getWidth() - g.getTranslateX() - navWidth - 2, 2 - g
+	                        .getTranslateY());
+	        g.setColor(UIConfig.header_bg);
+	        g.fillRect(-2, 0, navWidth + 2, navFont.getHeight());
+	        g.setColor(0x333333);
+	        g.drawString(navString, 0, 0, Graphics.LEFT | Graphics.TOP);
+	        g.translate(-1, -1);
+	        g.setColor(0xFFFFFF);
+	        g.drawString(navString, 0, 0, Graphics.LEFT | Graphics.TOP);
+	        g.translate(-g.getTranslateX(), -g.getTranslateY());
 	}
-	
-	*/
+
+	 */
 
 	/**
 	 * Open and shows the given screen, optionally the screen can be shown
@@ -758,7 +827,9 @@ public class UICanvas extends GameCanvas {
 		/* if the screen is the only one, it's painted immediately */
 		screen.setDirty(true);
 		viewedIndex = this.screenList.indexOf(screen);
-		askRepaint(screen);
+		// changing index -> mandatory to repaint the background
+		screen.firstPaint = true;
+		screen.askRepaint();
 		screen.showNotify();
 	}
 
@@ -811,8 +882,11 @@ public class UICanvas extends GameCanvas {
 		screenList.removeElementAt(idx);
 		// if all the screens have been removed the list could be empty
 		if (idx <= viewedIndex) viewedIndex--;
-		if (idx >= 0 && screenList.size() > 0) {
-			change(0);
+		if (viewedIndex < 0) viewedIndex = 0;
+		if (screenList.size() > 0) {
+			int newIdx = idx;
+			if (idx >= screenList.size()) newIdx = screenList.size() - 1;
+			change(newIdx);
 		}
 		if (wlist != null && wlist.getItemList().size() > 0) {
 			wlist.remove(idx);
@@ -832,8 +906,9 @@ public class UICanvas extends GameCanvas {
 		si.hideNotify();
 		si = (UIScreen) screenList.elementAt(i);
 		si.setDirty(true);
+		si.firstPaint = true;
 		viewedIndex = i;
-		askRepaint(si);
+		si.askRepaint();
 		si.showNotify();
 
 		// if (wlist != null) {
@@ -854,18 +929,19 @@ public class UICanvas extends GameCanvas {
 			// i.e. in N95
 			UIScreen activeScreen = this.getCurrentScreen();
 			// to initialize it at least at start
-			if (activeScreen != null || screenList.size() == 0) {
+			if (activeScreen != null || screenList == null
+					|| screenList.size() == 0) {
 				this.canvasGraphics = this.getGraphics();
 				this.clipHeight = canvasGraphics.getClipHeight();
 			}
 			if (activeScreen != null) {
 				activeScreen.invalidate(w, h);
-				askRepaint(activeScreen);
+				activeScreen.askRepaint();
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@						System.out.println(e.getMessage());
-//@						e.printStackTrace();
+//@									System.out.println(e.getMessage());
+//@									e.printStackTrace();
 			// #enddebug
 		}
 
@@ -958,6 +1034,8 @@ public class UICanvas extends GameCanvas {
 		try {
 			if (AlertType.INFO.equals(type)) {
 				img = Image.createImage("/icons/warning.png");
+			} else if (AlertType.WARNING.equals(type)) {
+				img = Image.createImage("/icons/warning.png");
 			} else if (AlertType.ERROR.equals(type)) {
 				img = Image.createImage("/icons/error.png");
 			} else {
@@ -976,8 +1054,8 @@ public class UICanvas extends GameCanvas {
 		// in that case we use a native alert screen
 		if (currentScreen != null) {
 			UILabel titleLabel = new UILabel(img, title);
-			UIMenu alertMenu = UIMenu.easyMenu("", 10, 20,
-					UICanvas.getInstance().getWidth() - 20, titleLabel);
+			UIMenu alertMenu = UIUtils.easyMenu("", 10, 20, UICanvas
+					.getInstance().getWidth() - 20, titleLabel);
 			titleLabel.setFont(bigFont);
 			titleLabel.setFocusable(false);
 			UILabel textLabel = new UILabel(text);
@@ -1031,36 +1109,45 @@ public class UICanvas extends GameCanvas {
 	}
 
 	// #mdebug
-//@		private static UIMenu logMenu = new UIMenu("log");
-//@	
-//@		public static void clearLog() {
-//@			logMenu.clear();
-//@		}
-//@	
-//@		public static void log(String logString) {
-//@			UILabel uil = new UILabel(logString);
-//@			logMenu.append(uil);
-//@			logMenu.setAbsoluteX(10);
-//@			logMenu.setAbsoluteY(20);
-//@			logMenu.setWidth(UICanvas.getInstance().getWidth());
-//@			UICanvas.getInstance().getCurrentScreen().addPopup(logMenu);
-//@		}
-//@	
-//@		public static void log(Vector logStrings) {
-//@			logMenu.setAbsoluteX(10);
-//@			logMenu.setAbsoluteY(20);
-//@			logMenu.setWidth(UICanvas.getInstance().getWidth());
-//@			for (Enumeration en = logStrings.elements(); en.hasMoreElements();) {
-//@				String logString = (String) en.nextElement();
-//@				if (logString != null) {
-//@					UILabel uil = new UILabel(logString);
-//@					logMenu.append(uil);
-//@				}
+//@			private static UIMenu logMenu = new UIMenu("log");
+//@		
+//@			public static void clearLog() {
+//@				logMenu.clear();
 //@			}
-//@			UIScreen cs = UICanvas.getInstance().getCurrentScreen();
-//@			if (cs != null) cs.addPopup(logMenu);
-//@		}
-//@	
+//@		
+//@			public static void log(String logString) {
+//@				UILabel uil = new UILabel(logString);
+//@				logMenu.append(uil);
+//@				logMenu.setAbsoluteX(10);
+//@				logMenu.setAbsoluteY(20);
+//@				logMenu.setWidth(UICanvas.getInstance().getWidth());
+//@				UICanvas.getInstance().getCurrentScreen().addPopup(logMenu);
+//@			}
+//@		
+//@			public static void log(Vector logStrings) {
+//@				logMenu.setAbsoluteX(10);
+//@				logMenu.setAbsoluteY(20);
+//@				logMenu.setWidth(UICanvas.getInstance().getWidth());
+//@				for (Enumeration en = logStrings.elements(); en.hasMoreElements();) {
+//@					String logString = (String) en.nextElement();
+//@					if (logString != null) {
+//@						UILabel uil = new UILabel(logString);
+//@						logMenu.append(uil);
+//@					}
+//@				}
+//@				UIScreen cs = UICanvas.getInstance().getCurrentScreen();
+//@				if (cs != null) cs.addPopup(logMenu);
+//@			}
+//@		
 	// #enddebug
+
+	public boolean hasQwerty() {
+		// TODO Auto-generated method stub
+		return qwerty;
+	}
+
+	public void setQwerty(boolean qwerty) {
+		this.qwerty = qwerty;
+	}
 
 }

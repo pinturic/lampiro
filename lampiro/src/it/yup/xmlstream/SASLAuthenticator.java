@@ -1,13 +1,14 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SASLAuthenticator.java 1164 2009-02-01 21:00:07Z luca $
+ * $Id: SASLAuthenticator.java 1578 2009-06-16 11:07:59Z luca $
 */
 
 package it.yup.xmlstream;
 
 import it.yup.util.GoogleToken;
 import it.yup.util.Utils;
+import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 
 import java.io.ByteArrayOutputStream;
@@ -52,9 +53,10 @@ public class SASLAuthenticator extends Initializer {
 
 		Element auth = new Element(namespace, "auth");
 		for (int i = 0; i < supportedMechanisms.length; i++) {
-			for (int j = 0; j < mechanisms.children.size(); j++) {
-				Element mechanism = (Element) mechanisms.children.elementAt(j);
-				if (supportedMechanisms[i].equals(mechanism.content)) {
+			Element[] children = mechanisms.getChildren();
+			for (int j = 0; j < children.length; j++) {
+				Element mechanism = children[j];
+				if (supportedMechanisms[i].equals(mechanism.getText())) {
 					if (supportedMechanisms[i].equals(MECHANISM_PLAIN)) {
 						auth.setAttribute("mechanism", MECHANISM_PLAIN);
 						try {
@@ -68,8 +70,8 @@ public class SASLAuthenticator extends Initializer {
 							tmp = stream.password;
 							bos.write(Utils.getBytesUtf8(tmp));
 							/* base64 **SHOULD** be ASCII and doesn't need UTF-8 */
-							auth.content = new String(Base64.encode(bos
-									.toByteArray()));
+							auth.addText(new String(Base64.encode(bos
+									.toByteArray())));
 						} catch (UnsupportedEncodingException e) {
 							// YUPMidlet.yup.reportException("UnsupportedEncoding on SASLAutenticator", e, null);
 						} catch (IOException e) {
@@ -80,11 +82,15 @@ public class SASLAuthenticator extends Initializer {
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
 
-						stream.addOnetimeEventListener(pq,
+						BasicXmlStream.addOnetimeEventListener(pq,
 								new PacketListener() {
 									public void packetReceived(Element e) {
 										if ("success".equals(e.name)) {
 											stream.restart();
+											stream
+													.dispatchEvent(
+															BasicXmlStream.STREAM_AUTHENTICATED,
+															null);
 										} else {
 											stream
 													.dispatchEvent(
@@ -101,11 +107,15 @@ public class SASLAuthenticator extends Initializer {
 						auth.setAttribute("mechanism", MECHANISM_DIGEST_MD5);
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
-						stream.addOnetimeEventListener(pq,
+						BasicXmlStream.addOnetimeEventListener(pq,
 								new PacketListener() {
 									public void packetReceived(Element e) {
 										if ("challenge".equals(e.name)) {
 											gotChallenge(e);
+											stream
+													.dispatchEvent(
+															BasicXmlStream.STREAM_AUTHENTICATED,
+															null);
 										} else {
 											stream
 													.dispatchEvent(
@@ -122,20 +132,43 @@ public class SASLAuthenticator extends Initializer {
 						auth
 								.setAttribute("mechanism",
 										MECHANISM_X_GOOGLE_TOKEN);
-						String token = GoogleToken.getToken(Contact
-								.user(stream.jid), stream.password);
-						auth.content = new String(Base64.encode(("\00"
-								+ Contact.userhost(stream.jid) + "\00" + token)
-								.getBytes()));
+						String user = Contact.user(stream.jid);
+						String token = GoogleToken.getToken(user,
+								stream.password);
+
+						try {
+							String jid = Contact.userhost(stream.jid);
+							byte jidbytes[] = Utils.getBytesUtf8(jid);
+							byte tokenbytes[] = Utils.getBytesUtf8(token);
+							byte buf[] = new byte[2 + jidbytes.length
+									+ tokenbytes.length];
+							buf[0] = 0;
+							System.arraycopy(jidbytes, 0, buf, 1,
+									jidbytes.length);
+							buf[jidbytes.length + 1] = 0;
+							System.arraycopy(tokenbytes, 0, buf,
+									jidbytes.length + 2, tokenbytes.length);
+							// #mdebug
+//@																					System.out.println(new String(Base64.encode(buf)));
+							// #enddebug
+							auth.addText(new String(Base64.encode(buf)));
+						} catch (Exception e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
 						// listen for the result 
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
 
-						stream.addOnetimeEventListener(pq,
+						BasicXmlStream.addOnetimeEventListener(pq,
 								new PacketListener() {
 									public void packetReceived(Element e) {
 										if ("success".equals(e.name)) {
 											stream.restart();
+											stream
+													.dispatchEvent(
+															BasicXmlStream.STREAM_AUTHENTICATED,
+															null);
 											return;
 										} else {
 											stream
@@ -164,7 +197,8 @@ public class SASLAuthenticator extends Initializer {
 	private void gotChallenge(Element packet) {
 		try {
 			// decode and parse the challenge
-			String challengeMessage = new String(Base64.decode(packet.content));
+			String challengeMessage = new String(Base64
+					.decode(packet.getText()));
 			Hashtable challengeDirectives = parse(challengeMessage);
 
 			String response_content;
@@ -215,26 +249,26 @@ public class SASLAuthenticator extends Initializer {
 			Element responseElement = new Element(namespace, "response");
 			// responseElement.content = new String(Base64.encode(content.getBytes("utf-8")));
 			// BASE64 **SHOULD** be UTF-8
-			responseElement.content = new String(Base64.encode(Utils
-					.getBytesUtf8(response_content)));
+			responseElement.addText(new String(Base64.encode(Utils
+					.getBytesUtf8(response_content))));
 			EventQuery pq = new EventQuery(EventQuery.ANY_PACKET, null, null);
 
-			stream.addOnetimeEventListener(pq, new PacketListener() {
+			BasicXmlStream.addOnetimeEventListener(pq, new PacketListener() {
 				public void packetReceived(Element e) {
 					if ("success".equals(e.name)) {
 						stream.restart();
 					} else if ("challenge".equals(e.name)) {
 						gotChallenge(e);
 					} else if ("failure".equals(e.name)) {
-						Element child = e.getChildByName(null, "not-authorized");
-						if (child != null)
-							stream.dispatchEvent(
-									BasicXmlStream.NOT_AUTHORIZED,
-									"Cannot authenticate");
+						Element child = e
+								.getChildByName(null, "not-authorized");
+						if (child != null) stream.dispatchEvent(
+								BasicXmlStream.NOT_AUTHORIZED,
+								"Cannot authenticate");
 						else
 							stream.dispatchEvent(
-								BasicXmlStream.REGISTRATION_FAILED,
-								"Cannot registrate");
+									BasicXmlStream.REGISTRATION_FAILED,
+									"Cannot registrate");
 					} else {
 						stream.dispatchEvent(BasicXmlStream.STREAM_ERROR,
 								"Cannot authenticate");

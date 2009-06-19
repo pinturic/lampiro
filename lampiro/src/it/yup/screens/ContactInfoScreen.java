@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ContactInfoScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: ContactInfoScreen.java 1356 2009-04-08 10:07:06Z luca $
 */
 
 package it.yup.screens;
@@ -55,7 +55,7 @@ public class ContactInfoScreen extends Form implements CommandListener {
 		for (int i = 0; i < resources.length; i++) {
 			String jid = resources[i].getAttribute(Stanza.ATT_FROM);
 			ImageItem ii_img = new ImageItem(null, XMPPClient.getInstance()
-					.getPresenceIcon(c.getAvailability(jid)), Item.LAYOUT_LEFT,
+					.getPresenceIcon(c,null,c.getAvailability(jid)), Item.LAYOUT_LEFT,
 					null);
 			ii_img.setLayout(Item.LAYOUT_LEFT | Item.LAYOUT_NEWLINE_BEFORE);
 			append(ii_img);

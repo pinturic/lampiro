@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIItem.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIItem.java 1577 2009-06-15 14:38:27Z luca $
 */
 
 /**
@@ -9,7 +9,11 @@
  */
 package it.yup.ui;
 
-import it.yup.util.Logger;
+//#mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+//#enddebug
 
 import javax.microedition.lcdui.Graphics;
 
@@ -20,6 +24,17 @@ import javax.microedition.lcdui.Graphics;
  * astratta?
  */
 public abstract class UIItem {
+
+	/*
+	 * Constants used to draw the borders of the UIItem
+	 */
+	public static final int OUTER_UP = 0;
+	public static final int INNER_UP = 1;
+	public static final int INNER_DOWN = 2;
+	public static final int OUTER_DOWN = 3;
+
+	private int gradientColor = -1;
+	private int gradientSelectedColor = -1;
 
 	/**
 	 * The type of column or row in a {@link UILayout} (can be
@@ -73,8 +88,29 @@ public abstract class UIItem {
 	 * valid color then bg_color will be used to paint otherwise
 	 * UIConfig.bg_color will be used.
 	 */
-	protected int bg_color = -1;
-	protected int fg_color = -1;
+	int bg_color = -1;
+	int fg_color = -1;
+	int selectedColor = -1;
+	
+	
+	/*
+	 * A status used to carry data between object accesses (like MFC visual objects status)
+	 */
+	private Object status = null;
+	
+	/**
+	 * @return the status
+	 */
+	public Object getStatus() {
+		return status;
+	}
+
+	/**
+	 * @param status the status to set
+	 */
+	public void setStatus(Object status) {
+		this.status = status;
+	}
 
 	/**
 	 * @return the type
@@ -155,6 +191,10 @@ public abstract class UIItem {
 		if (subMenu != null) {
 			subMenu.setScreen(screen);
 		}
+	}
+
+	public UIScreen getScreen() {
+		return screen;
 	}
 
 	/**
@@ -249,9 +289,9 @@ public abstract class UIItem {
 		int originalClipWidth = g.getClipWidth();
 		int originalClipHeight = g.getClipHeight();
 
-		if (this instanceof UIMenu == false)
+		this.setWidth(w);
 		// UIMenu computes its clip by itself
-		g.clipRect(0, 0, w, h);
+		if (this instanceof UIMenu == false) g.clipRect(0, 0, w, h);
 
 		// notify the screen my coordinates 
 		coors[0] = originalX;
@@ -267,13 +307,11 @@ public abstract class UIItem {
 		try {
 			paint(g, w, h);
 		} catch (Exception e) {
-			System.out.println(e);
-			System.out.println("In paint0: " + e.getMessage());
-			Logger.log("In paint0:" + e.getMessage());
 			// #mdebug
-//@			System.out.println(e);
-//@			System.out.println("In paint0: " + e.getMessage());
-//@			Logger.log("In paint0:" + e.getMessage());
+//@												System.out.println(e);
+//@												e.printStackTrace();
+//@												System.out.println("In paint0: " + e.getMessage());
+//@												Logger.log("In paint0:" + e.getMessage());
 			// #enddebug
 		}
 		this.dirty = false;
@@ -300,6 +338,112 @@ public abstract class UIItem {
 	public boolean isDirty() {
 		return dirty;
 	}
+
+	/*
+	 * draw the borders of UIItem
+	 * 
+	 * @param g
+	 *            the {@link Graphics} on which to paint into
+	 *            
+	 * @param rect
+	 *            the coordinate of the rectangle to paint in this order: X0,Y0,X1,Y1,
+	 *            
+	 * @param colors 
+	 * 			  the colors used to paint the borders in this order (and -1 is the transparent color): OUTER_UP,INNER_UP, INNER_DOWN,OUTER_DOWN, 
+	 * 
+	 * @param colors 
+	 * 			  the color matrix for the upper left corner (will be mirrored to be painted in all other corners) and -1 is the transparent color
+	 * 
+	 */
+	protected void drawBorder(Graphics g, int[] rect, int[] colors,
+			int[][] border) {
+		int oldColor = g.getColor();
+		int x0 = rect[0], y0 = rect[1], x1 = rect[2], y1 = rect[3];
+
+		// This block is a condensed way of doing the next commented
+		// block
+		int[] color_mappings = new int[] { y0, x0, y0 + 1, x0 + 1, y1 - 1,
+				x1 - 1, y1, x1 };
+		for (int i = OUTER_UP; i <= OUTER_DOWN; i++) {
+			int ithColor = colors[i];
+			if (ithColor >= 0) {
+				g.setColor(ithColor);
+				g.drawLine(x0 + 2, color_mappings[2 * i], x1 - 2,
+						color_mappings[2 * i]);
+				g.drawLine(color_mappings[2 * i + 1], y0 + 2,
+						color_mappings[2 * i + 1], y1 - 2);
+			}
+		}
+
+		//		if (colors[OUTER_UP]>=0){
+		//			g.setColor(colors[OUTER_UP]);
+		//			g.drawLine(x0+2,y0,x1-2,y0);
+		//			g.drawLine(x0,y0+2,x0,y1-2);
+		//		}
+		//		if (colors[INNER_UP]>=0){
+		//			g.setColor(colors[INNER_UP]);
+		//			g.drawLine(x0+2,y0+1,x1-2,y0+1);
+		//			g.drawLine(x0+1,y0+2,x0+1,y1-2);
+		//		}
+		//		if (colors[INNER_DOWN]>=0){
+		//			g.setColor(colors[INNER_DOWN]);
+		//			g.drawLine(x0+2,y1-1,x1-2,y1-1);
+		//			g.drawLine(x1-1,y0+2,x1-1,y1-2);
+		//		}
+		//		if (colors[OUTER_DOWN]>=0){
+		//			g.setColor(colors[OUTER_DOWN]);
+		//			g.drawLine(x0+2,y1,x1-2,y1);
+		//			g.drawLine(x1,y0+2,x1,y1-2);
+		//		}
+
+		for (int i = 0; i <= 2; i++) {
+			for (int j = 0; j <= 2; j++) {
+				int colorij = border[i][j];
+				if (colorij >= 0) {
+					g.setColor(colorij);
+					drawPixel(g, i + x0, j + y0);
+					drawPixel(g, x1 - i, j + y0);
+					drawPixel(g, x0 + i, y1 - j);
+					drawPixel(g, x1 - i, y1 - j);
+				}
+			}
+		}
+		g.setColor(oldColor);
+	}
+
+	protected void drawPixel(Graphics g, int x, int y) {
+		g.drawLine(x, y, x, y);
+	}
+
+	protected void drawInput(Graphics g, int x0, int y0, int x1, int y1) {
+		int oldColor = g.getColor();
+		g.setColor(UIConfig.input_color);
+		g.fillRect(x0 + 1, y0 + 1, x1 - x0 - 1, y1 - y0 - 1);
+
+		int selColor = isSelected() ? UIConfig.tbs_color : -1;
+		int colors[] = new int[] { UIConfig.tbb_color, selColor, selColor,
+				UIConfig.tbb_color };
+		int border[][] = new int[][] {
+				new int[] { -1, UIConfig.tbb_color, -1 },
+				new int[] { UIConfig.tbb_color, selColor, -1 },
+				new int[] { -1, -1, -1 }, };
+		drawBorder(g, new int[] { x0, y0, x1, y1 }, colors, border);
+		g.setColor(oldColor);
+	}
+
+	//	protected void drawBorder(Graphics g, int x0, int y0, int x1, int y1) {
+	//		g.setColor(UIConfig.tbb_color);
+	//		g.drawLine(x0 + 1, y0, x1 - 1, y0);
+	//		g.drawLine(x1, y0 + 1, x1, y1 - 1);
+	//		g.drawLine(x1 - 1, y1, x0 + 1, y1);
+	//		g.drawLine(x0, y1 - 1, x0, y0 + 1);
+	//		g.setColor(UIConfig.input_color);
+	//		g.fillRect(x0 + 1, y0 + 1, x1 - x0 - 2, y1 - y0 - 2);
+	//		if (this.isSelected()) {
+	//			g.setColor(UIConfig.tbs_color);
+	//			g.drawRect(x0 + 1, y0 + 1, x1 - x0 - 2, y1 - y0 - 2);
+	//		}
+	//	}
 
 	/**
 	 * Set the {@link UIScreen} to be repainted.
@@ -384,8 +528,8 @@ public abstract class UIItem {
 	 * @param bg_color
 	 *            the bg_color to set
 	 */
-	public void setFg_color(int bg_color) {
-		this.fg_color = bg_color;
+	public void setFg_color(int fg_color) {
+		this.fg_color = fg_color;
 	}
 
 	/**
@@ -401,6 +545,30 @@ public abstract class UIItem {
 
 	public UIIContainer getContainer() {
 		return container;
+	}
+
+	public void setSelectedColor(int selectedColor) {
+		this.selectedColor = selectedColor;
+	}
+
+	public int getSelectedColor() {
+		return selectedColor >= 0 ? selectedColor : UIConfig.selected_color;
+	}
+
+	public void setGradientColor(int gradientColor) {
+		this.gradientColor = gradientColor;
+	}
+
+	public int getGradientColor() {
+		return gradientColor;
+	}
+
+	public void setGradientSelectedColor(int gradientSelectedColor) {
+		this.gradientSelectedColor = gradientSelectedColor;
+	}
+
+	public int getGradientSelectedColor() {
+		return gradientSelectedColor;
 	}
 
 }

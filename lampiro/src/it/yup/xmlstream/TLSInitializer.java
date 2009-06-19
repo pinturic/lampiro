@@ -1,12 +1,13 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: TLSInitializer.java 1137 2009-01-28 12:46:16Z luca $
+ * $Id: TLSInitializer.java 1285 2009-03-16 09:26:32Z luca $
 */
 
 // #ifdef TLS
 //@package it.yup.xmlstream;
 //@
+//@import it.yup.xml.Element;
 //@import java.io.IOException;
 //@
 //@public class TLSInitializer extends Initializer implements PacketListener {
@@ -31,6 +32,7 @@
 //@		if("proceed".equals(e.name)) {
 //@			try {
 //@				((SocketStream) stream).startTLS();
+//@				stream.dispatchEvent(BasicXmlStream.TLS_INITIALIZED, null);
 //@			} catch (IOException e1) {
 //@				// notify error
 //@				e1.printStackTrace();

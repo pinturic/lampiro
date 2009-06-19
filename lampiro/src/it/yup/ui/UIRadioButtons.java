@@ -1,12 +1,10 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIRadioButtons.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIRadioButtons.java 1561 2009-06-08 13:52:35Z luca $
 */
 
 package it.yup.ui;
-
-import java.util.Enumeration;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
@@ -66,27 +64,31 @@ public class UIRadioButtons extends UIVLayout {
 
 	public int getHeight(Graphics g) {
 		int itemHeight = this.layoutItems[0].getHeight(g);
-		this.layoutHeight = itemHeight * this.layoutItems.length;
-		this.height = layoutHeight;
+		this.height = itemHeight * this.layoutItems.length;
 		return this.height;
 	}
 
 	public boolean keyPressed(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
+		boolean keepSelection = false;
 		if (ga == Canvas.FIRE && this.selectedIndex >= 0
-				&& this.chechedIndex != selectedIndex) {
-			UILabel ulbOld = (UILabel) this.layoutItems[this.chechedIndex];
-			ulbOld.img = UICanvas.getUIImage("/icons/radio_unchecked.png");
-			ulbOld.setDirty(true);
+		//				&& this.chechedIndex != selectedIndex
+		) {
+			if (this.chechedIndex >= 0) {
+				UILabel ulbOld = (UILabel) this.layoutItems[this.chechedIndex];
+				ulbOld.img = UICanvas.getUIImage("/icons/radio_unchecked.png");
+				ulbOld.setDirty(true);
+			}
 
 			this.chechedIndex = this.selectedIndex;
 			UILabel ulb = (UILabel) this.layoutItems[this.chechedIndex];
 			ulb.img = UICanvas.getUIImage("/icons/radio_checked.png");
-			ulb.setDirty(true);
+			ulb.setSelected(true);
 			this.setDirty(true);
 			this.askRepaint();
+			keepSelection = true;
 		}
-		boolean keepSelection = super.keyPressed(key);
+		keepSelection |= super.keyPressed(key);
 		// we must save the last selectedIndex
 		// when loosing focus
 		if (keepSelection == false) {
@@ -101,6 +103,13 @@ public class UIRadioButtons extends UIVLayout {
 		}
 		return keepSelection;
 	}
+
+	//	public void setSelected(boolean _selected) {
+	//		super.setSelected(_selected);
+	//		if (_selected && this.chechedIndex>=0)
+	//			this.setSelectedIndex(this.chechedIndex);
+	//			
+	//	}
 
 	public void setSelectedIndex(int i) {
 		if (i < 0 || i > layoutItems.length) { return; }

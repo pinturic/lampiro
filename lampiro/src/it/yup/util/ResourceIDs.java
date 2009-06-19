@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: ResourceIDs.java 1598 2009-06-19 12:59:47Z luca $
 */
 
 /**
@@ -65,9 +65,24 @@ public class ResourceIDs {
 	public static final int STR_HINT = 51;
 	public static final int STR_GATEWAY_HINT = 52;
 	public static final int STR_DISPLAYED_STATUS = 53;
-	public static final int STR_SCARY_GMAIL = 54;
+	public static final int STR_LOADING = 54;
 	public static final int STR_CONTACT_ID = 55;
 	public static final int STR_SERVER_EXPLORE = 56;
+	public static final int STR_NAME = 57;
+	public static final int STR_NICK_NAME = 58;
+	public static final int STR_WIZARD_TEXT = 59;
+	public static final int STR_INSERT_CODE = 60;
+	public static final int STR_FT_STATUS = 61;
+	public static final int STR_FINISHED = 62;
+	public static final int STR_ONGOING = 63;
+	public static final int STR_NO_FT = 64;
+	public static final int STR_CONFIRM = 65;
+	public static final int STR_WRONG_PWD = 66;
+	public static final int STR_UNAVAILABLE = 67;
+	public static final int STR_WAIT_ACCEPTANCE = 68;
+	public static final int STR_DECLINED = 69;
+	public static final int STR_WIZARD_GATEWAYS = 70;
+	public static final int STR_KEY_CONFIGURATION = 71;
 
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;
@@ -76,6 +91,10 @@ public class ResourceIDs {
 	public static final int STR_USE_URLS = 104;
 	public static final int STR_ADD_USER = 105;
 	public static final int STR_MORE = 106;
+	public static final int STR_FORWARD_MESSAGE = 107;
+	public static final int STR_FORWARD = 108;
+	public static final int STR_TO = 109;
+	public static final int STR_FORWARDED_TEXT = 110;
 
 	public static final int STR_JABBER_ID = 200;
 	public static final int STR_EMAIL_ADDRESS = 202;
@@ -91,7 +110,7 @@ public class ResourceIDs {
 	public static final int STR_GROUP_CHAT = 212;
 	public static final int STR_CHOOSE_NAME = 213;
 	public static final int STR_GROUP_CHAT_INVITATION = 214;
-	public static final int STR_CLOSE_MUC = 215;
+	public static final int STR_EXIT_MUC = 215;
 	public static final int STR_JOINED_MUC = 216;
 	public static final int STR_LEFT_MUC = 217;
 	public static final int STR_TOPIC = 218;
@@ -103,21 +122,30 @@ public class ResourceIDs {
 	public static final int STR_NOTE = 224;
 	public static final int STR_ENABLE_TLS = 225;
 	public static final int STR_STOP_LOGIN = 226;
-	public static final int STR_KEY_HELP= 227;
-	public static final int STR_KEY_SELECT_LEFT= 228;
-	public static final int STR_KEY_SELECT_RIGHT= 229;
-	public static final int STR_KEY_CONFIRM_LEFT= 230;
-	public static final int STR_KEY_CONFIRM_RIGHT= 231;
+	public static final int STR_KEY_HELP = 227;
+	public static final int STR_KEY_SELECT_LEFT = 228;
+	public static final int STR_KEY_SELECT_RIGHT = 229;
+	public static final int STR_KEY_CONFIRM_LEFT = 230;
+	public static final int STR_KEY_CONFIRM_RIGHT = 231;
 	public static final int STR_KEY_PROCEED = 232;
-	public static final int STR_KEY_ERROR_KEY= 233;
+	public static final int STR_KEY_ERROR_KEY = 233;
 	public static final int STR_KEY_ERROR_SELECTION = 234;
-	public static final int STR_KEY_PRESS_LEFT= 235;
-	public static final int STR_KEY_PRESS_RIGHT = 236;
+	public static final int STR_KEY_PRESS = 235;
+	public static final int STR_KEY_CONFIRM = 236;
 	public static final int STR_KEY_CONFIGURE = 237;
 	public static final int STR_CONNECTION_FAILED = 238;
 	public static final int STR_CONNECTION_LOST = 239;
 	public static final int STR_WRONG_USERNAME = 240;
-	
+	public static final int STR_CONNECTED = 241;
+	public static final int STR_TLS_INITIALIZED = 242;
+	public static final int STR_COMPRESSION_INITIALIZED = 243;
+	public static final int STR_AUTHENTICATED = 244;
+	public static final int STR_INITIALIZED = 245;
+	public static final int STR_RESET_CONFIG = 246;
+	public static final int STR_RESET_DATA = 247;
+	public static final int STR_CLOSE_MUC = 248;
+	public static final int STR_ROOM_NAME = 249;
+
 	public static final int STR_MESSAGE_TO = 300;
 	public static final int STR_FILL_FORM = 500;
 	public static final int STR_SEND_MESSAGE = 700;
@@ -132,6 +160,44 @@ public class ResourceIDs {
 	public static final int STR_RELOAD_CONTACT = 709;
 	public static final int STR_PENDINGTASK = 710;
 	public static final int STR_SEE_DETAILS = 711;
+	public static final int STR_CAPTURE_IMAGE = 712;
+	public static final int STR_CAPTURE = 713;
+	public static final int STR_IMAGE = 714;
+	public static final int STR_CONTACTS = 715;
+	public static final int STR_FILE_NAME = 716;
+	public static final int STR_START = 717;
+	public static final int STR_ASK_FT = 718;
+	public static final int STR_FT = 719;
+	public static final int STR_CAPTURE_AUDIO = 720;
+	public static final int STR_AUDIO = 721;
+	public static final int STR_STOP = 722;
+	public static final int STR_PLAY = 723;
+	public static final int STR_MM_ALBUM = 724;
+	public static final int STR_MM_SAVE = 725;
+	public static final int STR_FT_ERROR = 727;
+	public static final int STR_DECODE_ERROR = 728;
+	public static final int STR_SEND_FILE = 729;
+	public static final int STR_REFRESH_ROSTER = 730;
+	public static final int STR_SEND_IMAGE = 731;
+	public static final int STR_SEND_AUDIO = 732;
+	public static final int STR_UNGROUPED = 733;
+	public static final int STR_SEARCH = 734;
+	public static final int STR_HIGHLIGHTS = 735;
+	public static final int STR_HANDLE_GROUPS = 736;
+	public static final int STR_GROUP_LIST = 737;
+	public static final int STR_NEW_GROUP = 738;
+	public static final int STR_EXISTING_GROUPS = 739;
+	public static final int STR_MOVE = 740;
+	public static final int STR_OPEN = 741;
+	public static final int STR_EXPANDED = 742;
+	public static final int STR_LOGOUT = 743;
+	public static final int STR_IS = 744;
+	public static final int STR_ONLINE = 745;
+	public static final int STR_OFFLINE = 746;
+	public static final int STR_SEND_GRP_MSG = 747;
+	public static final int STR_SIZE = 748;
+	public static final int STR_CAPTURE_CAPTION = 749;
+	public static final int STR_SCARY_GMAIL = 750;
 
 	public static final int STR_SET_STATUS = 800;
 	public static final int STR_CHOOSE_STATUS = 801;
@@ -145,6 +211,12 @@ public class ResourceIDs {
 	public static final int STR_ACCEPT_ALL = 903;
 	public static final int STR_ACCEPT_ALWAYS = 904;
 	public static final int STR_SUBSCRIPTION_REQUEST = 905;
+	public static final int STR_FT_DECLINED = 906;
+	public static final int STR_FT_ACCEPTED = 907;
+	public static final int STR_FT_SENT = 908;
+	public static final int STR_FT_NOT = 909;
+	public static final int STR_FT_RECEIVER = 910;
+	public static final int STR_UPLOAD_TEXT = 911;
 
 	public static final int STR_CMDSCREEN_TITLE = 1001;
 	public static final int STR_EXECUTE = 1002;
@@ -170,6 +242,17 @@ public class ResourceIDs {
 	public static final int STR_FONT_SIZE = 1216;
 	public static final int STR_RESET_OPTIONS = 1217;
 	public static final int STR_HISTORY_SIZE = 1218;
+	public static final int STR_MM_SIZE = 1219;
+	public static final int STR_QWERTY = 1220;
+	public static final int STR_COLOR_ALEF = 1221;
+	public static final int STR_CAMERA_RESOLUTION = 1222;
+	public static final int STR_RESOLUTION_DEFAULT = 1223;
+	public static final int STR_CAMERA_LOW = 1224;
+	public static final int STR_CAMERA_MEDIUM = 1225;
+	public static final int STR_CAMERA_HIGH = 1226;
+	public static final int STR_CAMERA_HUGE = 1227;
+	public static final int STR_CAMERA_ERROR = 1228;
+
 
 	/* uninstantiable */
 	private ResourceIDs() {

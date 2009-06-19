@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MemoryLogConsumer.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: MemoryLogConsumer.java 1519 2009-05-19 16:15:30Z luca $
 */
 
 package it.yup.util;
@@ -11,7 +11,7 @@ import java.util.Vector;
 public class MemoryLogConsumer implements LogConsumer {
 
 	public Vector messages = new Vector();
-	public int max_size = 10;
+	public int max_size = 30;
 	private static MemoryLogConsumer consumer = null;
 	
 	private MemoryLogConsumer(){};
