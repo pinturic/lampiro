@@ -1,10 +1,12 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: PacketListener.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: PacketListener.java 1220 2009-02-27 09:41:06Z luca $
 */
 
 package it.yup.xmlstream;
+
+import it.yup.xml.Element;
 
 
 /**

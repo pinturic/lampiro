@@ -13,9 +13,10 @@ import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
-import it.yup.xmlstream.Element;
+import it.yup.ui.UIUtils;
+import it.yup.xml.Element;
+import it.yup.xmpp.IQResultListener;
 import it.yup.xmpp.XMPPClient;
-import it.yup.xmpp.packets.IQResultListener;
 import it.yup.xmpp.packets.Iq;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
@@ -27,7 +28,7 @@ public class GatewayRegisterScreen extends UIScreen {
 		UIMenu resPopup;
 
 		public GatewayRegistrationHandler() {
-			resPopup = UIMenu.easyMenu(rm.getString(ResourceIDs.STR_REGISTER),
+			resPopup = UIUtils.easyMenu(rm.getString(ResourceIDs.STR_REGISTER),
 					10, -1, UICanvas.getInstance().getWidth() - 20, textLabel);
 			String regText = rm.getString(ResourceIDs.STR_REG_GATEWAYS);
 			String firstLetter = (regText.charAt(0) + "").toUpperCase();
@@ -53,7 +54,7 @@ public class GatewayRegisterScreen extends UIScreen {
 			Element error = e.getChildByName(null, "error");
 			regSuccessfull = true;
 			if (error != null) {
-				textLabel.setText(rm.getString(ResourceIDs.STR_REG_ERROR));
+				textLabel.setText(rm.getString(ResourceIDs.STR_REG_GATEWAYS));
 				regSuccessfull = false;
 			}
 			GatewayRegisterScreen.this.addPopup(resPopup);
@@ -81,13 +82,13 @@ public class GatewayRegisterScreen extends UIScreen {
 
 	public GatewayRegisterScreen(Element iq) {
 		this.iq = iq;
-		Element q = iq.getChildByName(RosterScreen.IQ_REGISTER, Iq.QUERY);
+		Element q = iq.getChildByName(XMPPClient.IQ_REGISTER, Iq.QUERY);
 		mainPanel = new UIPanel();
 		mainPanel.setMaxHeight(-1);
 		this.append(mainPanel);
 		Element instructions = q.getChildByName(null, "instructions");
 		if (instructions != null) {
-			String instructionText = instructions.content;
+			String instructionText = instructions.getText();
 			if (instructionText == null) instructionText = "";
 			UITextField instructionsLabel = new UITextField(rm
 					.getString(ResourceIDs.STR_INSTRUCTIONS), instructionText,
@@ -97,7 +98,7 @@ public class GatewayRegisterScreen extends UIScreen {
 		}
 		Element username = q.getChildByName(null, "username");
 		if (username != null) {
-			String usernameText = username.content;
+			String usernameText = username.getText();
 			if (usernameText == null) usernameText = "";
 			usernameLabel = new UITextField(rm
 					.getString(ResourceIDs.STR_USERNAME), usernameText, 50,
@@ -121,7 +122,10 @@ public class GatewayRegisterScreen extends UIScreen {
 	}
 
 	public void menuAction(UIMenu menu, UIItem c) {
-		if (regSuccessfull) UICanvas.getInstance().close(this);
+		if (regSuccessfull) {
+			UICanvas.getInstance().close(this);
+			UICanvas.getInstance().show(RosterScreen.getInstance());
+		}
 	}
 
 	public void itemAction(UIItem item) {
@@ -129,19 +133,19 @@ public class GatewayRegisterScreen extends UIScreen {
 		if (item == this.submit) {
 			String from = iq.getAttribute(Iq.ATT_FROM);
 			Iq iq = new Iq(from, Iq.T_SET);
-			Element query = iq.addElement(RosterScreen.IQ_REGISTER, Iq.QUERY);
-			Element usr = query.addElement(RosterScreen.IQ_REGISTER,
+			Element query = iq.addElement(XMPPClient.IQ_REGISTER, Iq.QUERY);
+			Element usr = query.addElement(XMPPClient.IQ_REGISTER,
 					"username");
-			usr.content = this.usernameLabel.getText();
-			Element pwd = query.addElement(RosterScreen.IQ_REGISTER,
+			usr.addText(this.usernameLabel.getText());
+			Element pwd = query.addElement(XMPPClient.IQ_REGISTER,
 					"password");
-			pwd.content = this.passwordLabel.getText();
+			pwd.addText(this.passwordLabel.getText());
 
 			XMPPClient.getInstance().sendIQ(iq,
 					new GatewayRegistrationHandler());
 
 		} else if (item == this.cancel) {
-			UICanvas.getInstance().close(this);
+			RosterScreen.closeAndOpenRoster(this);
 		}
 	}
 

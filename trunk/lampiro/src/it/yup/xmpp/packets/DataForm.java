@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataForm.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: DataForm.java 1220 2009-02-27 09:41:06Z luca $
 */
 
 /**
@@ -12,7 +12,7 @@ package it.yup.xmpp.packets;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
 
 /**
  *
@@ -81,8 +81,9 @@ public class DataForm {
 				/* form has multiple items, form definition is in "reported" 
 				 * form results are in "item" elements*/
 				parseForm(repo);
-				for (int i = 0; i < form.children.size(); i++) {
-					Element e = (Element) form.children.elementAt(i);
+				Element[] children=form.getChildren();
+				for (int i = 0; i < children.length; i++) {
+					Element e = children[i];
 					if ("item".equals(e.name)) {
 						parseItem(e);
 					}
@@ -112,9 +113,9 @@ public class DataForm {
 	private void parseItem(Element item) {
 
 		Hashtable res = new Hashtable();
-
-		for (int i = 0; i < item.children.size(); i++) {
-			Element e = (Element) item.children.elementAt(i);
+		Element [] children = item.getChildren();
+		for (int i = 0; i < children.length; i++) {
+			Element e = children[i];
 			if (!FIELD.equals(e.name)) {
 				/* ??? should not be... */
 				continue;
@@ -125,7 +126,7 @@ public class DataForm {
 				/* ??? error */
 				continue;
 			}
-			res.put(var, eval.content);
+			res.put(var, eval.getText());
 		}
 
 		results.addElement(res);
@@ -137,8 +138,9 @@ public class DataForm {
 	 * 		The field definition
 	 */
 	private void parseForm(Element form) {
-		for (int i = 0; i < form.children.size(); i++) {
-			Element e = (Element) form.children.elementAt(i);
+		Element [] children = form.getChildren();
+		for (int i = 0; i < children.length; i++) {
+			Element e = children[i];
 			if (FIELD.equals(e.name)) {
 				Field fld = new Field(e);
 				if (fld.varName == null && fld.type == FLT_FIXED) {
@@ -147,13 +149,12 @@ public class DataForm {
 				}
 				fields.addElement(fld);
 			}
-			// XXX: there can be more than one.
-			if (INSTRUCTIONS.equals(e.name)) {
-				instructions = (instructions == null ? e.content : instructions
-						+ "\n" + e.content);
+			// XXX: there can be more than one instruction line
+			if(INSTRUCTIONS.equals(e.name)) {
+				instructions = (instructions == null ? e.getText() : instructions + "\n" + e.getText());
 			}
-			if (TITLE.equals(e.name)) {
-				title = e.content;
+			if(TITLE.equals(e.name)) {
+				title = e.getText();
 			}
 		}
 	}
@@ -190,7 +191,7 @@ public class DataForm {
 					|| fld.type == FLT_JIDSINGLE || fld.type == FLT_TXTPRIV
 					|| fld.type == FLT_TXTSINGLE || fld.type == FLT_LISTSINGLE) {
 				Element val = ch.addElement(NAMESPACE, FLD_VALUE);
-				val.content = fld.dValue;
+				val.addText(fld.dValue);
 				continue;
 			}
 
@@ -200,7 +201,7 @@ public class DataForm {
 				 * tag should be reported? standard doesn't address this issue... */
 				if (fld.dValue == null) {
 					Element val = ch.addElement(NAMESPACE, FLD_VALUE);
-					val.content = "";
+					val.addText("");
 					continue;
 				}
 				int p = 0, q = 0;
@@ -208,9 +209,9 @@ public class DataForm {
 					Element val = ch.addElement(NAMESPACE, FLD_VALUE);
 					q = fld.dValue.indexOf('\n', p);
 					if (q == -1) {
-						val.content = fld.dValue.substring(p);
+						val.addText(fld.dValue.substring(p));
 					} else {
-						val.content = fld.dValue.substring(p, q);
+						val.addText(fld.dValue.substring(p, q));
 						p = q + 1;
 					}
 				} while (q != -1);
@@ -257,10 +258,11 @@ public class DataForm {
 				}
 			}
 
-			for (int i = 0; i < f.children.size(); i++) {
-				Element e = (Element) f.children.elementAt(i);
+			Element [] children = f.getChildren();
+			for (int i = 0; i < children.length; i++) {
+				Element e = children[i];
 				if (FLD_DESC.equals(e.name)) {
-					desc = e.content;
+					desc = e.getText();
 					continue;
 				}
 				if (FLD_REQUIRED.equals(e.name)) {
@@ -269,9 +271,9 @@ public class DataForm {
 				}
 				if (FLD_VALUE.equals(e.name)) {
 					if (dValue == null) {
-						dValue = e.content;
+						dValue = e.getText();
 					} else {
-						dValue += "\n" + e.content;
+						dValue += "\n" + e.getText();
 					}
 					continue;
 				}
@@ -291,7 +293,7 @@ public class DataForm {
 			String[] opt = new String[2];
 			Element v = e.getChildByName(NAMESPACE, FLD_VALUE);
 			if (v != null) {
-				opt[0] = v.content;
+				opt[0] = v.getText();
 			}
 			String att = e.getAttribute(FLD_LABEL);
 			if (att != null) {

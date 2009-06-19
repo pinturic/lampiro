@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AddContactScreen.java 1159 2009-02-01 10:04:07Z fabio $
+ * $Id: AddContactScreen.java 1310 2009-03-23 11:12:58Z luca $
 */
 
 package it.yup.screens;
@@ -14,7 +14,8 @@ import it.yup.xmpp.Contact;
 import it.yup.xmpp.Group;
 import it.yup.xmpp.XMPPClient;
 
-import java.util.Vector;
+import java.util.Enumeration;
+import java.util.Hashtable;
 
 import javax.microedition.lcdui.ChoiceGroup;
 import javax.microedition.lcdui.Command;
@@ -43,7 +44,7 @@ public class AddContactScreen extends Form implements CommandListener {
 
 	private Command cmd_save = new Command(rm.getString(ResourceIDs.STR_SAVE),
 			Command.OK, 1);
-	private Command cmd_exit = new Command(rm.getString(ResourceIDs.STR_EXIT),
+	private Command cmd_exit = new Command(rm.getString(ResourceIDs.STR_CLOSE),
 			Command.CANCEL, 2);
 	private ChoiceGroup ch_grps = new ChoiceGroup(rm
 			.getString(ResourceIDs.STR_GROUP), ChoiceGroup.POPUP);
@@ -67,10 +68,12 @@ public class AddContactScreen extends Form implements CommandListener {
 		append(t_group);
 
 		// I add a list of groups only if there are groups
-		Vector v = XMPPClient.getInstance().getRoster().groups;
-		for (int i = 1; i < v.size(); i++) {
-			Group g = (Group) v.elementAt(i);
-			ch_grps.append(g.name, null);
+		Hashtable v = Group.getGroups();
+		Enumeration en = v.elements();
+		while (en.hasMoreElements()){
+			Group g = (Group) en.nextElement();
+			if (g.name.length()>0)
+				ch_grps.append(g.name, null);
 		}
 		if (ch_grps.size() > 0) {
 			append(ch_grps);

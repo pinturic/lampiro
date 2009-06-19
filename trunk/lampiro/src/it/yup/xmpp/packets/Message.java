@@ -1,12 +1,12 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Message.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: Message.java 1375 2009-04-20 07:51:54Z luca $
 */
 
 package it.yup.xmpp.packets;
 
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
 
 public class Message extends Stanza {
 
@@ -16,23 +16,25 @@ public class Message extends Stanza {
 	public static final String THREAD   = "thread";
 	public static final String ERROR    = "error";
 	
+	public static final String CHAT    		= "chat";
+	public static final String GROUPCHAT	= "groupchat";
+	public static final String NORMAL    	= "normal";
+	public static final String HEADLINE   	= "headline";
+	
 	public Message(String to, String type) {
 		super(MESSAGE, to, type, null);
 	}
 
 	public void setBody(String body) {
-		Element el = getChildByName(NS_JABBER_CLIENT, BODY);
-		if (el != null)
-			el.content = body;
-		else
-			el = addElement(NS_JABBER_CLIENT, BODY);
-			el.content = body;
+		removeChild(NS_JABBER_CLIENT, BODY);
+		addElementAndContent(NS_JABBER_CLIENT, BODY, body);
 	}
 
 	public String getBody() {
-		Element el = getChildByName(NS_JABBER_CLIENT, BODY);
-		if (el != null)
-			return el.content;
+		Element el = (Element) this.getChildByName(NS_JABBER_CLIENT, BODY);
+		if (el != null) {
+			return el.getText();
+		}
 		return null;
 	}
 
@@ -46,20 +48,11 @@ public class Message extends Stanza {
 			return null;
 		}
 		
-		return txt.content;
+		return txt.getText();
 	}
 
-	public static Message fromElement(Element src) {
-
-		String to = src.getAttribute(ATT_TO);
-		String type = src.getAttribute(ATT_TYPE);
-
-		/* copy entire tree of data. watch out for possible GC issues here */
-		Message m = new Message(to, type);
-		m.attributes = src.attributes;
-		m.children = src.children;
-		
-		return m;
+	public Message(Element e) {
+		super(e);
 	}
 
 }

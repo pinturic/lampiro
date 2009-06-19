@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SubscriptionConfirmAlert.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: SubscriptionConfirmAlert.java 1310 2009-03-23 11:12:58Z luca $
 */
 
 package it.yup.screens;
@@ -56,7 +56,7 @@ public class SubscriptionConfirmAlert extends Alert implements CommandListener {
 			Contact c = client.roster.getContactByJid(contact.jid);
 			if (c == null) {
 				c = new Contact(contact.jid, contact.name, "from",
-						contact.groups);
+						contact.getGroups());
 				// xmpp.addContact(c);
 			}
 			pmsg.setAttribute(Stanza.ATT_TYPE, Presence.T_SUBSCRIBED);

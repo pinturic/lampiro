@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIMenu.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: UIMenu.java 1542 2009-05-26 12:30:51Z luca $
 */
 
 /**
@@ -11,9 +11,6 @@ package it.yup.ui;
 
 // #debug
 //@import it.yup.util.Logger;
-
-import it.yup.util.ResourceIDs;
-import it.yup.util.ResourceManager;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -30,12 +27,12 @@ import javax.microedition.lcdui.Image;
  */
 public class UIMenu extends UIItem implements UIIContainer {
 
-	static ResourceManager rm = ResourceManager.getManager("common", "en");
-
 	/** The list of items included here. */
 	Vector itemList;
 	/** il sottomenu selezionato e aperto */
 	private UIMenu openSubMenu;
+
+	private boolean autoClose = true;
 
 	/**
 	 * A flag used to know if the scrollbar is need for the menu
@@ -64,6 +61,16 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	private int absoluteY = 0;
 
+	/*
+	 * The title label if present
+	 */
+	UILabel titleLabel;
+
+	/*
+	 * The name of the menu
+	 */
+	String name = "";
+
 	/**
 	 * Used to know the absolute origin of the Menu on the screen. We must
 	 * invalidate the background when hiding.
@@ -78,9 +85,11 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	protected int lastVisibleIndex = 0;
 
-	public String cancelMenuString = rm.getString(ResourceIDs.STR_CANCEL)
-			.toUpperCase();
-	public String selectMenuString = rm.getString(ResourceIDs.STR_SELECT);
+	public String cancelMenuString = UIConfig.cancelMenuString;
+			
+	public String selectMenuString = UIConfig.selectMenuString;
+
+	int borderSize = 0;
 
 	/**
 	 * The images used for submenus
@@ -91,7 +100,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 			menuImage = Image.createImage("/icons/menuarrow.png");
 		} catch (IOException e) {
 			// #mdebug
-//@			System.out.println("In allocating menuImage" + e.getMessage());
+//@						System.out.println("In allocating menuImage" + e.getMessage());
 			// #enddebug
 		}
 	}
@@ -125,30 +134,21 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 		itemList = new Vector();
 		this.focusable = true;
+		this.name = _name;
 		if (_name != null && _name.length() > 0
 				&& this instanceof UIScreen == false) {
-			UILabel titleLabel = new UILabel(_name);
+			titleLabel = new UILabel(_name);
 			Font font_body = UIConfig.font_body;
 			Font title_font = Font.getFont(font_body.getFace(),
 					Font.STYLE_BOLD, font_body.getSize());
 			titleLabel.setFont(title_font);
-
-			int newBgColor = 0;
-			int[] rgb = new int[] { UIConfig.header_bg, UIConfig.header_bg,
-					UIConfig.header_bg };
-			for (int i = 0; i < 3; i++) {
-				rgb[i] &= (0xFF0000 >> (i * 8));
-				rgb[i] += (0xFF << ((2 - i) * 8));
-				rgb[i] /= 2;
-				rgb[i] &= (0xFF0000 >> (i * 8));
-				newBgColor += rgb[i];
-			}
-			titleLabel.setBg_color(newBgColor);
-
 			this.append(titleLabel);
+			titleLabel.setBg_color(UIConfig.header_bg);
+			titleLabel.setFg_color(UIConfig.menu_title);
 			titleLabel.setFocusable(false);
 			titleLabel.setAnchorPoint(Graphics.HCENTER);
 		}
+		borderSize = 2;
 	}
 
 	/**
@@ -173,6 +173,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 		// UIMenu subMenu is not here anymore I add it outside
 		ui.setFocusable(true);
 		ui.setDirty(true);
+		ui.setBg_color(UIConfig.menu_color);
 
 		itemList.addElement(ui);
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
@@ -194,6 +195,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				"Invalid menu pos: " + pos + ", " + itemList.size()); }
 		ui.setFocusable(true);
 		ui.setDirty(true);
+		ui.setBg_color(UIConfig.menu_color);
 
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
 		ui.setScreen(this.screen);
@@ -209,11 +211,21 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 *            la posizione a cui rimuovere l'item
 	 */
 	public UIItem remove(int pos) {
-		UIItem ui = (UIItem) itemList.elementAt(pos);
+		UIItem ui = null;
+		if (pos < itemList.size() && pos >= 0) {
+			try {
+				ui = (UIItem) itemList.elementAt(pos);
+				itemList.removeElementAt(pos);
+			} catch (Exception e) {
+				System.out.println("In removing menu item" + e.getMessage());
+				e.printStackTrace();
+				// #mdebug
+				// #enddebug
+			}
+		}
 		if (this.screen != null) {
 			this.screen.removePaintedItem(ui);
 		}
-		itemList.removeElementAt(pos);
 		return ui;
 	}
 
@@ -308,6 +320,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 			g.translate(0, uithHeight);
 			this.height += uithHeight;
 		}
+		this.height += 2 * borderSize;
 		g.translate(0, oy - g.getTranslateY());
 		neededHeight = this.height;
 		if (neededHeight == 0) neededHeight = 1;
@@ -367,6 +380,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 			g.translate(1 - g.getTranslateX() + initialX, 1 - g.getTranslateY()
 					+ initialY);
+			g.translate(borderSize, borderSize);
 			int scrollbarHeight = (h * h) / neededHeight;
 			// to avoid a too big scrollbar;
 			if (scrollbarHeight > (2 * h) / 3) {
@@ -380,7 +394,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 			scrollbarPosition *= h;
 			scrollbarPosition /= neededHeight;
 
-			int lastHeight = 0;
+			int lastHeight = borderSize;
 			// if a controil is dirty all the subsequent must be set as dirty since the height
 			// can be changed
 			boolean lastDirty = false;
@@ -393,13 +407,16 @@ public class UIMenu extends UIItem implements UIIContainer {
 				if (uith.isDirty()) {
 					lastDirty = true;
 					// remove the space needed for border and scrollabar
-					int reservedWidth = w - 1;
+					int reservedWidth = w - 2 * borderSize;
+					// the screen need an additional pixel for border
+					//					if (this instanceof UIScreen)
+					reservedWidth -= 1;
 					if (needScrollbar == true) reservedWidth -= UIConfig.scrollbarWidth;
 					int uithHeight = uith.getHeight(g);
 
 					// I must invalidate all the UIMenus different from myself
 					// that are over uith
-					if (this.screen != null) {
+					if (this.screen != null && this.screen != this) {
 						this.screen
 								.invalidatePopups(this, g.getTranslateX(), g
 										.getTranslateY(), g.getTranslateX()
@@ -427,7 +444,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				this.lastVisibleIndex = i;
 
 				// only the visible UIItem
-				if (lastHeight > h) {
+				if (lastHeight > h-borderSize ) {
 					/* last item is only "partially visible" */
 					this.lastVisibleIndex--;
 					lastHeight -= itemHeight;
@@ -437,13 +454,13 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 				if (lastVisibleIndex == this.itemList.size() - 1) {
 					g.setColor(getBg_color() >= 0 ? getBg_color()
-							: UIConfig.bg_color);
+							: UIConfig.menu_color);
 					int yGapHeight = this.height - lastHeight - 1;
 					if (this.needScrollbar == false) {
-						g.fillRect(0, 0, w - 1, yGapHeight - 1);
+						g.fillRect(0, 0, w - 1, yGapHeight - borderSize);
 					} else {
 						g.fillRect(0, 0, w - UIConfig.scrollbarWidth - 1,
-								yGapHeight - 1);
+								yGapHeight - borderSize);
 					}
 				}
 
@@ -455,11 +472,9 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 			// draw the scrollbar
 			if (needScrollbar == true) {
-				g.translate(initialX - g.getTranslateX(), initialY
-						- g.getTranslateY());
-				g.translate(1, 1);
+				g.translate(w - UIConfig.scrollbarWidth - borderSize + initialX
+						- g.getTranslateX(), initialY - g.getTranslateY() + 1);
 				g.setColor(UIConfig.scrollbar_bg);
-				g.translate(w - UIConfig.scrollbarWidth - 1, 0);
 				g.fillRect(0, 0, UIConfig.scrollbarWidth, height - 1);
 				g.setColor(UIConfig.scrollbar_fg);
 				if (this.lastVisibleIndex != this.itemList.size() - 1) {
@@ -467,15 +482,63 @@ public class UIMenu extends UIItem implements UIIContainer {
 				} else {
 					g.translate(0, h - scrollbarHeight);
 				}
-				g.fillRect(0, 0, UIConfig.scrollbarWidth, scrollbarHeight);
+				g.fillRect(1, 0, UIConfig.scrollbarWidth - 2, scrollbarHeight);
 			}
 
 			g.translate(initialX - g.getTranslateX(), initialY
 					- g.getTranslateY());
-			// the boreder is painted later if I am a screen
+			// the border is painted later if I am a screen
 			if (this instanceof UIScreen == false) {
-				g.setColor(0x223377);
-				g.drawRect(1, 1, width - 1, height - 2);
+//				g.setColor(UIConfig.menu_border);
+//				g.drawRect(1, 1, width - 2, height - 2);
+//				int col_lighter;
+//				int col_darker;
+//				if (UIConfig.menu_3d == true) {
+//					col_lighter = getBg_color() >= 0 ? getBg_color()
+//							: UIConfig.menu_color;
+//					col_darker = UIUtils.colorize(col_lighter, -50);
+//					col_lighter = UIUtils.colorize(col_lighter, 50);
+//				} else {
+//					col_lighter = UIConfig.menu_border;
+//					col_darker = UIConfig.menu_border;
+//				}
+//				g.setColor(col_lighter);
+//				g.drawLine(2, 2, width - 2, 2);
+//				g.drawLine(2, 2, 2, height - 2);
+//				g.setColor(col_darker);
+//				g.drawLine(width - 2, 2, width - 2, height - 2);
+//				g.drawLine(2, height - 2, width - 2, height - 2);
+				
+				
+				int currentbbColor = UIConfig.menu_border;
+				int innerUp =  0;
+				int innerDown =  0;
+				int border[][] = null;
+				if (UIConfig.menu_3d == true) {
+					innerUp =  UIUtils.colorize(currentbbColor, 50);
+					innerDown =  UIUtils.colorize(currentbbColor, -50);
+					border = new int[][] {
+							new int[] { currentbbColor, currentbbColor, -1 },
+							new int[] { currentbbColor, innerUp, -1 },
+							new int[] { -1, -1, -1 }, };
+				} else {
+					innerUp = UIConfig.menu_border;
+					innerDown = UIConfig.menu_border;
+					int innerColor = UIUtils.medColor(UIConfig.menu_color, currentbbColor);
+					int diagColor = UIUtils.medColor(UIConfig.bg_color, currentbbColor);
+					border = new int[][] { new int[] { -1, diagColor, -1 },
+							new int[] { diagColor, innerDown, -1 },
+							new int[] { -1, -1, innerColor }, };
+				}
+				int colors[] = new int[] { currentbbColor, innerUp, innerDown,
+						currentbbColor };
+				drawBorder(g, new int[] { 1, 1, width-1, height-1}, colors, border);
+				if (UIConfig.menu_3d == true) {
+					g.setColor(innerDown);
+					this.drawPixel(g, width-2, 2);
+					this.drawPixel(g, 2, height-2);
+					this.drawPixel(g, width-2, height-2);
+				}
 			}
 
 			// moving down or up the screen can cause the lastVisible or
@@ -528,9 +591,9 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 * @return The selected UIMenuItem
 	 */
 	protected UIItem keyPressed(int key, int ga) {
-		UIItem v = null;
+		//UIItem v = null;
 		if (openSubMenu != null) {
-			v = openSubMenu.keyPressed(key, ga);
+			/*v = */openSubMenu.keyPressed(key, ga);
 			return null;
 		}
 		if (key != UICanvas.MENU_RIGHT
@@ -544,10 +607,18 @@ public class UIMenu extends UIItem implements UIIContainer {
 			case Canvas.UP:
 				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) ((UIItem) this.itemList
 						.elementAt(selectedIndex)).setSelected(false);
-				if (selectedIndex == 0) selectedIndex = this.itemList.size() - 1;
-				else if (selectedIndex == -1) selectedIndex = 0;
-				else
-					selectedIndex--;
+				if (selectedIndex == 0) {
+					selectedIndex = this.itemList.size() - 1;
+				} else if (selectedIndex == -1) selectedIndex = 0;
+				else {
+					if (selectedIndex > 0
+					//							&& ((UIItem) this.itemList
+					//									.elementAt(selectedIndex - 1))
+					//									.isFocusable()
+					) {
+						selectedIndex--;
+					}
+				}
 				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
 					selItem = ((UIItem) this.itemList.elementAt(selectedIndex));
 					selItem.setSelected(true);
@@ -686,6 +757,8 @@ public class UIMenu extends UIItem implements UIIContainer {
 			UIItem ithItem = (UIItem) en.nextElement();
 			this.height += ithItem.getHeight(g);
 		}
+		//for borders
+		height += (2 * borderSize);
 		return height;
 	}
 
@@ -789,28 +862,24 @@ public class UIMenu extends UIItem implements UIIContainer {
 		}
 	}
 
-	/*
-	 * An helper function that builds and initialize a UIMenu.
-	 * 
-	 * @param item
-	 * 			the UIMenu title
-	 * @param absoluteX
-	 * 			the X position of the UIMenu
-	 * @param absoluteY
-	 * 			the Y position of the UIMenu
-	 * @param width
-	 * 			the width of the UIMenu
-	 * @param firstItem
-	 * 			the first item to add to the UIMenu  
-	 */
-	public static UIMenu easyMenu(String title, int absoluteX, int absoluteY, int width,
-			UIItem firstItem) {
-		UIMenu retMenu = new UIMenu(title);
-		if (absoluteX > 0) retMenu.setAbsoluteX(absoluteX);
-		if (absoluteY > 0) retMenu.setAbsoluteY(absoluteY);
-		if (width > 0) retMenu.setWidth(width);
-		if (firstItem != null) retMenu.append(firstItem);
-		return retMenu;
+	public boolean contains(UIItem item) {
+		if (this.itemList.contains(item)) return true;
+		Enumeration en = this.itemList.elements();
+		while (en.hasMoreElements()) {
+			UIItem ithItem = (UIItem) en.nextElement();
+			if (ithItem instanceof UIIContainer) {
+				UIIContainer iic = (UIIContainer) ithItem;
+				if (iic.contains(item)) return true;
+			}
+		}
+		return false;
 	}
 
+	public void setAutoClose(boolean autoClose) {
+		this.autoClose = autoClose;
+	}
+
+	public boolean isAutoClose() {
+		return autoClose;
+	}
 }

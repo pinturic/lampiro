@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AddContactScreen.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: AddContactScreen.java 1586 2009-06-17 12:26:55Z luca $
 */
 
 package lampiro.screens;
@@ -14,13 +14,14 @@ import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
+import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
+import it.yup.xmpp.IQResultListener;
 import it.yup.xmpp.XMPPClient;
-import it.yup.xmpp.packets.IQResultListener;
 import it.yup.xmpp.packets.Iq;
 
 import java.io.IOException;
@@ -42,7 +43,7 @@ import javax.microedition.lcdui.TextField;
 public class AddContactScreen extends UIScreen {
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+			"en");
 	/*
 	 * the found gateways
 	 */
@@ -55,9 +56,11 @@ public class AddContactScreen extends UIScreen {
 	private UITextField t_error;
 	private UICombobox t_type;
 
-	private UILabel cmd_save = new UILabel(rm.getString(ResourceIDs.STR_SAVE).toUpperCase());
-	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT).toUpperCase());
-	
+	private UILabel cmd_save = new UILabel(rm.getString(ResourceIDs.STR_SAVE)
+			.toUpperCase());
+	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
+			.toUpperCase());
+
 	private XMPPClient xmppClient = XMPPClient.getInstance();
 
 	public AddContactScreen() {
@@ -81,7 +84,7 @@ public class AddContactScreen extends UIScreen {
 				64, TextField.UNEDITABLE);
 		t_type = new UICombobox(rm.getString(ResourceIDs.STR_CONTACT_TYPE),
 				false);
-		Image img=null;
+		Image img = null;
 		try {
 			img = Image.createImage("/transport/jabber.png");
 		} catch (IOException e) {
@@ -90,11 +93,12 @@ public class AddContactScreen extends UIScreen {
 		t_type.append(transportLabel);
 		t_type.setSelectedIndex(0);
 
+		append(t_type);
 		append(t_help);
 		append(t_jid);
 		append(t_name);
 		//append(t_group);
-		append(t_type);
+		
 
 		/*
 		 * XXX: useless? // I add a list of groups only if there are groups
@@ -103,7 +107,7 @@ public class AddContactScreen extends UIScreen {
 		 * ch_grps.append(g.name, null); } if(ch_grps.size() > 0) {
 		 * append(ch_grps); }
 		 */
-		setMenu(UIMenu.easyMenu("", -1, -1, -1, cmd_save));
+		setMenu(UIUtils.easyMenu("", -1, -1, -1, cmd_save));
 		getMenu().append(cmd_exit);
 		this.setFreezed(false);
 		this.askRepaint();
@@ -119,9 +123,9 @@ public class AddContactScreen extends UIScreen {
 			String ithType = data[0];
 			String ithName = data[1];
 			Image img = null;
-			Contact rosterContact = XMPPClient.getInstance().getRoster().getContactByJid(ithFrom);
-			if (rosterContact == null || rosterContact.isVisible() == false)
-				continue;
+			Contact rosterContact = XMPPClient.getInstance().getRoster()
+					.getContactByJid(ithFrom);
+			if (rosterContact == null || rosterContact.isVisible() == false) continue;
 
 			if (ithType != null) {
 				try {
@@ -142,77 +146,13 @@ public class AddContactScreen extends UIScreen {
 			t_type.append(transportLabel);
 			this.gateways.addElement(ithFrom);
 		}
-		// to get the gateways
-//		IQResultListener dih = new IQResultListener() {
-//			public void handleError(Element e) {
-//			}
-//
-//			public void handleResult(Element e) {
-//				Element q = e.getChildByName(XMPPClient.NS_IQ_DISCO_ITEMS,
-//												Iq.QUERY);
-//				if (q != null) {
-//					Element items[] = q
-//							.getChildrenByName(XMPPClient.NS_IQ_DISCO_ITEMS,
-//												"item");
-//					for (int i = 0; i < items.length; i++) {
-//						String ithJid = items[i].getAttribute("jid");
-//						IQResultListener dih = new IQResultListener() {
-//							public void handleError(Element e) {
-//								// TODO Auto-generated method stub
-//
-//							}
-//
-//							public void handleResult(Element e) {
-//								Element q = e
-//										.getChildByName(
-//														XMPPClient.NS_IQ_DISCO_INFO,
-//														Iq.QUERY);
-//								if (q != null) {
-//									String name = "";
-//									String category = "";
-//									String from = e.getAttribute("from");
-//									Element identity = q
-//											.getChildByName(
-//															XMPPClient.NS_IQ_DISCO_INFO,
-//															"identity");
-//									name = identity.getAttribute("name");
-//									category = identity
-//											.getAttribute("category");
-//									if (category.toLowerCase()
-//											.compareTo("gateway") == 0) {
-//										Contact c = AddContactScreen.this.xmppClient
-//												.getRoster().getContactByJid(
-//														from);
-//										if (c != null) {
-//											t_type.append(name);
-//											AddContactScreen.this.gateways
-//													.addElement(from);
-//										}
-//									}
-//								}
-//							}
-//						};
-//						Iq iq = new Iq(ithJid, Iq.T_GET);
-//						iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-//						xmppClient.sendIQ(iq, dih);
-//					}
-//				}
-//			}
-//		};
-//		String myJid = xmppClient.my_jid;
-//		String domain = Contact.domain(myJid);
-//		Iq iq = new Iq(domain, Iq.T_GET);
-//		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
-//		xmppClient.sendIQ(iq, dih);
 	}
-	
+
 	public void itemAction(UIItem cmd) {
 		if (cmd == t_type) {
 			if (t_type.getSelectedIndex() > 0) {
 				IQResultListener gjh = new IQResultListener() {
 					public void handleError(Element e) {
-						int a = 0;
-						a++;
 					}
 
 					public void handleResult(Element e) {
@@ -220,7 +160,7 @@ public class AddContactScreen extends UIScreen {
 								XMPPClient.JABBER_IQ_GATEWAY, Iq.QUERY);
 						Element desc = query.getChildByName(
 								XMPPClient.JABBER_IQ_GATEWAY, "desc");
-						t_help.setText(desc.content);
+						t_help.setText(desc.getText());
 						AddContactScreen.this.askRepaint();
 					}
 				};
@@ -254,11 +194,11 @@ public class AddContactScreen extends UIScreen {
 						// some perverted gateway answers the wrong way !!!
 						Element q = query.getChildByName(
 								XMPPClient.JABBER_IQ_GATEWAY, "prompt");
-						if (q==null){
-							q= query.getChildByName(
+						if (q == null) {
+							q = query.getChildByName(
 									XMPPClient.JABBER_IQ_GATEWAY, "jid");
 						}
-						String jid = q.content;
+						String jid = q.getText();
 						String name = t_name.getText();
 						String group = "";//t_group.getText();
 						AddContactScreen.this.registerContact(jid, name, group);
@@ -272,13 +212,13 @@ public class AddContactScreen extends UIScreen {
 						Iq.QUERY);
 				Element prompt = query.addElement(XMPPClient.JABBER_IQ_GATEWAY,
 						Iq.PROMPT);
-				prompt.content = this.t_jid.getText();
+				prompt.addText(this.t_jid.getText());
 				xmppClient.sendIQ(iq, gjh);
 			}
 			UICanvas.getInstance().show(RosterScreen.getInstance());
 			UICanvas.getInstance().close(this);
 		} else if (cmd == cmd_exit) {
-			UICanvas.getInstance().close(this);
+			RosterScreen.closeAndOpenRoster(this);
 		}
 	}
 

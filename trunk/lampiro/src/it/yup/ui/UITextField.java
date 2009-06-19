@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITextField.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: UITextField.java 1512 2009-05-18 14:29:27Z luca $
 */
 
 package it.yup.ui;
@@ -37,12 +37,19 @@ public class UITextField extends UIItem implements CommandListener {
 	private UITextPanel innerPanel;
 
 	private boolean groupSelected = false;
-	
+
 	/*
 	 * Must be set to true when the UITextfield must automatically unexpand
 	 * when loosing focus 
 	 */
 	private boolean autoUnexpand = true;
+
+	/*
+	 * Must be set to true when the UITextfield can be expanded and unexpanded
+	 * by the control itself in response to a keyPress (programmatically it still can be 
+	 * epanded or unexpanded )
+	 */
+	private boolean expandable = true;
 
 	/** the label */
 	private String label;
@@ -61,6 +68,7 @@ public class UITextField extends UIItem implements CommandListener {
 	 */
 	private int constraints;
 	private int maxLines = 4;
+	private int minLines = 1;
 
 	private boolean isEditable() {
 		return !((constraints & TextField.UNEDITABLE) > 0);
@@ -71,6 +79,9 @@ public class UITextField extends UIItem implements CommandListener {
 		this.innerPanel = new UITextPanel();
 		this.innerPanel.setContainer(this);
 		this.innerPanel.setText(text == null ? "" : text);
+		innerPanel.setBg_color(UIConfig.input_color);
+		//		innerPanel.setFg_color(UIConfig.fg_color);
+		//		innerPanel.setSelectedColor(UIConfig.input_color);
 		this.maxSize = maxSize;
 		this.constraints = constraints;
 		setFocusable(true);
@@ -135,33 +146,25 @@ public class UITextField extends UIItem implements CommandListener {
 
 		int offset = (h - this.getHeight(g)) / 2 - 1;
 		if (offset < 0) offset = 0;
-		if (wrappable && selected && groupSelected) {
-			g.setColor(tempBc_color);
-		} else {
-			g.setColor(selected ? UIConfig.header_bg : (tempBc_color));
-		}
-		g.fillRect(0, offset, w, this.height);
 		int loffset = 0;
 		if (label.length() > 0) loffset = lfont.getHeight();
 		if (wrappable && selected && groupSelected) {
 			g.setColor(tempBc_color);
 			g.fillRect(0, offset, w, loffset);
-			g.setColor(UIConfig.fg_color);
-		} else {
-			g.setColor(selected ? UIConfig.header_fg : UIConfig.fg_color);
-		}
+		} 
+		g.setColor(UIConfig.fg_color);
 		g.setFont(lfont);
 		g.drawString(label, 2, 1 + offset, Graphics.LEFT | Graphics.TOP);
 		g.setFont(tfont);
 		int innerLabelHeight = this.innerPanel.getHeight(g);
-		if (wrappable && selected && groupSelected) {
-			g.setColor(UIConfig.header_bg);
-			g.fillRect(0, 1 + loffset + offset, w, 6 + innerLabelHeight);
-			g.setColor(tempBc_color);
-			g.fillRect(3, 4 + loffset + offset, w - 7, innerLabelHeight - 1);
-		} else {
-			g.drawRect(1, 2 + loffset + offset, w - 3, 3 + innerLabelHeight);
-		}
+
+		// first draw the outer  borders and then the inner one 
+		int x0 = 1, y0 = 2 + loffset + offset, x1 = w - 3 + x0, y1 = 3
+				+ innerLabelHeight + y0;
+		
+		drawInput(g, x0, y0, x1, y1);
+		g.setColor(UIConfig.fg_color);
+		
 		String innerText = this.innerPanel.getText();
 		String t = innerText;
 		if (this.wrappable == false) {
@@ -248,6 +251,7 @@ public class UITextField extends UIItem implements CommandListener {
 		Vector textLines = tempLabel.getTextLines();
 		int nLines = textLines.size();
 		if (nLines > this.maxLines) nLines = this.maxLines;
+		if (nLines < this.minLines) nLines = this.minLines;
 		int textHeight = nLines * (UIConfig.font_body.getHeight() + 2) + 1;
 		// if nothing is inside at least one row should be present
 		if (textHeight == 1) textHeight = (UIConfig.font_body.getHeight() + 2) + 1;
@@ -259,12 +263,13 @@ public class UITextField extends UIItem implements CommandListener {
 		if (wrappable && groupSelected) {
 			if (ga != Canvas.FIRE) {
 				boolean innerKeyKeep = this.innerPanel.keyPressed(key);
-				if (innerKeyKeep == false && this.autoUnexpand) {
+				if (innerKeyKeep == false && this.autoUnexpand
+						&& this.expandable) {
 					unExpand();
 				}
 				return innerKeyKeep;
 			} else {
-				unExpand();
+				if (this.expandable) unExpand();
 				return true;
 			}
 		}
@@ -292,8 +297,10 @@ public class UITextField extends UIItem implements CommandListener {
 		// 3) this has not yet been selected.
 		// 4) this object is editable 
 		// 5) the scrollbar is visible 
+		// 6) the UITextfield is expandable
 		if (ga == Canvas.FIRE && this.wrappable && this.groupSelected == false
-				&& isEditable() == false && this.innerPanel.needScrollbar) {
+				&& isEditable() == false && this.innerPanel.needScrollbar
+				&& this.expandable) {
 			expand();
 			return true;
 		}
@@ -388,5 +395,21 @@ public class UITextField extends UIItem implements CommandListener {
 
 	private boolean isAutoUnexpand() {
 		return autoUnexpand;
+	}
+
+	public void setExpandable(boolean expandable) {
+		this.expandable = expandable;
+	}
+
+	public boolean isExpandable() {
+		return expandable;
+	}
+
+	public void setMinLines(int minLines) {
+		this.minLines = minLines;
+	}
+
+	public int getMinLines() {
+		return minLines;
 	}
 }

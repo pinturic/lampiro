@@ -11,6 +11,7 @@ import javax.microedition.lcdui.Image;
 
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
+import it.yup.ui.UICheckbox;
 import it.yup.ui.UIConfig;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
@@ -20,12 +21,18 @@ import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
+import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.util.Utils;
+import it.yup.xml.BProcessor;
+import it.yup.xml.Element;
 import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.Roster;
 import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.packets.Presence;
+import it.yup.xmpp.packets.Stanza;
 
 /**
  * @author luca
@@ -33,82 +40,79 @@ import it.yup.xmpp.XMPPClient;
  */
 public class SubscribeScreen extends UIScreen {
 
-	public static final int ADD=0;
-	public static final int DELETE=1;
-	public static final int MODIFY=2;
+	public static final int ADD = 0;
+	public static final int DELETE = 1;
+	public static final int MODIFY = 2;
 
 	private UIPanel subscribePanel;
 
-	private UILabel cmd_yes;
-
-	private UIMenu denyMenu;
-
 	static ResourceManager rm = ResourceManager.getManager("common", "en");
 
-	public UIButton acceptAll = new UIButton(rm
-			.getString(ResourceIDs.STR_ACCEPT_ALL));
-	
+	public UIButton accept = new UIButton(rm.getString(ResourceIDs.STR_ACCEPT));
+
 	private UIButton acceptAlways = new UIButton(rm
 			.getString(ResourceIDs.STR_ACCEPT_ALWAYS));
 
 	private UIButton close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
 
-	private UILabel cmd_no;
-	
 	private UILabel sub_text = new UILabel("");
 
-	private Contact fromContact = null;
-	
-	UIHLayout acceptLayout= null;
-	
-	public SubscribeScreen (Contact fromContact){
+	private String fromContact = null;
+
+	UIHLayout acceptLayout = null;
+
+	private SubscribeScreen(Contact fromContact) {
 		this();
-		this.fromContact = fromContact;
-		this.sub_text.setText(fromContact.getPrintableName()+ " " +rm.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST_FROM));
-		int acceptIndex = subscribePanel.getItems().indexOf(acceptLayout);
-		UIHLayout newAcceptLayout= null;
-		newAcceptLayout = UIHLayout.easyCenterLayout(acceptAlways, 130);
+		this.fromContact = fromContact.jid;
+		this.sub_text.setText(fromContact.getPrintableName() + " "
+				+ rm.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST_FROM));
+		componentSubscriptionsScreen.put(this.fromContact, this);
+
+		// the acceptLayout is not always seen (e.g.) when only one contact is shown
+		int acceptIndex = subscribePanel.getItems().indexOf(sub_text);
+		UIHLayout newAcceptLayout = null;
+		newAcceptLayout = UIUtils.easyCenterLayout(acceptAlways, 130);
 		acceptAlways.setFont(UIConfig.small_font);
-		subscribePanel.insertItemAt(newAcceptLayout,acceptIndex+1);
+		subscribePanel.insertItemAt(newAcceptLayout, acceptIndex + 1);
 	}
+
 	/**
 	 * 
 	 */
-	public SubscribeScreen() {
-		sub_text.setWrappable(true, UICanvas.getInstance().getWidth()-10);
-		cmd_yes = new UILabel(rm.getString(ResourceIDs.STR_YES).toUpperCase());
-		UIMenu menu = new UIMenu("");
-		menu.append(cmd_yes);
-		setMenu(menu);
+	private SubscribeScreen() {
+		sub_text.setWrappable(true, UICanvas.getInstance().getWidth() - 10);
+		//		UIMenu menu = new UIMenu("");
+		//		menu.append(cmd_yes);
+		//		setMenu(menu);
 		setTitle(rm.getString(ResourceIDs.STR_SUBSCRIPTION_CONFIRM));
 		subscribePanel = new UIPanel();
 		subscribePanel.setMaxHeight(-1);
-		subscribePanel.setFocusable(true);
+		subscribePanel.setModal(true);
 		this.append(subscribePanel);
-		this.sub_text.setText(rm.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST));
+		this.sub_text.setText(rm
+				.getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST));
 		subscribePanel.addItem(this.sub_text);
-		acceptLayout = UIHLayout.easyCenterLayout(acceptAll, 130);
-		acceptLayout.setSelectedItem(acceptAll);
-		acceptAll.setImg(UICanvas.getUIImage("/icons/contact_add_all.png"));
-		acceptAll.setFont(UIConfig.small_font);
-		acceptAlways.setImg(UICanvas.getUIImage("/icons/contact_add_always.png"));
-		subscribePanel.addItem(acceptLayout);
-		acceptAll.setFocusable(true);
+
+		acceptLayout = new UIHLayout(2);
+		acceptLayout.setGroup(false);
+		acceptLayout.insert(accept, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		acceptLayout.insert(close, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
+
+		close.setImg(UICanvas.getUIImage("/icons/contact_delete.png"));
+		//acceptLayout.setSelectedItem(acceptAll);
+		accept.setImg(UICanvas.getUIImage("/icons/contact_add_all.png"));
+		accept.setFont(UIConfig.small_font);
+		acceptAlways.setImg(UICanvas
+				.getUIImage("/icons/contact_add_always.png"));
+		//subscribePanel.addItem(acceptLayout);
+		accept.setFocusable(true);
 		UISeparator sep = new UISeparator(2);
-		sep.setBg_color(0xCCCCCC);
+		sep.setFg_color(0xCCCCCC);
 		subscribePanel.addItem(sep);
-		sep = new UISeparator(2);
-		sep.setBg_color(0xCCCCCC);
-		subscribePanel.addItem(sep);
-		UIHLayout closeLayout = UIHLayout.easyCenterLayout(close, 80);
-		subscribePanel.addItem(closeLayout);
-		denyMenu = new UIMenu("");
-		cmd_no = new UILabel(rm.getString(ResourceIDs.STR_NO).toUpperCase());
-		denyMenu.append(cmd_no);
+		subscribePanel.addItem(acceptLayout);
 		subscribePanel.setSelected(true);
 		this.setSelectedIndex(0);
-		subscribePanel.setSelectedIndex(1);
-		acceptAll.setSelected(true);
+		//subscribePanel.setSelectedIndex(1);
 	}
 
 	private Hashtable subscriptions = new Hashtable(5);
@@ -129,60 +133,23 @@ public class SubscribeScreen extends UIScreen {
 			}
 			// then insert it
 			String upAction = "";
-			Image image = null;
 			if (action == SubscribeScreen.ADD) {
 				upAction = rm.getString(ResourceIDs.STR_ADD_CONTACT);
-				image = UICanvas.getUIImage("/icons/contact_add.png");
 			}
 			if (action == SubscribeScreen.DELETE) {
 				upAction = rm.getString(ResourceIDs.STR_DELETE_CONTACT);
-				image = UICanvas.getUIImage("/icons/contact_delete.png");
 			}
-			UIHLayout uhl = new UIHLayout(2);
-			uhl.setGroup(false);
-			UILabel imgLabel = new UILabel(image);
-			uhl.insert(imgLabel, 0, image.getWidth(),
-					UILayout.CONSTRAINT_PIXELS);
-			imgLabel.setFocusable(false);
-			UILabel ithSubscription = new UILabel(upAction + " "
-					+ c.getPrintableName());
-			uhl.insert(ithSubscription, 1, 100, UILayout.CONSTRAINT_PERCENTUAL);
-			ithSubscription.setSubmenu(this.denyMenu);
+			UICheckbox ithSubscription = new UICheckbox(upAction + " "
+					+ c.getPrintableName() + "?");
+			ithSubscription.setChecked(true);
 			ithSubscription.setWrappable(true, UICanvas.getInstance()
 					.getWidth() - 20);
 			subscriptions.put(ithSubscription, new Object[] { c,
 					new Integer(action) });
-			this.subscribePanel.insertItemAt(uhl, this.subscribePanel
-					.getItems().size() - 2);
+			this.subscribePanel.insertItemAt(ithSubscription,
+					this.subscribePanel.getItems().size() - 2);
 		}
 		return true;
-	}
-
-	public void menuAction(UIMenu menu, UIItem cmd) {
-		UIItem selLabel = this.subscribePanel.getSelectedItem();
-		if (selLabel != null) {
-			synchronized (this.subscriptions) {
-				Object[] objects = (Object[]) this.subscriptions.get(selLabel);
-				Contact c = (Contact) objects[0];
-				int action = ((Integer) objects[1]).intValue();
-				if (cmd == cmd_yes) {
-					if (action == SubscribeScreen.ADD) XMPPClient.getInstance()
-							.getRoster().subscribeContact(c, true);
-					else if (action == SubscribeScreen.DELETE) XMPPClient
-							.getInstance().getRoster().unsubscribeContact(c);
-					this.subscribePanel.removeItem((UIItem) selLabel
-							.getContainer());
-					this.subscriptions.remove(selLabel);
-				} else if (cmd == cmd_no) {
-					this.subscribePanel.removeItem((UIItem) selLabel
-							.getContainer());
-					this.subscriptions.remove(selLabel);
-				}
-				if (this.subscriptions.isEmpty()) this.itemAction(this.close);
-				else
-					this.askRepaint();
-			}
-		}
 	}
 
 	public void itemAction(UIItem cmd) {
@@ -190,43 +157,99 @@ public class SubscribeScreen extends UIScreen {
 			// so that the user preferred resource is reset
 			SubscribeScreen.releaseScreen(this);
 			UICanvas.getInstance().close(this);
-		} else if (cmd == acceptAll) {
+		} else if (cmd == accept) {
 			// XXX this could have serious synch problems
 			synchronized (this.subscriptions) {
 				Enumeration en = this.subscriptions.keys();
 				Roster roster = XMPPClient.getInstance().getRoster();
 				while (en.hasMoreElements()) {
-					UIItem selLabel = (UIItem) en.nextElement();
+					UICheckbox selLabel = (UICheckbox) en.nextElement();
 					Object objects[] = (Object[]) this.subscriptions
 							.get(selLabel);
 					Contact c = (Contact) objects[0];
-					roster.subscribeContact(c, true);
-					this.subscribePanel.removeItem((UIItem) selLabel
-							.getContainer());
+					int action = ((Integer) objects[1]).intValue();
+
+					if (selLabel.isChecked()) {
+						if (action == SubscribeScreen.ADD) roster
+								.subscribeContact(c, true);
+						else if (action == SubscribeScreen.DELETE) roster
+								.unsubscribeContact(c);
+						this.subscriptions.remove(selLabel);
+					} else {
+						// negate presence subscription
+						Presence pmsg = new Presence();
+						pmsg.setAttribute(Stanza.ATT_TO, c.jid);
+						pmsg.setAttribute(Stanza.ATT_TYPE,
+								Presence.T_UNSUBSCRIBED);
+						XMPPClient.getInstance().sendPacket(pmsg);
+
+						this.subscribePanel.removeItem((UIItem) selLabel
+								.getContainer());
+						this.subscriptions.remove(selLabel);
+					}
 				}
 			}
-			this.askRepaint();
 			this.itemAction(this.close);
 		} else if (cmd == acceptAlways) {
-			this.itemAction(acceptAll);
+			this.itemAction(accept);
 			Config cfg = Config.getInstance();
-			String acceptedGateways = cfg.getProperty(Config.ACCEPTED_GATEWAYS, "");
-			acceptedGateways = acceptedGateways+"<"+this.fromContact.jid.trim();
-			cfg.setProperty(Config.ACCEPTED_GATEWAYS, acceptedGateways);
+			String acceptedGateways = cfg.getProperty(Config.ACCEPTED_GATEWAYS,
+					"");
+			byte[] agb = Utils.getBytesUtf8(acceptedGateways);
+			Element parsedAgb = null;
+			Element agEl = null;
+			if (agb != null && agb.length > 0) {
+				try {
+					parsedAgb = BProcessor.parse(agb);
+				} catch (Exception ex) {
+				}
+			}
+			if (parsedAgb == null) parsedAgb = new Element("", "agb");
+
+			agEl = parsedAgb;
+
+			// check if the gw is already autoaccepted
+			boolean found = false;
+			for (int i = 0; i < agEl.getChildren().length; i++) {
+				if (agEl.getChildren()[i].getText().equals(fromContact)) {
+					found = true;
+					break;
+				}
+			}
+			if (found == false) agEl.addElement(null, "agw").addText(
+					this.fromContact);
+			agb = BProcessor.toBinary(agEl);
+			cfg.setProperty(Config.ACCEPTED_GATEWAYS, Utils.getStringUTF8(agb));
 			cfg.saveToStorage();
 		}
 	}
 
 	private static SubscribeScreen userSubscriptionScreen = null;
-	
+	private static Hashtable componentSubscriptionsScreen = new Hashtable();
+
 	public synchronized static void releaseScreen(SubscribeScreen ss) {
-		if (ss == SubscribeScreen.userSubscriptionScreen){
+		if (ss == SubscribeScreen.userSubscriptionScreen) {
 			userSubscriptionScreen = null;
+		} else {
+			componentSubscriptionsScreen.remove(ss.fromContact);
 		}
 	}
+
+	/*
+	 * Returns a user subscription screen useful for "normal" contacts (not for gateway ones)
+	 */
 	public synchronized static SubscribeScreen getUserSubscription() {
-		if (userSubscriptionScreen==null)
-			userSubscriptionScreen = new SubscribeScreen();
+		if (userSubscriptionScreen == null) userSubscriptionScreen = new SubscribeScreen();
 		return userSubscriptionScreen;
 	}
+
+	public synchronized static SubscribeScreen getComponentSubscription(
+			Contact componentJid) {
+		SubscribeScreen subscribeScreen = (SubscribeScreen) componentSubscriptionsScreen
+				.get(componentJid.jid);
+		if (subscribeScreen == null) subscribeScreen = new SubscribeScreen(
+				componentJid);
+		return subscribeScreen;
+	}
+
 }

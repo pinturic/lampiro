@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: DataResultScreen.java 1273 2009-03-13 15:57:53Z luca $
 */
 
 /**
@@ -12,7 +12,7 @@ package it.yup.screens;
 import java.util.Hashtable;
 
 import lampiro.LampiroMidlet;
-import it.yup.screens.DataFormScreen.DataFormListener;
+import it.yup.xmpp.DataFormListener;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xmpp.packets.DataForm;

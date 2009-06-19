@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BaseChannel.java 1144 2009-01-30 17:26:43Z luca $
+ * $Id: BaseChannel.java 1577 2009-06-15 14:38:27Z luca $
 */
 
 package it.yup.transport;
@@ -14,7 +14,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Vector;
 
-import org.bouncycastle.crypto.tls.TlsOuputStream;
+//#ifdef TLS
+//@import org.bouncycastle.crypto.tls.TlsOuputStream;
+//#endif
 
 // #ifdef COMPRESSION
 //@import com.jcraft.jzlib.ZOutputStream;
@@ -78,10 +80,10 @@ public abstract class BaseChannel {
 						try {
 							if (this.exiting) { return; }
 							// #mdebug							
-//@																												Logger.log(
-//@																															"Sender: waiting for packets to send. Data: "
-//@																																	,
-//@																															Logger.DEBUG);
+//@							Logger
+//@									.log(
+//@											"Sender: waiting for packets to send. Data: ",
+//@											Logger.DEBUG);
 							// #enddebug							
 							channel.packets.wait();
 
@@ -90,7 +92,7 @@ public abstract class BaseChannel {
 
 							if (!channel.pollAlive()) {
 								// #debug								
-//@																																Logger.log("send exited");
+//@								Logger.log("send exited");
 								return;
 							}
 
@@ -110,20 +112,20 @@ public abstract class BaseChannel {
 
 				try {
 					// #debug
-//@																				Logger.log("[SEND] " + new String(pkt));
+//@					Logger.log("[SEND] " + new String(pkt));
 
 					// #ifndef BXMPP					
 					channel.outputStream.write(pkt);
 					channel.outputStream.flush();
 					// #ifdef COMPRESSION
-					//@					if (channel.outputStream instanceof ZOutputStream) {
-					//@						BaseChannel.bytes_sent = (int) ((ZOutputStream) channel.outputStream)
-					//@								.getTotalOut();
-					//@					}
+//@					if (channel.outputStream instanceof ZOutputStream) {
+//@						BaseChannel.bytes_sent = (int) ((ZOutputStream) channel.outputStream)
+//@								.getTotalOut();
+//@					}
 					// #ifndef TLS
-					//@					else {
-					//@						BaseChannel.bytes_sent += pkt.length;
-					//@					}
+//@					else {
+//@						BaseChannel.bytes_sent += pkt.length;
+//@					}
 					// #endif
 // #ifdef TLS
 					//@					else if (channel.outputStream instanceof TlsOuputStream == false) {
@@ -135,19 +137,19 @@ public abstract class BaseChannel {
 					// #endif
 					// #endif
 // #ifndef COMPRESSION
-					bytes_sent += pkt.length;
+										bytes_sent += pkt.length;
 					// #endif
 
 					// #endif
 				} catch (IOException e) {
 					// #debug
-//@																				Logger.log("[SEND] IOException:" + e.getMessage());
+//@					Logger.log("[SEND] IOException:" + e.getMessage());
 					close();
 				}
 
 			}
 			// #debug
-//@												Logger.log("Sender: exiting", Logger.DEBUG);
+//@			Logger.log("Sender: exiting", Logger.DEBUG);
 
 		}
 	}

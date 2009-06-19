@@ -50,7 +50,7 @@ public class UITextPanel extends UIPanel {
 	}
 
 	public void setMaxHeight(int mh) {
-		if (this.getMaxHeight() != mh) {
+		if (this.maxHeight != mh) {
 			// so to recompute the lines
 			textLines = null;
 		}
@@ -75,6 +75,9 @@ public class UITextPanel extends UIPanel {
 				if (this.enableEmoticons) ithLabel = new UIEmoLabel("");
 				else
 					ithLabel = new UILabel("");
+				ithLabel.setBg_color(UIConfig.input_color);
+				ithLabel.setFg_color(UIConfig.fg_color);
+				ithLabel.setSelectedColor(UIConfig.input_color);
 				ithLabel.setFocusable(true);
 				ithLabel.setSelected(this.selected);
 				this.addItem(ithLabel);
@@ -102,8 +105,7 @@ public class UITextPanel extends UIPanel {
 		}
 
 		// fill the gap
-		g.setColor(selected ? UIConfig.header_bg
-				: (getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color));
+		g.setColor(getBg_color());
 		if (needScrollbar) w -= UIConfig.scrollbarWidth;
 		g.fillRect(0, paintedHeight, w, h - paintedHeight);
 
@@ -123,28 +125,29 @@ public class UITextPanel extends UIPanel {
 		int ga = UICanvas.getInstance().getGameAction(key);
 		if (ga != Canvas.DOWN && ga != Canvas.UP) { return super
 				.keyPressed(key); }
-
-		switch (ga) {
-			case Canvas.DOWN:
-				if (lastLabel < this.textLines.size() - 1) {
-					this.firstLabel++;
-					this.lastLabel++;
-					this.setDirty(true);
-					this.askRepaint();
+		if (textLines != null) {
+			switch (ga) {
+				case Canvas.DOWN:
+					if (lastLabel < this.textLines.size() - 1) {
+						this.firstLabel++;
+						this.lastLabel++;
+						this.setDirty(true);
+						this.askRepaint();
+						return true;
+					} else if (lastLabel == this.textLines.size() - 1
+							&& needScrollbar == false) { return false; }
 					return true;
-				} else if (lastLabel == this.textLines.size() - 1
-						&& needScrollbar == false) { return false; }
-				return true;
 
-			case Canvas.UP: {
-				if (firstLabel > 0) {
-					this.firstLabel--;
-					this.lastLabel--;
-					this.setDirty(true);
-					this.askRepaint();
+				case Canvas.UP: {
+					if (firstLabel > 0) {
+						this.firstLabel--;
+						this.lastLabel--;
+						this.setDirty(true);
+						this.askRepaint();
+						return true;
+					} else if (firstLabel == 0 && needScrollbar == false) { return false; }
 					return true;
-				} else if (firstLabel == 0 && needScrollbar == false) { return false; }
-				return true;
+				}
 			}
 		}
 		return false;
@@ -167,7 +170,7 @@ public class UITextPanel extends UIPanel {
 		}
 
 		g.setColor(UIConfig.scrollbar_fg);
-		g.fillRect(0, sy, UIConfig.scrollbarWidth, sh);
+		g.fillRect(1, sy, UIConfig.scrollbarWidth - 2, sh);
 		/* resets origin to old value */
 		g.translate(-otx + g.getTranslateX(), -oty + g.getTranslateY());
 		g.setColor(oc);

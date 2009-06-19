@@ -1,36 +1,23 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleDataFormExecutor.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: SimpleDataFormExecutor.java 1566 2009-06-10 13:13:15Z luca $
 */
 
 package it.yup.xmpp;
 
 import java.util.Date;
 
-// #ifdef UI 
-import lampiro.screens.DataFormScreen;
-import lampiro.screens.DataFormScreen.DataFormListener;
-import lampiro.screens.DataResultScreen;
-import lampiro.screens.RosterScreen;
-import it.yup.ui.UICanvas;
-import it.yup.ui.UIScreen;
-
-// #endif
-// #ifndef UI
+// #ifndef UI 
 //@
-//@import lampiro.LampiroMidlet;
 //@import javax.microedition.lcdui.Display;
 //@import javax.microedition.lcdui.Displayable;
 //@
-//@import it.yup.screens.DataFormScreen;
-//@import it.yup.screens.DataResultScreen;
-//@import it.yup.screens.RosterScreen;
-//@import it.yup.screens.DataFormScreen.DataFormListener;
 //@
 // #endif
 
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
+import it.yup.xmpp.XMPPClient.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
@@ -39,9 +26,7 @@ import it.yup.xmpp.packets.Stanza;
 public class SimpleDataFormExecutor implements DataFormListener, Task {
 
 	private Element form_element;
-	// #ifndef UI 
-//@	private Displayable next_display = null;
-	// #endif
+
 	private String label = new String();
 	private DataForm df;
 	private byte status;
@@ -50,7 +35,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	public SimpleDataFormExecutor(Element el) {
 		this.form_element = el;
 		this.df = new DataForm(form_element.getChildByName(DataForm.NAMESPACE,
-															DataForm.X));
+				DataForm.X));
 		this.status = (df.type == DataForm.TYPE_FORM) ? Task.DF_FORM
 				: Task.DF_RESULT;
 
@@ -64,46 +49,43 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		arrive_time = new Date();
 	}
 
-	public void execute(int cmd) {
+	public boolean execute(int cmd) {
 		XMPPClient client = XMPPClient.getInstance();
 		boolean send_reply = false;
 
 		switch (cmd) {
-		case DataFormListener.CMD_CANCEL:
-			df.type = DataForm.TYPE_CANCEL;
-			status = Task.DF_CANCELED;
-			send_reply = true;
-			break;
-		case DataFormListener.CMD_SUBMIT:
-			df.type = DataForm.TYPE_SUBMIT;
-			status = Task.DF_SUBMITTED;
-			send_reply = true;
-			break;
-		case DataFormListener.CMD_DELAY:
-			// do nothing, keep status
-			break;
-		case DataFormListener.CMD_DESTROY:
-			status = Task.DF_DESTROY;
-			break;
+			case DataFormListener.CMD_CANCEL:
+				df.type = DataForm.TYPE_CANCEL;
+				status = Task.DF_CANCELED;
+				send_reply = true;
+				break;
+			case DataFormListener.CMD_SUBMIT:
+				df.type = DataForm.TYPE_SUBMIT;
+				status = Task.DF_SUBMITTED;
+				send_reply = true;
+				break;
+			case DataFormListener.CMD_DELAY:
+				// do nothing, keep status
+				break;
+			case DataFormListener.CMD_DESTROY:
+				status = Task.DF_DESTROY;
+				break;
 		}
 
 		if (send_reply) {
 			Stanza reply = buildReply(form_element);
-			reply.children.addElement(df.getResultElement());
+			reply.addElement(df.getResultElement());
 			client.sendPacket(reply);
 		}
 
 		client.updateTask(this);
 
-		// #ifdef UI 
-						UICanvas.getInstance().show(RosterScreen.getInstance());
-		// #endif
-// #ifndef UI
-//@		if (next_display == null) {
-//@			next_display = RosterScreen.getInstance();
-//@		}
-//@		LampiroMidlet.disp.setCurrent(next_display);
-		// #endif
+		XmppListener xmppListener = XMPPClient.getInstance().getXmppListener();
+		if (xmppListener!=null){
+			xmppListener.commandExecuted(null);
+		}
+		// true if the form_element is an IQ 
+		return Iq.IQ.equals(form_element.name) ;
 	}
 
 	/**
@@ -118,13 +100,13 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 			Message msg = new Message(el.getAttribute(Stanza.ATT_FROM), el
 					.getAttribute(Stanza.ATT_TYPE));
 			Element e = el.getChildByName(Stanza.NS_JABBER_CLIENT,
-											Message.THREAD);
+					Message.THREAD);
 			if (e != null) {
-				msg.children.addElement(e);
+				msg.addElement(e);
 			}
 			reply = msg;
 		} else if (Iq.IQ.equals(el.name)) {
-			// XXX: Always type='set' because now we handle just the type='form'
+			// XXX: Always type='set' because now we handle just the type='from'
 			Iq iq = new Iq(el.getAttribute(Stanza.ATT_FROM), Iq.T_SET);
 			iq.setAttribute(Stanza.ATT_FROM, el.getAttribute(Stanza.ATT_TO));
 			reply = iq;
@@ -133,36 +115,31 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	}
 
 	// #ifdef UI 
-			public void display() {
-			UIScreen scr = null;
-	// #endif
+	public void display() {
+		// #endif
 // #ifndef UI
-//@	public void display(Display disp, Displayable nextDisplay) {
-//@		Displayable scr = null;
+//@			public void display(Display disp, Displayable nextDisplay) {
 		// #endif
 
 		Element form = form_element.getChildByName(DataForm.NAMESPACE,
-													DataForm.X);
+				DataForm.X);
 
 		if (form == null) {
 			/* ??? LOG ??? */
 			return;
 		}
 
-		if (df.type == DataForm.TYPE_FORM) {
-			scr = new DataFormScreen(df, this);
-		} else if (df.type == DataForm.TYPE_RESULT) {
-			scr = new DataResultScreen(df, this);
-		} else {
-			/* should log it... */
-			return;
+		XmppListener xmppListener = XMPPClient.getInstance().getXmppListener();
+		if (xmppListener != null) {
+			if (df.type == DataForm.TYPE_FORM) {
+				xmppListener.handleDataForm(df,Task.CMD_INPUT,this,-1);
+			} else if (df.type == DataForm.TYPE_RESULT) {
+				xmppListener.handleDataForm(df,Task.CMD_FINISHED,this,-1);
+			} else {
+				/* should log it... */
+				return;
+			}
 		}
-		// #ifdef UI 
-						UICanvas.getInstance().open(scr, true);
-		// #endif
-// #ifndef UI
-//@		disp.setCurrent(scr);
-		// #endif
 	}
 
 	public String getLabel() {

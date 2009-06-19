@@ -1,35 +1,45 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: Config.java 1599 2009-06-19 13:13:04Z luca $
 */
 
 package it.yup.xmpp;
 
-// #debug
+// #mdebug
 //@import it.yup.util.Logger;
+// #enddebug
+
+import it.yup.util.RMSIndex;
+import it.yup.xml.BProcessor;
+import it.yup.xml.Element;
+import it.yup.xmpp.packets.Presence;
+import it.yup.util.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+
 import javax.microedition.lcdui.AlertType;
-import javax.microedition.rms.InvalidRecordIDException;
 import javax.microedition.rms.RecordStore;
-import javax.microedition.rms.RecordStoreNotFoundException;
+
 
 /**
  * Client Configuration
  */
 public class Config {
 
-	private static String version = "9.1.2";
+	private static String version = "9.6.0";
 
-	/** name of the record store */
-	public static final String RMS_NAME = "yuprms";
+	public static final String RMS_NAME = "lampirorms";
+
+	/** name of the record store  (will be signed as deprecated)*/
+	public static final String RMS_OLD_NAME = "yuprms";
 
 	/** config index in the record store */
 	public static final int RNUM_CONFIG = 1;
@@ -55,7 +65,7 @@ public class Config {
 
 	/** path of the GPRS/HTTP gateway */
 	public static final String SRV_QUERY_PATH = "http://services.bluendo.com/srv/?domain=";
-	
+
 	public static final String BLUENDO_SERVER = "jabber.bluendo.com";
 
 	/**
@@ -63,10 +73,15 @@ public class Config {
 	 * available
 	 */
 	public static final int WAIT_TIME = 30;
+	
+	/**
+	 * The time after which iq answer not arrived are considered as expired and remov ed
+	 */
+	public static int MAX_PERM_TIME = 60000;
 
 	// /** default value keepalive of the plain socket */
 	// XXX We may keep this but the transport should not read it from Config
-	private static final int SO_KEEPALIVE = 60 * 15 * 1000;
+	private static final int SO_KEEPALIVE = 60 * 5 * 1000;
 
 	/** Config instance */
 	private static Config instance;
@@ -74,6 +89,38 @@ public class Config {
 	public static String TRUE = "t";
 	public static String FALSE = "f";
 
+	// Constants for keys saved in the rms
+	public static String CONFIG = "config";
+	
+	/*
+	 * The db of all the known capabilities
+	 */
+	public static String KNOWN_CAPS = "known_caps";
+	
+	public static String CAPS_PREFIX = "caps";
+	
+	/*
+	 * All the gateways to which I am registered to
+	 */
+	public static String REGISTERED_GATEWAYS = "reg_gateways";
+	
+	public static String GROUPS_POSITION= "groups_position";
+
+	// The next ones are variables related to the management of multimedia data:
+	// audioTypes and imageTypes are the suffix handled and recognized by the multimedia related
+	// screens. audioType and imgType are constants used to identify a file in the
+	// store.
+	public static int audioType = 1;
+
+	public static int imgType = 0;
+
+	public static String audioTypes[] = new String[] { "amr", "amr-xb", "pcm",
+	"ulaw", "gsm", "wav", "au", "raw" };
+
+	public static String imageTypes[] = new String[] { "jpeg", "png", "jfif",
+	"bmp" };
+	
+	
 	// constants for values saved in the record store
 	/** server name */
 	public static short SERVER = 0x0000;
@@ -91,7 +138,7 @@ public class Config {
 	public static short SILENT = 0x0006;
 	/** logged once */
 	public static short LOGGED_ONCE = 0x0007;
-	/** keaplive for plain sockets */
+	/** keeplive for plain sockets */
 	public static short KEEP_ALIVE = 0x0008;
 	/** flag which is true after the first succesful login and roster update */
 	public static short CLIENT_INITIALIZED = 0x0009;
@@ -107,6 +154,8 @@ public class Config {
 	public static short LAST_PRIORITY = 0x0017;
 	/** XMPP resource */
 	public static short YUP_RESOURCE = 0x0021;
+	/** Has a qwerty keyboard */
+	public static short QWERTY = 0x0022;
 
 
 	/**
@@ -152,27 +201,29 @@ public class Config {
 	 * Font Size for roster and chat
 	 */
 	public static short HISTORY_SIZE = 0x0018;
-	
+
 	/*
-	 * The accepted gateways
+	 * The accepted gateways (i.e. the ones whose contacts do not need manual authorization)
 	 */
 	public static short ACCEPTED_GATEWAYS = 0x0022;
-	
-	/*
-	 * The db of all the known capabilities
-	 */
-	public static short KNOWN_CAPS = 0x0023;
-	
-	/*
-	 * All the gateways to which I am registered
-	 */
-	public static short REGISTERED_GATEWAYS = 0x0024;
 
+	/*
+	 * the album data
+	 */
+	public static short MM_ALBUM = 0x0025;
+	
+	/*
+	 * The resolution of the camera in capturing images 
+	 */
+	public static final short CAMERA_RESOLUTION = 0x0026;
+	
 	/** the bluendo assistent */
 	public static final String LAMPIRO_AGENT = "lampiro@golem.jabber.bluendo.com";
 
 	/** maximum wait time for a packet (should we let configure this ) */
 	public static final int TIMEOUT = -1;
+
+	private Hashtable cachedCaps= new Hashtable(7);
 
 	/**
 	 * Get the configuration using the stored values (if any), or use the
@@ -190,15 +241,58 @@ public class Config {
 	private Config() {
 	}
 
+	/*
+	 * The rmsIndex containing all the data
+	 */
+	private RMSIndex rms= new RMSIndex(RMS_NAME);
+
 	/**
 	 * Load the the configuration from the RMS
 	 */
-	private void loadFromStorage() {
-
-		RecordStore recordStore = null;
+	private synchronized void loadFromStorage() {
 		try {
-			recordStore = RecordStore.openRecordStore(RMS_NAME, false);
-			byte[] b = recordStore.getRecord(RNUM_CONFIG);
+			byte[] b = null;
+			boolean needSave = false;
+			
+			if (RMSIndex.rmExist(RMS_NAME)) {
+				// first check for existence of the "new recordStore"
+				// however old recordstore handling will be removed in future version
+				rms.open();
+				b = rms.load(Config.CONFIG.getBytes());
+				// if I cannot load the configuration it is better
+				// to delete it 
+				if (b==null){
+					resetStorage(true);
+					RecordStore.deleteRecordStore(RMS_NAME);
+				}
+				rms.close();
+			} else if (RMSIndex.rmExist(RMS_OLD_NAME)) {
+				// then check for existence of the "old recordStore"
+				// load and delete it 
+				RecordStore recordStore = null;
+				try {
+					recordStore = RecordStore.openRecordStore(RMS_OLD_NAME, false);
+					b = recordStore.getRecord(RNUM_CONFIG);
+					needSave = true;
+				} catch (Exception e) {
+					setDefaults();
+				} finally {
+					try {
+						if (recordStore != null) {
+							recordStore.closeRecordStore();
+							RecordStore.deleteRecordStore(RMS_OLD_NAME);
+						}
+					} catch (Exception e) {
+						// #mdebug
+//@							e.printStackTrace();
+//@							System.out.println("In config resetting" + e.getMessage()
+//@								+ e.getClass());
+						// #enddebug
+					}
+				}
+			} else {
+				setDefaults();
+			}
 
 			if (b != null && b.length != 0) {
 				DataInputStream in = new DataInputStream(
@@ -210,19 +304,14 @@ public class Config {
 				}
 				in.close();
 			}
-
+			if (needSave == true)
+				this.saveToStorage();
 			String _version = getProperty(Config.VERSION);
 
 			if (_version == null || _version.compareTo(Config.version) < 0) {
 				// the software has been updated, handle here the "update" logic
 				setDefaults();
 			}
-		} catch (RecordStoreNotFoundException rnfe) {
-			// no memory, using the default values
-			setDefaults();
-		} catch (InvalidRecordIDException ire) {
-			// the record does not exist, using the default value
-			setDefaults();
 		} catch (Exception e) {
 			this.resetStorage(true);
 			XMPPClient.getInstance().showAlert(
@@ -230,13 +319,6 @@ public class Config {
 					"Config Error",
 					"Error while loading config:\n" + e.getMessage()
 							+ "\nConfig has been reset.", null);
-		} finally {
-			try {
-				if (recordStore != null) {
-					recordStore.closeRecordStore();
-				}
-			} catch (Exception e) {
-			}
 		}
 	}
 
@@ -252,6 +334,7 @@ public class Config {
 		setDefault(Config.CLIENT_INITIALIZED, Config.FALSE);
 		setDefault(Config.LAST_STATUS_MESSAGE,
 				"Lampiro (http://lampiro.bluendo.com)");
+		setDefault(Config.LAST_PRESENCE_SHOW, Presence.SHOW_ONLINE);
 		saveToStorage();
 	}
 
@@ -295,8 +378,7 @@ public class Config {
 		this.loadFromStorage();
 	}
 
-	public void saveToStorage() {
-
+	public synchronized void saveToStorage() {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(baos);
@@ -307,22 +389,33 @@ public class Config {
 				out.writeShort(Integer.parseInt(code));
 				out.writeUTF((String) properties.get(code));
 			}
-			RecordStore rms = RecordStore.openRecordStore(RMS_NAME, true);
 			byte[] data = baos.toByteArray();
-			while (rms.getNumRecords() < RNUM_CONFIG) {
-				rms.addRecord(null, 0, 0);
-			}
-			rms.setRecord(RNUM_CONFIG, data, 0, data.length);
+			this.rms.open();
+			this.rms.store(Config.CONFIG.getBytes(), data);
+			this.rms.close();
 		} catch (Exception e) {
 			// #mdebug
-//@									Logger.log("Error in saving to storage: " + e.getMessage(),
-//@												Logger.DEBUG);
-//@						
+//@												Logger.log("Error in saving to storage: " + e.getMessage(),
+//@															Logger.DEBUG);
+//@									
 			// #enddebug
 			XMPPClient.getInstance().showAlert(AlertType.ERROR, "Config Error",
 					"Error while saving config:\n" + e.getMessage(), null);
 		}
 
+	}
+	
+	public synchronized byte [] getData (byte key []){
+		this.rms.open();
+		byte [] res = this.rms.load(key);
+		this.rms.close();
+		return res;
+	}
+	
+	public synchronized void setData (byte key[], byte data[]){
+		this.rms.open();
+		this.rms.store(key, data);
+		this.rms.close();
 	}
 
 	public String getProperty(short code) {
@@ -348,6 +441,102 @@ public class Config {
 		if (!this.properties.containsKey(String.valueOf(code))) {
 			setProperty(code, default_value);
 		}
+	}
+
+	public synchronized  void saveCapabilities(String node, String ver,
+			Element query) {
+		String combi = node + ver;
+		// should not happen
+		if (cachedCaps.contains(combi))
+			return;
+		byte[] capsRaw = this.getData(KNOWN_CAPS.getBytes());
+		if (capsRaw == null) capsRaw = new byte[0];
+	
+		//read the main record 
+		DataInputStream is = new DataInputStream(new ByteArrayInputStream(
+				capsRaw));
+		int capCount = 0;
+		try {
+			while (is.available() > 0) {
+				is.readUTF();
+				is.readUTF();
+				capCount++;
+			}
+		} catch (IOException e) {
+			// #mdebug
+//@								Logger.log("Error in getting capabilities: received packet: "
+//@									+ e.getClass(), Logger.DEBUG);
+			// #enddebug
+			// reset the capabilities 
+			this.setData(KNOWN_CAPS.getBytes(), "".getBytes());
+			return;
+		}
+		// save the new cap
+		String newCapKey = CAPS_PREFIX + capCount;
+		// #mdebug
+//@		
+		// #enddebug
+		byte[] newCapData = BProcessor.toBinary(query);
+		this.setData(newCapKey.getBytes(), newCapData);
+	
+		// add the new cap
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		DataOutputStream os = new DataOutputStream(baos);
+		try {
+			os.write(capsRaw);
+			os.writeUTF(combi);
+			os.writeUTF(newCapKey);
+		} catch (IOException e) {
+			// should not ever appear
+			// #mdebug
+//@								Logger.log("Error in saving new capability"
+//@									+ e.getClass(), Logger.DEBUG);
+			// #enddebug
+		}
+		this.setData(KNOWN_CAPS.getBytes(), baos.toByteArray());
+		this.cachedCaps.put(combi,query);
+	}
+	
+	public synchronized Element getCapabilities(String node, String ver) {
+		String combi = node + ver;
+		
+		Element cachedCap = (Element) cachedCaps.get(combi);
+		if (cachedCap != null)
+			return cachedCap;
+		
+		// load the capabilities 
+		byte[] capsRaw = this.getData(KNOWN_CAPS.getBytes());
+		if (capsRaw == null) return null;
+	
+		//read the main record 
+		DataInputStream is = new DataInputStream(new ByteArrayInputStream(
+				capsRaw));
+		String capCode = null;
+		String ithCap=null;
+		String tempCode;
+		try {
+			while (is.available() > 0) {
+				ithCap = is.readUTF();
+				tempCode = is.readUTF();
+				if (ithCap.equals(combi)){
+					capCode = tempCode;
+					break;
+				}
+			}
+		} catch (IOException e) {
+			// #mdebug
+//@								Logger.log("Error in getting capabilities: received packet: "
+//@									+ e.getClass(), Logger.DEBUG);
+			// #enddebug
+			return null ;
+		}
+		if (capCode == null)
+			return null;
+		byte capData[] = this.getData(Utils.getBytesUtf8( capCode));
+		Element decodedPacket = BProcessor.parse(capData);
+		cachedCaps.put(combi, decodedPacket);
+		
+		return decodedPacket;
 	}
 
 }

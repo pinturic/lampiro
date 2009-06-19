@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: ChatScreen.java 1377 2009-04-21 14:17:38Z luca $
 */
 
 package it.yup.screens;
@@ -25,7 +25,8 @@ import lampiro.LampiroMidlet;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
+import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
@@ -149,15 +150,14 @@ public class ChatScreen extends Canvas implements CommandListener,
 	 * @return true if new messages have been added
 	 */
 	private boolean updateConversation(int screen_width) {
-		Vector messages = user.getMessageHistory();
-		user.unread_msg = false;
+		Vector messages = user.getMessageHistory(null);
 		if (messages == null) { return false; }
 		for (int i = 0; i < messages.size(); i++) {
 			String msg[] = (String[]) messages.elementAt(i);
 			checkUrls(msg[1]);
 			current_conversation.addElement(wrapMessage(msg, screen_width));
 		}
-		user.resetMessageHistory();
+		user.resetMessageHistory(null);
 		return true;
 	}
 
@@ -166,7 +166,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 		EventQuery q = new EventQuery("message", null, null);
 		q.child = new EventQuery("body", null, null);
 
-		reg = XMPPClient.getInstance().registerListener(q, this);
+		reg = BasicXmlStream.addEventListener(q, this);
 	}
 
 	protected void hideNotify() {
@@ -353,7 +353,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 	}
 
 	public void packetReceived(Element e) {
-		if (user.getHistoryLength() > 0) {
+		if (user.getHistoryLength(null) > 0) {
 			repaint();
 		} else {
 			new_messages = true;
@@ -396,7 +396,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 		g.drawLine(0, header_height, w, header_height);
 
 		XMPPClient client = XMPPClient.getInstance();
-		Image img = client.getPresenceIcon(user.getAvailability());
+		Image img = client.getPresenceIcon(user,null, user.getAvailability());
 		g.drawImage(img, 0, 0, Graphics.TOP | Graphics.LEFT);
 		g.setColor(header_fg);
 		g.setFont(cfont);

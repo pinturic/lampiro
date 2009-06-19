@@ -1,11 +1,14 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUC.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: MUC.java 1459 2009-05-11 16:51:14Z luca $
 */
 
 package it.yup.xmpp;
 
+import java.util.Vector;
+
+import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
 
@@ -16,6 +19,21 @@ public class MUC extends Contact {
 
 	public MUC(String jid, String name) {
 		super(jid, name, "both", null);
+		
+		// MUCs have only one conversation
+		convs.addElement(new Object[] { this.jid, new Vector() });
+	}
+	
+	public void addMessageToHistory(String preferredResource, Message msg) {
+		// for the MUC all the messages must be stored together
+		// so to mantain the order 
+		// the default presence is the first one
+		preferredResource = this.jid;
+		String type = msg.getAttribute(Message.ATT_TYPE);
+		if (type==null)
+			type= Message.NORMAL;
+		
+		compileMessage(preferredResource, msg, type);
 	}
 
 	/**

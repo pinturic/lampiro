@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIVLayout.java 1017 2008-11-28 21:57:46Z luca $
+ * $Id: UIVLayout.java 1471 2009-05-13 21:35:41Z luca $
 */
 
 /**
@@ -18,8 +18,6 @@ import javax.microedition.lcdui.Graphics;
  */
 public class UIVLayout extends UILayout {
 
-	int layoutHeight;
-
 	/**
 	 * @param rowNumber
 	 *            The row number of the layOut.
@@ -28,7 +26,9 @@ public class UIVLayout extends UILayout {
 	 */
 	public UIVLayout(int rowNumber, int height) {
 		super(rowNumber);
-		this.layoutHeight = height;
+		this.dirKey1 = Canvas.UP;
+		this.dirKey2 = Canvas.DOWN;
+		this.height = height;
 	}
 
 	/**
@@ -117,66 +117,13 @@ public class UIVLayout extends UILayout {
 	}
 
 	public int getHeight(Graphics g) {
-		if (layoutHeight == -1) {
-			layoutHeight = g.getClipHeight() + g.getClipY();
+		if (height == -1) {
+			height = g.getClipHeight() + g.getClipY();
 		}
-		return this.layoutHeight;
+		return this.height;
 	}
 
 	public void setHeight(int layoutHeight) {
-		this.layoutHeight = layoutHeight;
-	}
-
-	public boolean keyPressed(int key) {
-		/* forward keypress only if this layout is focused */
-		if (selectedIndex >= 0 && selectedIndex < this.layoutItems.length
-				&& layoutFocused && layoutItems[selectedIndex].keyPressed(key)) {
-			// this is needed since we cannot know if anything below has been
-			// repainted
-			updateChildren();
-			return true;
-		}
-
-		int ga = UICanvas.getInstance().getGameAction(key);
-		if (layoutFocused) {
-			switch (ga) {
-				case Canvas.UP:
-					if (this.selectedIndex > 0) {
-						int newSelectedIndex = this.selectedIndex - 1;
-						if (this.isFocusable()) newSelectedIndex = traverseFocusable(
-								newSelectedIndex, false);
-						if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
-						else
-							return false;
-						updateChildren();
-						return true;
-					} else
-						return false;
-				case Canvas.DOWN:
-					if (this.selectedIndex < this.layoutItems.length - 1) {
-						int newSelectedIndex = this.selectedIndex + 1;
-						if (this.isFocusable()) newSelectedIndex = traverseFocusable(
-								newSelectedIndex, true);
-						if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
-						else
-							return false;
-						updateChildren();
-						return true;
-					} else
-						return false;
-			}
-		}
-
-		if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)) {
-			if (this.isFocusable()) {
-				this.layoutFocused = true;
-				selectedIndex = traverseFocusable(selectedIndex, true);
-				this.layoutItems[selectedIndex].setSelected(true);
-				updateChildren();
-				return true;
-			}
-		}
-
-		return false;
+		this.height = layoutHeight;
 	}
 }

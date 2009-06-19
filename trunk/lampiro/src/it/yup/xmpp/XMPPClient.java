@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: XMPPClient.java 1597 2009-06-19 11:54:12Z luca $
 */
 
 package it.yup.xmpp;
@@ -12,13 +12,16 @@ import it.yup.transport.SocketChannel;
 
 
 // #mdebug
-//@import it.yup.util.Logger; // 
-// #enddebug
+//@
+//@import it.yup.util.Logger;
+//@
+//#enddebug
 
+import it.yup.util.RMSIndex;
 import it.yup.util.Utils;
+import it.yup.xml.Element;
 import it.yup.xmlstream.AccountRegistration;
 import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.Element;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
@@ -27,62 +30,73 @@ import it.yup.xmlstream.StreamEventListener;
 
 
 import it.yup.xmpp.packets.DataForm;
-import it.yup.xmpp.packets.IQResultListener;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
-import lampiro.LampiroMidlet;
 
 import java.io.IOException;
 import java.util.Enumeration;
+import java.util.TimerTask;
 import java.util.Vector;
-import it.yup.util.ResourceManager;
 import org.bouncycastle.util.encoders.Base64;
 
-import javax.microedition.lcdui.Alert;
+import com.sun.mmedia.BasicPlayer;
+
 import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Image;
-import javax.microedition.media.Manager;
-import javax.microedition.media.MediaException;
 
-// #ifdef UI 
-import it.yup.ui.UICanvas;
-import it.yup.ui.UIScreen;
-import lampiro.screens.CommandListScreen;
-import lampiro.screens.DataFormScreen;
-import lampiro.screens.DataResultScreen;
-import lampiro.screens.RegisterScreen;
-import lampiro.screens.RosterScreen;
-import lampiro.screens.SubscribeScreen;
+public class XMPPClient implements StreamEventListener {
 
-// #endif
-// #ifndef UI
-//@
-//@import it.yup.screens.CommandListScreen;
-//@import it.yup.screens.DataFormScreen;
-//@import it.yup.screens.DataResultScreen;
-//@import it.yup.screens.RegisterScreen;
-//@import it.yup.screens.RosterScreen;
-//@import it.yup.screens.SubscriptionConfirmAlert;
-//@import javax.microedition.lcdui.Display;
-//@
-// #endif
+	/*
+	 * Few methods used to communicate to the application of xmpp events 
+	 */
+	public interface XmppListener {
 
-public class XMPPClient {
+		void removeContact(Contact c);
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
-	
+		void removeAllContacts();
+
+		void updateContact(Contact c, int chStatus);
+
+		void authenticated();
+
+		void rosterXsubscription(Element e);
+
+		void playSmartTone();
+
+		void askSubscription(Contact u);
+
+		void handleCommand(Contact c, String preferredResource);
+
+		void connectionLost();
+
+		void showAlert(AlertType type, String title, String text,
+				Object next_screen);
+
+		void handleTask(Task task, boolean display);
+
+		Object handleDataForm(DataForm df, byte type, DataFormListener dfl,
+				int cmds);
+
+		void commandExecuted(Object screenToClose);
+
+
+		void showCommand(Object screen);
+
+		void rosterRetrieved();
+
+	}
+
 	private Config cfg = Config.getInstance();
 
 	/*
 	 * The features published by Lampiro are ordered as specified here:
 	 * http://tools.ietf.org/html/rfc4790#section-9.3
 	 */
-	private String[] features = new String[] { MIDP_PLATFORM,NS_CAPS, NS_COMMANDS,
-			NS_IQ_DISCO_INFO,NS_IBB, NS_MUC,NS_ROSTERX ,JABBER_X_DATA };
+	private String[] features = new String[] { MIDP_PLATFORM, NS_CAPS,
+			NS_COMMANDS, NS_IQ_DISCO_INFO, NS_IBB, NS_MUC, NS_ROSTERX,
+			JABBER_X_DATA, JINGLE, JINGLE_FILE_TRANSFER, JINGLE_IBB_TRANSPORT };
 
 	/** the client instance */
 	private static XMPPClient xmppInstance;
@@ -107,17 +121,31 @@ public class XMPPClient {
 	/** true when the stream is valid */
 	private boolean valid_stream = false;
 
-	private int volume;
-	private boolean play_flags[];
-
-	/** reference to the possible alert screen */
-	private Alert alert;
+	private EventQueryRegistration lostConnReg = null;
 
 
 	// /** send the subscribe at most once per session */
 	// private boolean lampiro_subscribe_sent = false;
 
-	private Image presence_icons[];
+	protected Image presence_icons[];
+	protected Image presence_phone_icons[];
+
+	/*
+	 * This task is used to retrieve asynchronously the roster
+	 * after going online. 
+	 */
+	private TimerTask rosterRetrieveTask = null;
+
+	/*
+	 * The time after rosterRetrieveTask is scheduled after receiving
+	 * a presence
+	 */
+	private int rosterRetrieveTime = 5000;
+
+	/*
+	 * The time at which the last presence has been received
+	 */
+	private long lastPresenceTime;
 
 	/*
 	 * The number of sent bytes over the socket
@@ -133,7 +161,7 @@ public class XMPPClient {
 	public boolean addCompression = false;
 
 	/*
-	 * A flag used to enable or disable compression
+	 * A flag used to enable or disable TLS
 	 */
 	public boolean addTLS = false;
 
@@ -142,7 +170,20 @@ public class XMPPClient {
 	 * i.e. the gateways whose presence has been subscripted 
 	 * within the current session
 	 */
-	public Vector autoAcceptGateways= new Vector();
+	public Vector autoAcceptGateways = new Vector();
+
+	private XMPPClient.XmppListener xmppListener;
+
+	/*
+	 * Used to notify the XmppClient that the user jid and/or password
+	 * are changed from last login
+	 */
+	private boolean newCredentials = false;
+
+	/* 
+	 * The registration initializer
+	 */
+	private AccountRegistration accountRegistration;
 
 	/**
 	 * Get the total amount of traffic on the GPRS connection
@@ -158,6 +199,7 @@ public class XMPPClient {
 	public static String NS_COMMANDS = "http://jabber.org/protocol/commands";
 	public static String NS_CAPS = "http://jabber.org/protocol/caps";
 	public static String NS_BLUENDO_CAPS = "http://bluendo.com/protocol/caps";
+	public static String NS_BLUENDO_PUBLISH = "bluendo:http:publish:0";
 	public static String NS_IBB = "http://jabber.org/protocol/ibb";
 	public static String NS_MUC = "http://jabber.org/protocol/muc";
 	public static String NS_ROSTERX = "http://jabber.org/protocol/rosterx";
@@ -168,25 +210,95 @@ public class XMPPClient {
 	public static String MIDP_PLATFORM = "http://bluendo.com/midp#platform";
 	public static String JABBER_X_DATA = "jabber:x:data";
 	public static String JABBER_IQ_GATEWAY = "jabber:iq:gateway";
+	public static String IQ_REGISTER = "jabber:iq:register";
+	public static String JINGLE = "urn:xmpp:jingle:0";
+	public static String JINGLE_FILE_TRANSFER = "urn:xmpp:jingle:apps:file-transfer:1";
+	public static String FILE_TRANSFER = "http://jabber.org/protocol/si/profile/file-transfer";
+	public static String JINGLE_IBB_TRANSPORT = "urn:xmpp:jingle:transports:ibb:0";
+	public static String BLUENDO_PUBLISH = "bluendo:http:publish:0";
+	public static String USERID = "USERID";
+	public static String VCARD_TEMP = "vcard-temp";
+	public static String VCARD = "vCard";
+	public static String BINVAL = "BINVAL";
+	public static String NICKNAME = "NICKNAME";
+	public static String PHOTO = "PHOTO";
+	public static String FN = "FN";
+	public static String EMAIL = "EMAIL";
+	public static String BLUENDO_XMLRPC = "bluendo:bxmlrpc:0";
+	public static String BLUENDO_REGISTER = "bluendo:register:0";
+	public static String NS_DELAY = "urn:xmpp:delay";
+	public static String DELAY = "delay";
+	public static String[][] errorCodes = new String[][] {
+			{ "400", "Bad request" }, { "401", "Not authorized" },
+			{ "403", "Forbidden" }, { "404", "Item not found" },
+			{ "406", "Not acceptable" },
+			{ "407", "Registration required" },
+			{ "500", "Internal server error" },
+			{ "501", "Feature not implemented" },
+			{ "503", "Service unavailable" }, };
+
+	public Image getPresenceIcon(Contact c, String preferredResource,
+			int availability) {
+		Presence p = null;
+		if (c != null) {
+			if (preferredResource != null) p = c.getPresence(preferredResource);
+			else
+				p = c.getPresence();
+		}
+		if (availability >= 0 && availability < this.presence_icons.length) {
+			if (p == null || p.pType == Presence.PC) {
+				return this.presence_icons[availability];
+			} else if (p.pType == Presence.PHONE) { return this.presence_phone_icons[availability]; }
+		}
+		return null; // maybe we could return an empty image
+	}
 
 	private XMPPClient() {
 		roster = new Roster(this);
 
-		volume = Integer.parseInt(cfg.getProperty(Config.TONE_VOLUME, "50"));
-		play_flags = Utils.str2flags(cfg.getProperty(
-				Config.VIBRATION_AND_TONE_SETTINGS, "1"), 0, 4);
-
 		// preload the presence icons
 		String mapping[] = Contact.availability_mapping;
 		presence_icons = new Image[mapping.length];
-		for (int i = 0; i < presence_icons.length; i++) {
-			try {
-				presence_icons[i] = Image.createImage("/icons/presence_"
-						+ mapping[i] + ".png");
-			} catch (IOException e) {
-				presence_icons[i] = Image.createImage(16, 16);
-			}
+		presence_phone_icons = new Image[mapping.length];
+		try {
+			presence_icons[0] = Image.createImage("/icons/presence_"
+					+ mapping[1] + ".png");
+			presence_phone_icons[0] = Image.createImage("/icons/presence_"
+					+ mapping[1] + "_phone.png");
+			presence_icons[1] = Image.createImage("/icons/presence_"
+					+ mapping[1] + ".png");
+			presence_phone_icons[1] = Image.createImage("/icons/presence_"
+					+ mapping[1] + "_phone.png");
+			presence_icons[2] = Image.createImage("/icons/presence_"
+					+ mapping[2] + ".png");
+			presence_phone_icons[2] = Image.createImage("/icons/presence_"
+					+ mapping[2] + "_phone.png");
+			presence_icons[3] = Image.createImage("/icons/presence_"
+					+ mapping[3] + ".png");
+			presence_phone_icons[3] = Image.createImage("/icons/presence_"
+					+ mapping[3] + "_phone.png");
+			presence_icons[4] = Image.createImage("/icons/presence_"
+					+ mapping[3] + ".png");
+			presence_phone_icons[4] = Image.createImage("/icons/presence_"
+					+ mapping[3] + "_phone.png");
+			presence_icons[5] = Image.createImage("/icons/presence_"
+					+ mapping[5] + ".png");
+			presence_phone_icons[5] = Image.createImage("/icons/presence_"
+					+ mapping[5] + "_phone.png");
+		} catch (Exception e) {
+			// should not happen
 		}
+
+		//		presence_icons = new Image[mapping.length];
+		//		for (int i = 0; i < presence_icons.length; i++) {
+		//			try {
+		//				presence_icons[i] = Image.createImage("/icons/presence_"
+		//						+ mapping[i] + ".png");
+		//			} catch (IOException e) {
+		//				presence_icons[i] = Image.createImage(16, 16);
+		//			}
+		//		}
+
 	}
 
 	/**
@@ -201,54 +313,9 @@ public class XMPPClient {
 		}
 		return xmppInstance;
 	}
-	
-	public static Vector getCapabilities (String node, String ver){
-		String combi = node+ver;
-		String capsString = xmppInstance.cfg.getProperty(Config.KNOWN_CAPS, "");
-		Vector capsVector = Utils.tokenize(capsString, '<');
-		Enumeration en = capsVector.elements();
-		try {
-			while (en.hasMoreElements()) {
-				String index = (String) en.nextElement();
-				if (en.hasMoreElements() == false) return null;
-				String caps = (String) en.nextElement();
-				if (index.compareTo(combi) == 0) {
-					Vector res = Utils.tokenize(caps, '>');
-					return res;
-				}
-			}
-		} catch (Exception e) {
-			// corrupted configuration reset it
-			xmppInstance.cfg.setProperty(Config.KNOWN_CAPS, "");
-			xmppInstance.cfg.saveToStorage();
-		}
-		return null;
-	}
-	
-	public static void saveCapabilities (String node,String ver,Element [] features){
-		if (getCapabilities(node, ver)!=null){
-			return;
-		}
-		String combi = node+ver;
-		String featuresString = "";
-		for (int i = 0; i < features.length; i++) {
-			Element element = features[i];
-			featuresString+= (element.getAttribute("var")+">");
-		}
-		String capsString = xmppInstance.cfg.getProperty(Config.KNOWN_CAPS,"");
-		if (capsString.length()>0)
-			capsString+="<";
-		capsString+=combi;
-		capsString+="<";
-		capsString+=featuresString;
-		xmppInstance.cfg.setProperty(Config.KNOWN_CAPS,capsString);
-		xmppInstance.cfg.saveToStorage();
-	}
 
 	public void startClient() {
-		// #ifndef UI 
-		//@				LampiroMidlet.disp.setCurrent(RegisterScreen.getInstance());
-		// #endif
+
 	}
 
 	/** close the connection XXX i don't like this name */
@@ -256,49 +323,49 @@ public class XMPPClient {
 		// saveToStorage();
 	}
 
-	/**
-	 * Add a listener for XMPP packets
-	 * 
-	 * @param _q
-	 *            the xpath like query
-	 * @param _l
-	 *            the listener
-	 * @return The registration object to be used with
-	 *         {@link #unregisterListener(EventQueryRegistration)} for removing
-	 *         the listener
-	 */
-	public EventQueryRegistration registerListener(EventQuery _q, Object _l) {
-		return xmlStream.addEventListener(_q, _l);
-	}
-
-	/**
-	 * Add a one time listener for XMPP packets
-	 * 
-	 * @param _q
-	 *            the xpath like query
-	 * @param _l
-	 *            the listener
-	 * @return The registration object to be used with
-	 *         {@link #unregisterListener(EventQueryRegistration)} for removing
-	 *         the listener
-	 * 
-	 */
-	public EventQueryRegistration registerOneTimeListener(EventQuery _q,
-			Object _l) {
-		return xmlStream.addOnetimeEventListener(_q, _l);
-	}
-
-	/**
-	 * Remove a registered listener
-	 * 
-	 * @param reg
-	 *            the registration obtained with
-	 *            {@link #registerListener(EventQuery, PacketListener)}
-	 * 
-	 */
-	public void unregisterListener(EventQueryRegistration reg) {
-		xmlStream.removeEventListener(reg);
-	}
+	//	/**
+	//	 * Add a listener for XMPP packets
+	//	 * 
+	//	 * @param _q
+	//	 *            the xpath like query
+	//	 * @param _l
+	//	 *            the listener
+	//	 * @return The registration object to be used with
+	//	 *         {@link #unregisterListener(EventQueryRegistration)} for removing
+	//	 *         the listener
+	//	 */
+	//	public EventQueryRegistration registerListener(EventQuery _q, Object _l) {
+	//		return BasicXmlStream.addEventListener(_q, _l);
+	//	}
+	//
+	//	/**
+	//	 * Add a one time listener for XMPP packets
+	//	 * 
+	//	 * @param _q
+	//	 *            the xpath like query
+	//	 * @param _l
+	//	 *            the listener
+	//	 * @return The registration object to be used with
+	//	 *         {@link #unregisterListener(EventQueryRegistration)} for removing
+	//	 *         the listener
+	//	 * 
+	//	 */
+	//	public EventQueryRegistration registerOneTimeListener(EventQuery _q,
+	//			Object _l) {
+	//		return BasicXmlStream.addOnetimeEventListener(_q, _l);
+	//	}
+	//
+	//	/**
+	//	 * Remove a registered listener
+	//	 * 
+	//	 * @param reg
+	//	 *            the registration obtained with
+	//	 *            {@link #registerListener(EventQuery, PacketListener)}
+	//	 * 
+	//	 */
+	//	public void unregisterListener(EventQueryRegistration reg) {
+	//		BasicXmlStream.removeEventListener(reg);
+	//	}
 
 	/**
 	 * Queue a packet into the send queue
@@ -319,9 +386,7 @@ public class XMPPClient {
 	 */
 	public void sendIQ(Iq iq, IQResultListener listener) {
 		if (listener != null) {
-			EventQuery eq = new EventQuery("iq", new String[] { "id" },
-					new String[] { iq.getAttribute("id") });
-			registerOneTimeListener(eq, listener);
+			IqManager.getInstance().addRegistration(iq, listener);
 		}
 		sendPacket(iq);
 	}
@@ -335,10 +400,13 @@ public class XMPPClient {
 	 * 
 	 * @param register
 	 *            set true if the stream must create the account
+	 * @param newCredentials 
 	 * @return
 	 */
-	public BasicXmlStream createStream(boolean register) {
-
+	public BasicXmlStream createStream(boolean register, boolean newCredentials) {
+		this.newCredentials = newCredentials;
+		// this must be done to clean the Roster after a reconnect
+		this.roster.purge();
 		buildSocketConnection();
 
 
@@ -348,60 +416,23 @@ public class XMPPClient {
 		// xmlStream
 		// );
 
-		// Associate the roster with the stream
-		this.roster.associateWithStream(xmlStream);
-
-		// Register the handler for incoming messages
-		EventQuery eq = new EventQuery(Message.MESSAGE, null, null);
-		eq.child = new EventQuery(Message.BODY, null, null);
-		xmlStream.addEventListener(eq, new MessageHandler());
-
-		// Register the presence handler
-		eq = new EventQuery(Presence.PRESENCE, null, null);
-		xmlStream.addEventListener(eq, new PresenceHandler());
-
-		// Register the disco handler
-		eq = new EventQuery(Iq.IQ, new String[] { "type" },
-				new String[] { "get" });
-		eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
-				new String[] { NS_IQ_DISCO_INFO });
-		xmlStream.addEventListener(eq, new DiscoHandler());
-
-		// Register the handler for dataforms (both as <iq/> and <message/>)
-		// payloads
-		DataFormHandler dh = new DataFormHandler();
-		eq = new EventQuery(Message.MESSAGE, null, null);
-		eq.child = new EventQuery(DataForm.X, new String[] { "xmlns" },
-				new String[] { DataForm.NAMESPACE });
-		xmlStream.addEventListener(eq, dh);
-		eq = new EventQuery(Iq.IQ, null, null);
-		eq.child = new EventQuery(DataForm.X, new String[] { "xmlns" },
-				new String[] { DataForm.NAMESPACE });
-		xmlStream.addEventListener(eq, dh);
-
-		/* register handler for ad hoc command announcements */
-		PacketListener ashc_listener = new PacketListener() {
-			public void packetReceived(Element e) {
-				handleClientCommands(e, false);
-			}
-
-		};
-
 		// XXX useful with messages? I don't think so
 		// eq = new EventQuery(Message.MESSAGE, null, null);
 		// eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
 		// new String[] { "http://jabber.org/protocol/disco#items" } );
 		// xmlStream.addEventListener(eq, adch);
 
-		// XXX here we *must* use client capabilities
-		/* register handler for ad hoc command presence announce */
-		eq = new EventQuery(Presence.PRESENCE, null, null);
-		eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
-				new String[] { "http://jabber.org/protocol/disco#items" });
-		xmlStream.addEventListener(eq, ashc_listener);
-
 		if (register) {
-			xmlStream.addInitializer(new AccountRegistration(), 0);
+
+			EventQuery qReg = new EventQuery(
+					BasicXmlStream.STREAM_ACCOUNT_REGISTERED, null, null);
+			/*
+			 * The registration used to be notified of the registration
+			 */
+			BasicXmlStream.addEventListener(qReg, this);
+
+			accountRegistration = new AccountRegistration();
+			xmlStream.addInitializer(accountRegistration, 0);
 		}
 
 		return xmlStream;
@@ -427,6 +458,13 @@ public class XMPPClient {
 				+ cfg.getProperty(Config.SERVER) + "/" + resource, cfg
 				.getProperty(Config.PASSWORD));
 
+		EventQuery qAuth = new EventQuery(BasicXmlStream.STREAM_INITIALIZED,
+				null, null);
+		/*
+		 * The registration used to be notified of the authentication
+		 */
+		BasicXmlStream.addEventListener(qAuth, this);
+
 
 		if (!connection.isOpen()) {
 			connection.open();
@@ -439,14 +477,63 @@ public class XMPPClient {
 		}
 	}
 
-	/*
-	 * XXX: perch� questo non diventa un initializer o listener sullo stream?
-	 * qui c'� un pezzo di "view", non sarebbe pi� opportuno separare le cose in
-	 * modo da isolare le varie cose? in fondo va detto che se vogliamo che
-	 * XMPPClient diventi una libreria...
-	 */
-	public void stream_authenticated(boolean new_credentials) {
-		// create the self contact and setup the initialial presence
+	public void gotStreamEvent(String event, Object source) {
+		if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+
+			// all these registration are made here 
+			// Register the handler for incoming messages
+			EventQuery eq = new EventQuery(Message.MESSAGE, null, null);
+			eq.child = new EventQuery(Message.BODY, null, null);
+			BasicXmlStream.addEventListener(eq, new MessageHandler());
+
+			// Register the presence handler
+			eq = new EventQuery(Presence.PRESENCE, null, null);
+			BasicXmlStream.addEventListener(eq, new PresenceHandler());
+
+			// Register the disco handler
+			eq = new EventQuery(Iq.IQ, new String[] { "type" },
+					new String[] { "get" });
+			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
+					new String[] { NS_IQ_DISCO_INFO });
+			BasicXmlStream.addEventListener(eq, new DiscoHandler());
+
+			// Register the handler for dataforms (both as <iq/> and <message/>)
+			// payloads
+			DataFormHandler dh = new DataFormHandler();
+			eq = new EventQuery(Message.MESSAGE, null, null);
+			eq.child = new EventQuery(DataForm.X, new String[] { "xmlns" },
+					new String[] { DataForm.NAMESPACE });
+			BasicXmlStream.addEventListener(eq, dh);
+			eq = new EventQuery(Iq.IQ, null, null);
+			eq.child = new EventQuery(DataForm.X, new String[] { "xmlns" },
+					new String[] { DataForm.NAMESPACE });
+			BasicXmlStream.addEventListener(eq, dh);
+
+			/* register handler for ad hoc command announcements */
+			PacketListener ashc_listener = new PacketListener() {
+				public void packetReceived(Element e) {
+					handleClientCommands(e, false);
+				}
+			};
+
+			// XXX here we *must* use client capabilities
+			/* register handler for ad hoc command presence announce */
+			eq = new EventQuery(Presence.PRESENCE, null, null);
+			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
+					new String[] { "http://jabber.org/protocol/disco#items" });
+			BasicXmlStream.addEventListener(eq, ashc_listener);
+
+			IqManager.getInstance().streamInitialized();
+			roster.streamInitialized();
+
+			stream_authenticated();
+		} else if (BasicXmlStream.STREAM_ACCOUNT_REGISTERED.equals(event)) {
+			xmlStream.removeInitializer(accountRegistration);
+		}
+	}
+
+	public void stream_authenticated() {
+		// create the self contact and setup the initial presence
 		my_jid = xmlStream.jid;
 
 		me = new Contact(Contact.userhost(my_jid), null, null, null);
@@ -469,17 +556,17 @@ public class XMPPClient {
 
 		// XXX I don't like this, it could be better to send capabilities with a
 		// different hash in the version
-		Element x = p.addElement(JABBER_X_DATA, "x");
-		x.setAttribute("type", "result");
-		Element field = x.addElement(JABBER_X_DATA, "field");
-		field.setAttribute("var", "FORM_TYPE");
-		field.setAttribute("type", "hidden");
-		field.addElement(JABBER_X_DATA, "value").content = MIDP_PLATFORM;
-
-		field = x.addElement(JABBER_X_DATA, "field");
-		field.setAttribute("var", "microedition.platform");
-		field.addElement(JABBER_X_DATA, "value").content = System
-				.getProperty("microedition.platform");
+		//		Element x = p.addElement(JABBER_X_DATA, "x");
+		//		x.setAttribute("type", Iq.T_RESULT);
+		//		Element field = x.addElement(JABBER_X_DATA, "field");
+		//		field.setAttribute("var", "FORM_TYPE");
+		//		field.setAttribute("type", "hidden");
+		//		field.addElement(JABBER_X_DATA, "value").addText(MIDP_PLATFORM);
+		//
+		//		field = x.addElement(JABBER_X_DATA, "field");
+		//		field.setAttribute("var", "microedition.platform");
+		//		field.addElement(JABBER_X_DATA, "value").addText(
+		//				System.getProperty("microedition.platform"));
 
 		me.updatePresence(p);
 
@@ -487,35 +574,52 @@ public class XMPPClient {
 		valid_stream = true;
 
 		// Listen for lost connections
-		xmlStream.addEventListener(new EventQuery(
+		lostConnReg = BasicXmlStream.addEventListener(new EventQuery(
 				BasicXmlStream.STREAM_TERMINATED, null, null),
 				new StreamEventListener() {
 
 					public void gotStreamEvent(String event, Object source) {
+						if (rosterRetrieveTask != null) rosterRetrieveTask
+								.cancel();
 						valid_stream = false;
 						closeStream();
+						if (xmppListener != null) xmppListener.connectionLost();
 						showAlert(AlertType.ERROR, "Connection lost",
-								"Connection with the server lost",
-								RegisterScreen.getInstance());
+								"Connection with the server lost", null);
+						BasicXmlStream.removeEventListener(lostConnReg);
 						/* XXX: should close all screens and open the RegisterScreen */
 					}
 				});
 
-		// now go online
-		// XXX: perch� if(true)?
-		if (true || new_credentials) {
-			roster.retrieveRoster(true);
-		} else {
-			// subscribe_to_agent();
-			// #ifdef UI
-			UICanvas.getInstance().open(RosterScreen.getInstance(), true);
-			UICanvas.getInstance().close(RegisterScreen.getInstance());
-			// #endif
-// #ifndef UI
-			//@						LampiroMidlet.disp.setCurrent(RosterScreen.getInstance());
-			// #endif
-			// UICanvas.getInstance().open(new RosterScreen(), true);
+		// if this is the first login it is better to ask the roster and go online suddenly
+		// otherwise i only go online and the ask the roster after a while
+		// however first try to load the roster from db
+		String rmsName = "rstr_"
+				+ Contact.userhost(my_jid).replace('@', '_').replace('.', '_');
+		if (rmsName.length() > 31) {
+			rmsName = rmsName.substring(0, 31);
 		}
+		roster.rosterStore = new RMSIndex(rmsName);
+		roster.readFromStorage();
+		if (newCredentials || Integer.parseInt(this.roster.rosterVersion) > 0) {
+			roster.retrieveRoster(true, false);
+		} else {
+			this.setPresence(-1, null);
+
+			lastPresenceTime = System.currentTimeMillis();
+			rosterRetrieveTask = new TimerTask() {
+				public void run() {
+					if (lastPresenceTime + rosterRetrieveTime < System
+							.currentTimeMillis()) {
+						roster.retrieveRoster(false, false);
+						this.cancel();
+					}
+				}
+			};
+			Utils.tasks.schedule(rosterRetrieveTask, rosterRetrieveTime,
+					rosterRetrieveTime);
+		}
+		if (this.xmppListener != null) xmppListener.authenticated();
 	}
 
 	private String getCapVer() {
@@ -540,12 +644,23 @@ public class XMPPClient {
 	private class MessageHandler implements PacketListener {
 
 		public void packetReceived(Element p) {
-			// Logger.log(
-			// "MessageHandler: received packet: " + new String(p.toXml()),
-			// Logger.DEBUG
-			// );
-			Message msg = Message.fromElement(p);
 
+			// different behaviours depending on type
+
+			String type = p.getAttribute(Message.ATT_TYPE);
+			if (type == null) type = Message.NORMAL;
+			
+			// e.g. normal are used to receive invite for MUC;
+			// if the MUC user is created here it result in a normal Contact!!!
+			// be careful for that 
+			Element x = p.getChildByName(XMPPClient.NS_MUC_USER, "x");
+			if (x!= null){
+				Element invite = x.getChildByName(null, "invite");
+				if (invite !=null)
+					return;
+			}
+
+			Message msg = new Message(p);
 			// XXX: we will need to check the type
 			String jid = msg.getAttribute(Stanza.ATT_FROM);
 			// error packet sometimes do not have from
@@ -556,18 +671,17 @@ public class XMPPClient {
 				Element group_elements[] = p.getChildrenByName(null, "group");
 				String groups[] = new String[group_elements.length];
 				for (int j = 0; j < groups.length; j++) {
-					groups[j] = group_elements[j].content;
+					groups[j] = group_elements[j].getText();
 				}
 				u = new Contact(Contact.userhost(jid), p.getAttribute("name"),
 						p.getAttribute("subscription"), groups);
 				roster.contacts.put(Contact.userhost(u.jid), u);
 			}
 
-			RosterScreen roster = RosterScreen.getInstance();
-			u.addMessageToHistory(msg);
-			roster.updateContact(u, Contact.CH_MESSAGE_NEW);
+			u.addMessageToHistory(jid, msg);
+			if (xmppListener != null) xmppListener.updateContact(u,
+					Contact.CH_MESSAGE_NEW);
 			playSmartTone();
-
 		}
 	}
 
@@ -575,9 +689,11 @@ public class XMPPClient {
 
 		public void packetReceived(Element e) {
 			// #mdebug
-//@						Logger.log("PresenceHandler: received packet: "
-//@								+ new String(e.toXml()), Logger.DEBUG);
+//@			Logger.log("PresenceHandler: received packet: "
+//@					+ new String(e.toXml()), Logger.DEBUG);
 			// #enddebug
+
+			lastPresenceTime = System.currentTimeMillis();
 			String t = e.getAttribute(Stanza.ATT_TYPE);
 			if (t == null || Presence.T_UNAVAILABLE.equals(t)) {
 				Presence p = new Presence(e);
@@ -586,7 +702,6 @@ public class XMPPClient {
 				Contact u = roster.getContactByJid(from);
 				String type = e.getAttribute(Stanza.ATT_TYPE);
 				if (u == null) {
-					// #ifdef MUC
 					// first check if its a MUC
 					Element[] xs = p.getChildrenByName(null, "x");
 					for (int i = 0; xs != null && i < xs.length; i++) {
@@ -598,23 +713,20 @@ public class XMPPClient {
 					}
 
 					if (u == null) {
-						if (type != null && type.compareTo(Presence.T_UNAVAILABLE)==0)
-							return;
+						if (type != null
+								&& type.compareTo(Presence.T_UNAVAILABLE) == 0) return;
 						// XXX Guess the subscription
-						u = new Contact(Contact.userhost(from), null, "both",
-								null);
+						u = new Contact(Contact.userhost(from), null,
+								"unknown", null);
 					}
-					// #endif
-// #ifndef MUC
-					//@										// XXX Guess the subscription
-					//@										u = new Contact(Contact.userhost(from), null, "both", null);
-					// #endif
+
 					u.updatePresence(new Presence(e));
 					roster.contacts.put(u.jid, u);
 				} else {
 					u.updatePresence(p);
 				}
-				RosterScreen.getInstance().updateContact(u, Contact.CH_STATUS);
+				if (xmppListener != null) xmppListener.updateContact(u,
+						Contact.CH_STATUS);
 
 			} else if (Presence.T_SUBSCRIBE.equals(t)) {
 				handleSubscribe(new Presence(e));
@@ -626,7 +738,7 @@ public class XMPPClient {
 
 		private void handleSubscribe(Presence p) {
 			// try getting the contact (we may already have it)
-			String jid = p.getAttribute(Stanza.ATT_FROM);
+			String jid = Contact.userhost(p.getAttribute(Stanza.ATT_FROM));
 			Contact u = roster.getContactByJid(jid);
 			if (u == null) {
 				// we don't have the contact, create it
@@ -635,7 +747,7 @@ public class XMPPClient {
 
 			// subscription handling
 			if ("both".equals(u.subscription) || "to".equals(u.subscription)
-					|| Config.LAMPIRO_AGENT.equals(jid)) {
+					|| Config.LAMPIRO_AGENT.equals(Contact.userhost(jid))) {
 				// subscribe received: if already granted, I don't ask anything
 				Presence pmsg = new Presence();
 				pmsg.setAttribute(Stanza.ATT_TO, u.jid);
@@ -665,12 +777,15 @@ public class XMPPClient {
 				 * confirmMenu.setAbsoluteY(offset); this.confirmContact =
 				 * contact; currentScreen.addPopup(confirmMenu);
 				 */
-				
+
 				// add a nick only if a previous name has been added
 				Element nick = p.getChildByName(XMPPClient.NS_NICK, "nick");
-				if (nick != null && nick.content != null && nick.content.length()>0 
-						&& (u.name == null || u.name.length()==0)){
-					u.name = nick.content;
+				if (nick != null) {
+					String nickNameText = nick.getText();
+					if (nickNameText != null && nickNameText.length() > 0
+							&& (u.name == null || u.name.length() == 0)) {
+						u.name = nickNameText;
+					}
 				}
 
 				Enumeration en = XMPPClient.this.autoAcceptGateways.elements();
@@ -681,17 +796,9 @@ public class XMPPClient {
 						return;
 					}
 				}
-				// #ifdef UI
-				SubscribeScreen scs = SubscribeScreen.getUserSubscription();
-				scs.addSubscription(u, SubscribeScreen.ADD);
-				UICanvas.getInstance().open(scs, true);
-				// #endif
-// #ifndef UI
-				//@	Display d = Display.getDisplay(LampiroMidlet._lampiro);
-				//@	SubscriptionConfirmAlert scf = new SubscriptionConfirmAlert(u,
-				//@		d.getCurrent());
-				//@	d.setCurrent(scf);
-				// #endif
+				if (xmppListener != null) {
+					xmppListener.askSubscription(u);
+				}
 			}
 		}
 	}
@@ -715,64 +822,38 @@ public class XMPPClient {
 			reply.setAttribute(Stanza.ATT_ID, p.getAttribute(Stanza.ATT_ID));
 			String node = q.getAttribute("node");
 			Element qr = reply.addElement(NS_IQ_DISCO_INFO, Iq.QUERY);
-			String capDisco = XMPPClient.NS_BLUENDO_CAPS+"#"+XMPPClient.this.getCapVer();
-			if (node == null || node == capDisco ) {
+			String capDisco = XMPPClient.NS_BLUENDO_CAPS + "#"
+					+ XMPPClient.this.getCapVer();
+			if (node == null || node.compareTo(capDisco) == 0) {
 				Element identity = qr.addElement(NS_IQ_DISCO_INFO, "identity");
 				identity.setAttribute("category", "client");
 				identity.setAttribute("type", "phone");
 				identity.setAttribute("name", "Lampiro");
 				for (int i = 0; i < features.length; i++) {
-					Element feature = qr.addElement(NS_IQ_DISCO_INFO,
-							"feature");
+					Element feature = qr
+							.addElement(NS_IQ_DISCO_INFO, "feature");
 					feature.setAttribute("var", features[i]);
 				}
 
 			} else if (MIDP_PLATFORM.equals(node)) {
 				qr.setAttribute("node", MIDP_PLATFORM);
 				Element x = qr.addElement(JABBER_X_DATA, "x");
-				x.setAttribute("type", "result");
+				x.setAttribute("type", Iq.T_RESULT);
 				Element field = x.addElement(JABBER_X_DATA, "field");
 				field.setAttribute("var", "microedition.platform");
-				field.addElement(JABBER_X_DATA, "value").content = System
-						.getProperty("microedition.platform");
-
+				field.addElement(JABBER_X_DATA, "value").addText(
+						System.getProperty("microedition.platform"));
 			}
-			if (node == capDisco){
-				reply.setAttribute("node", capDisco);
+			if (node != null && node.compareTo(capDisco) == 0) {
+				qr.setAttribute("node", capDisco);
 			}
 			sendPacket(reply);
 		}
 	}
 
 	public void playSmartTone() {
-		// #ifdef UI
-		boolean shown = UICanvas.getInstance().getCurrentScreen() == RosterScreen
-				.getInstance();
-		// #endif
-// #ifndef UI
-		//@				boolean shown = RosterScreen.getInstance().isShown();
-		// #endif
-		boolean vibrate = (shown && play_flags[1])
-				|| ((!shown) && play_flags[0]);
-		boolean play = (shown && play_flags[3]) || ((!shown) && play_flags[2]);
-
-		if (vibrate) {
-			// #ifdef UI
-			LampiroMidlet.disp.vibrate(200);
-			// #endif
-// #ifndef UI
-			//@						LampiroMidlet.disp.vibrate(200);
-			// #endif
-		}
-
-		if (play) {
-			try {
-				Manager.playTone(40, 100, volume);
-				Manager.playTone(50, 100, volume);
-				Manager.playTone(30, 100, volume);
-			} catch (MediaException e1) {
-
-			}
+		if (this.xmppListener != null) {
+			xmppListener.playSmartTone();
 		}
 	}
 
@@ -797,6 +878,7 @@ public class XMPPClient {
 	public void setPresence(int availability, String status) {
 
 		Presence p = me.getPresence(my_jid);
+		if (p == null) return;
 		Presence new_p = new Presence();
 
 		new_p.setAttribute("from", p.getAttribute("from"));
@@ -817,8 +899,8 @@ public class XMPPClient {
 			new_p.setStatus(p.getStatus());
 		}
 
-		new_p.children.addElement(p.getChildByName(null, "x"));
-		new_p.children.addElement(p.getChildByName(null, "c"));
+		//new_p.addElement(p.getChildByName(null, "x"));
+		new_p.addElement(p.getChildByName(null, "c"));
 		new_p.setPriority(p.getPriority());
 		me.updatePresence(new_p);
 		sendPacket(new_p);
@@ -851,16 +933,11 @@ public class XMPPClient {
 				c.cmdlist[i][1] = items[i].getAttribute("name");
 			}
 
-			RosterScreen.getInstance().updateContact(c, Contact.CH_TASK_NEW);
+			if (xmppListener != null) xmppListener.updateContact(c,
+					Contact.CH_TASK_NEW);
 
-			if (show) {
-				CommandListScreen cmdscr = new CommandListScreen(c);
-				// #ifdef UI
-				UICanvas.getInstance().open(cmdscr, true);
-				// #endif
-// #ifndef UI
-				//@								LampiroMidlet.disp.setCurrent(cmdscr);
-				// #endif 
+			if (show && this.xmppListener != null) {
+				this.xmppListener.handleCommand(c, from);
 			}
 		} // XXX we could add an alert if it's empty and we have to show
 	}
@@ -878,41 +955,9 @@ public class XMPPClient {
 	 */
 	public void showAlert(AlertType type, String title, String text,
 			final Object next_screen) {
-		// #ifdef UI
-		if (next_screen != null) {
-			UICanvas.getInstance().open((UIScreen) next_screen, true);
+		if (xmppListener != null) {
+			xmppListener.showAlert(type, title, text, next_screen);
 		}
-		UICanvas.showAlert(type, title, text);
-		// #endif
-// #ifndef UI
-		//@		
-		//@				Displayable cur = LampiroMidlet.disp.getCurrent();
-		//@				if (cur.equals(alert)) {
-		//@					alert.setString(alert.getString() + "\n" + text);
-		//@					return;
-		//@				}
-		//@		
-		//@				Image img;
-		//@				try {
-		//@					if (AlertType.INFO.equals(type)) {
-		//@						img = Image.createImage("/icons/warning.png");
-		//@					} else if (AlertType.ERROR.equals(type)) {
-		//@						img = Image.createImage("/icons/error.png");
-		//@					} else {
-		//@						img = Image.createImage("/icons/error.png");
-		//@					}
-		//@		
-		//@				} catch (IOException e) {
-		//@					img = null;
-		//@				}
-		//@		
-		//@				alert = new Alert(title, text, img, type);
-		//@		
-		//@				alert.setType(type);
-		//@				alert.setTimeout(Alert.FOREVER);
-		//@		
-		//@				LampiroMidlet.disp.setCurrent(alert, (Displayable) next_screen);
-		//#endif
 	}
 
 	/**
@@ -925,14 +970,9 @@ public class XMPPClient {
 
 		Contact user = roster.getContactByJid(task.getFrom());
 		user.addTask(task);
-		System.out.println("Tsk: " + Integer.toHexString(task.getStatus()));
-		// #ifdef UI 
-		Displayable cur = LampiroMidlet.disp.getCurrent();
-		// #endif
-// #ifndef UI
-		//@				Displayable cur = LampiroMidlet.disp.getCurrent();
-		// #endif
-
+		// #mdebug
+//@		System.out.println("Tsk: " + Integer.toHexString(task.getStatus()));
+		//#enddebug
 		byte type = task.getStatus();
 
 		// true if we should display the command
@@ -941,6 +981,11 @@ public class XMPPClient {
 
 		if ((type & Task.CMD_MASK) == Task.CMD_MASK) {
 			switch (type) {
+				case Task.CMD_FORM_LESS:
+					display = false;
+					removed = true;
+					user.removeTask(task);
+					break;
 				case Task.CMD_INPUT:
 					display = true;
 					break;
@@ -960,7 +1005,8 @@ public class XMPPClient {
 					display = true;
 					break;
 				case Task.CMD_ERROR:
-					// XXX
+					display = true;
+					removed = true;
 					break;
 				case Task.CMD_DESTROY:
 					removed = true;
@@ -984,7 +1030,8 @@ public class XMPPClient {
 					display = true;
 					break;
 				case Task.DF_ERROR:
-					// XXX
+					display = true;
+					removed = true;
 					break;
 				case Task.DF_DESTROY:
 					removed = true;
@@ -994,23 +1041,16 @@ public class XMPPClient {
 		}
 
 		// update contact position in the roster
-		if (removed) {
-			RosterScreen.getInstance().updateContact(user,
-					Contact.CH_TASK_REMOVED);
-		} else {
-			RosterScreen.getInstance().updateContact(user, Contact.CH_TASK_NEW);
+		if (xmppListener != null) {
+			if (removed) {
+				xmppListener.updateContact(user, Contact.CH_TASK_REMOVED);
+			} else {
+				xmppListener.updateContact(user, Contact.CH_TASK_NEW);
+			}
 		}
 
-		// Display a task only if no other task is currently displayed
-		Class klass = cur.getClass();
-		if (display && !DataFormScreen.class.equals(klass)
-				&& !DataResultScreen.class.equals(klass)) {
-			// #ifdef UI
-			task.display();
-			// #endif
-// #ifndef UI
-			//@						task.display(LampiroMidlet.disp, cur);
-			// #endif
+		if (this.xmppListener != null) {
+			this.xmppListener.handleTask(task, display);
 		}
 	};
 
@@ -1029,20 +1069,24 @@ public class XMPPClient {
 	// }
 	// }
 
-	/**
-	 * Get the icon for a presence show
-	 * 
-	 * @param i
-	 *            a {@link@Presence} AV_* constant
-	 * @return
-	 */
-	public Image getPresenceIcon(int availability) {
-		if (availability >= 0 && availability < presence_icons.length) { return presence_icons[availability]; }
-		return null; // maybe we could return an empty image
-	}
-
 	public Roster getRoster() {
 		return roster;
+	}
+
+	public void setXmppListener(XMPPClient.XmppListener xmppListener) {
+		this.xmppListener = xmppListener;
+	}
+
+	public XMPPClient.XmppListener getXmppListener() {
+		return xmppListener;
+	}
+
+	public static String getErrorString(String code) {
+		for (int i = 0; i < XMPPClient.errorCodes.length; i++) {
+			String[] ithCode = XMPPClient.errorCodes[i];
+			if (ithCode[0].equals(code)) { return (ithCode[1]); }
+		}
+		return "";
 	}
 
 	// #ifdef SEND_DEBUG1

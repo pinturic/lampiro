@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: SplashScreen.java 1272 2009-03-13 14:05:51Z luca $
 */
 
 package it.yup.screens;
@@ -9,12 +9,13 @@ package it.yup.screens;
 import java.util.TimerTask;
 
 import it.yup.util.Utils;
-import it.yup.xmpp.XMPPClient;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
+
+import lampiro.LampiroMidlet;
 
 public class SplashScreen extends Canvas {
 	
@@ -63,7 +64,8 @@ public class SplashScreen extends Canvas {
 	    	first_time = false;
 	    	Utils.tasks.schedule(new TimerTask() {
 				public void run() {
-					XMPPClient.getInstance().startClient();
+					RegisterScreen rgs = RegisterScreen.getInstance();
+					LampiroMidlet.disp.setCurrent(rgs);
 				}
 	    		
 	    	}, 3000);

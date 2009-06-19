@@ -1,15 +1,15 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketChannel.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: SocketChannel.java 1464 2009-05-12 14:56:52Z luca $
 */
 
 package it.yup.transport;
 
 // #debug
 //@import it.yup.util.Logger;
+
 import it.yup.util.Utils;
-import it.yup.xmpp.XMPPClient;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,8 +21,11 @@ import javax.microedition.io.Connector;
 import javax.microedition.io.SocketConnection;
 import javax.microedition.io.StreamConnection;
 
-import org.bouncycastle.crypto.tls.AlwaysValidVerifyer;
-import org.bouncycastle.crypto.tls.TlsInputStream;
+//#ifdef TLS
+//@import org.bouncycastle.crypto.tls.AlwaysValidVerifyer;
+//@import org.bouncycastle.crypto.tls.TlsInputStream; 
+//#endif
+
 import org.bouncycastle.crypto.tls.TlsProtocolHandler;
 
 // #ifdef COMPRESSION
@@ -83,11 +86,11 @@ public class SocketChannel extends BaseChannel {
 
 				try {
 					// #debug					
-//@										Logger.log("Connecting to " + connectionUrl);
+//@					Logger.log("Connecting to " + connectionUrl);
 					connection = (SocketConnection) Connector
 							.open(connectionUrl);
 					// #debug					
-//@										Logger.log("Connected ");
+//@					Logger.log("Connected ");
 					inputStream = connection.openInputStream();
 					outputStream = connection.openOutputStream();
 
@@ -98,11 +101,11 @@ public class SocketChannel extends BaseChannel {
 					listener.connectionEstablished(SocketChannel.this);
 				} catch (IOException e) {
 					// #debug					
-//@										Logger.log("Connection failed: " + e.getMessage());
+//@					Logger.log("Connection failed: " + e.getMessage());
 					listener.connectionFailed(SocketChannel.this);
 				} catch (Exception e) {
 					// #debug		    		
-//@										Logger.log("Unexpected exception: " + e.getMessage());
+//@					Logger.log("Unexpected exception: " + e.getMessage());
 					listener.connectionFailed(SocketChannel.this);
 					//		    		YUPMidlet.yup.reportException("Unexpected Exception on Channel start.", e, null);
 				}
@@ -112,13 +115,23 @@ public class SocketChannel extends BaseChannel {
 	}
 
 	public void close() {
+		if (pollAlive() == false)
+			return;
 		exiting = true;
 		try {
 			inputStream.close();
 			outputStream.close();
 			connection.close();
 		} catch (IOException e) {
-
+			// #mdebug 
+//@			System.out.println("In closing strean");
+//@			e.printStackTrace();
+			// #enddebug
+		} catch (Exception e) {
+			// #mdebug 
+//@			System.out.println("In closing strean");
+//@			e.printStackTrace();
+			// #enddebug
 		}
 	}
 
@@ -228,7 +241,6 @@ public class SocketChannel extends BaseChannel {
 
 
 		public int read() throws IOException {
-
 			int b;
 			int ch = 0;
 			b = getByte();
@@ -239,8 +251,8 @@ public class SocketChannel extends BaseChannel {
 //@						.getTotalIn();
 //@			}
 			// #ifndef TLS 
-//@												else
-//@												{SocketChannel.this.bytes_received++;}			
+//@															else
+//@															{SocketChannel.this.bytes_received++;}			
 			// #endif
 // #ifdef TLS
 //@			else if (sockInstream instanceof TlsInputStream == false) {
@@ -252,7 +264,7 @@ public class SocketChannel extends BaseChannel {
 			// #endif
 			// #endif
 // #ifndef COMPRESSION
-									SocketChannel.this.bytes_received++;
+												SocketChannel.bytes_received++;
 			// #endif
 
 			if (b == 0xff) {
@@ -284,8 +296,8 @@ public class SocketChannel extends BaseChannel {
 				ch = (b1 << 18) + (b2 << 12) + (b3 << 6) + b4;
 			}
 			return ch;
-
 		}
+
 	}
 
 	public UTFReader getReader() {

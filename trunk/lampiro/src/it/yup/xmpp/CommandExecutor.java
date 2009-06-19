@@ -1,43 +1,25 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandExecutor.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: CommandExecutor.java 1579 2009-06-16 15:55:25Z luca $
 */
 
 package it.yup.xmpp;
 
-import java.io.IOException;
 import java.util.Date;
 import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
-// #ifdef UI 
-import it.yup.ui.UICanvas;
-import it.yup.ui.UILabel;
-import it.yup.ui.UIScreen;
-import lampiro.screens.DataFormScreen;
-import lampiro.screens.DataResultScreen;
-import lampiro.screens.RosterScreen;
-import lampiro.screens.DataFormScreen.DataFormListener;
-
-// #endif
 // #ifndef UI
-//@import lampiro.LampiroMidlet;
 //@import javax.microedition.lcdui.Display;
 //@import javax.microedition.lcdui.Displayable;
-//@import javax.microedition.lcdui.Screen;
 //@
-//@import it.yup.screens.DataFormScreen;
-//@import it.yup.screens.DataResultScreen;
-//@import it.yup.screens.DataFormScreen.DataFormListener;
-//@
-// #endif
+//#endif
 
-
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
+import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
+import it.yup.xmpp.XMPPClient.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 
@@ -51,8 +33,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	// "en");
 
 	public static final int MSG_BROKEN_DF = 1101;
-	/** the user associated with this command */
-	private Contact usr;
+
 	/** the command information (node, label) */
 	private String[] cmd;
 	/** the sid associated with this command iteration */
@@ -64,13 +45,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 
 	private Element current_element = null;
 
-	// #ifdef UI 
-	/** the screen assocated (if shown) to this command */
-	private UIScreen screen;
-	// #endif
-// #ifndef UI
-	//@		private Displayable next_screen;
-	// #endif
+	private Object screen;
 
 	private String note = null;
 
@@ -78,20 +53,23 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 
 	private int step;
 
+	private String chosenResource;
 
-	public CommandExecutor(Contact usr, String[] cmd) {
-		init(usr, cmd);
+
+	public CommandExecutor(String[] cmd, String chosenResource) {
+		init(cmd, chosenResource);
 	}
 
-	private void init(Contact usr, String[] cmd) {
-		this.usr = usr;
+	private void init(String[] cmd, String chosenResource) {
+
 		this.cmd = cmd;
+		this.chosenResource = chosenResource;
 		this.status = Task.CMD_EXECUTING;
 
 		step = 1;
 		last_modify = new Date();
 
-		Iq iq = new Iq(usr.getFullJid(), Iq.T_SET);
+		Iq iq = new Iq(chosenResource, Iq.T_SET);
 		Element cel = iq.addElement(XMPPClient.NS_COMMANDS, "command");
 		cel.setAttribute("node", cmd[0]);
 		cel.setAttribute("action", "execute");
@@ -105,7 +83,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "id" },
 				new String[] { iq.getAttribute(Iq.ATT_ID) });
 
-		xmpp.registerOneTimeListener(eq, this);
+		BasicXmlStream.addOnetimeEventListener(eq, this);
 		xmpp.sendPacket(iq);
 	}
 
@@ -122,7 +100,6 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 
 		/* every time this is copied, not a problem, SHOULD stay the same */
 		sid = command.getAttribute("sessionid");
-
 
 		/* Parse the dataform if present */
 		Element form = command.getChildByName(DataForm.NAMESPACE, DataForm.X);
@@ -154,7 +131,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 			this.status = Task.CMD_ERROR;
 			// XXX is this enough?
 		}
-
+		if (el.getAttribute(Iq.ATT_TYPE).equals(Iq.T_ERROR)) this.status = Task.CMD_ERROR;
 		if (df == null) {
 			if (this.status != Task.CMD_FINISHED) {
 				this.status = Task.CMD_FORM_LESS;
@@ -166,7 +143,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		Element note_element = command.getChildByName(
 				"http://jabber.org/protocol/commands", "note");
 		if (note_element != null) {
-			this.note = note_element.content;
+			this.note = note_element.getText();
 		} else {
 			this.note = null;
 		}
@@ -174,11 +151,12 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		client.updateTask(this);
 	}
 
-	public void execute(int cmd) {
+	public boolean execute(int cmd) {
 		/*
 		 * not checking if the cmd is in the allowed ones, as I have built the
 		 * screen accordingly...
 		 */
+		boolean setWaiting = false;
 		last_modify = new Date();
 		switch (cmd) {
 			case DataFormListener.CMD_CANCEL:
@@ -189,45 +167,47 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				step--;
 				status = Task.CMD_EXECUTING;
 				sendReply("prev", null);
+				setWaiting = true;
 				break;
 			case DataFormListener.CMD_NEXT:
 				step++;
 				status = Task.CMD_EXECUTING;
 				df.type = DataForm.TYPE_SUBMIT;
 				sendReply("next", df.getResultElement());
+				setWaiting = true;
 				break;
 			case DataFormListener.CMD_SUBMIT:
 				step++;
 				status = Task.CMD_EXECUTING;
 				df.type = DataForm.TYPE_SUBMIT;
 				sendReply("execute", df.getResultElement());
+				setWaiting = true;
 				break;
 			case DataFormListener.CMD_DELAY:
 				// do nothing, just display the next screen
+				setWaiting = true;
 				break;
 			case DataFormListener.CMD_DESTROY:
 				status = Task.CMD_DESTROY;
 		}
 
 		// update commad status
-		XMPPClient.getInstance().updateTask(this);
-		// #ifdef UI 
-		if (screen != null) {
-			/* close the screen */
-			UICanvas.getInstance().close(screen);
-			screen = null;
-		} else {
-			UICanvas.getInstance().show(RosterScreen.getInstance());
+		XMPPClient instance = XMPPClient.getInstance();
+		instance.updateTask(this);
+		if (instance.getXmppListener() != null) {
+			if (screen != null) {
+				/* close the screen */
+				instance.getXmppListener().commandExecuted(screen);
+				screen = null;
+			} else {
+				instance.getXmppListener().commandExecuted(null);
+			}
 		}
-		// #endif
-// #ifndef UI
-		//@				LampiroMidlet.disp.setCurrent(next_screen);
-		// #endif
-
+		return setWaiting;
 	}
 
 	void sendReply(String action, Element dfel) {
-		Iq iq = new Iq(usr.getFullJid(), Iq.T_SET);
+		Iq iq = new Iq(chosenResource, Iq.T_SET);
 		Element cel = iq.addElement("http://jabber.org/protocol/commands",
 				"command");
 		cel.setAttribute("node", cmd[0]);
@@ -238,37 +218,37 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 			cel.setAttribute("action", action);
 		}
 		if (dfel != null) {
-			cel.children.addElement(dfel);
+			cel.addElement(dfel);
 		}
 		sendPacket(iq);
 	}
 
 	// #ifdef UI 
 	public void display() {
-		UIScreen screen = null;
 		// #endif
 // #ifndef UI
-		//@			public void display(Display disp, Displayable next_screen) {
-		//@				this.next_screen = next_screen;
-		//@				Screen screen = null;
+		//@	public void display(Display disp, Displayable next_screen) {
 		// #endif
+		Object screen = null;
 
 		XMPPClient client = XMPPClient.getInstance();
-
 		client = XMPPClient.getInstance();
 		switch (status) {
 			case Task.CMD_INPUT:
-				screen = new DataFormScreen(df, this);
-				DataFormScreen dfs = (DataFormScreen) screen;
 				Element command = (Element) current_element.getChildByName(
 						XMPPClient.NS_COMMANDS, "command");
 				Element actions = command.getChildByName(
 						XMPPClient.NS_COMMANDS, "actions");
+				if (actions == null) {
+					actions = new Element(XMPPClient.NS_COMMANDS, "actions");
+					actions.addElement(null, "complete");
+				}
 				// add the available actions
-				if (actions != null && df.type == DataForm.TYPE_FORM) {
+				if (df.type == DataForm.TYPE_FORM) {
 					int cmds = 0;
-					for (int i = 0; i < actions.children.size(); i++) {
-						Element iel = (Element) actions.children.elementAt(i);
+					Element[] children = actions.getChildren();
+					for (int i = 0; i < children.length; i++) {
+						Element iel = children[i];
 						if ("next".equals(iel.name)) {
 							cmds |= DataFormListener.CMD_NEXT;
 						} else if ("prev".equals(iel.name)) {
@@ -277,7 +257,17 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 							cmds |= DataFormListener.CMD_SUBMIT;
 						}
 					}
+					XmppListener xmppListener = XMPPClient.getInstance()
+							.getXmppListener();
+					if (xmppListener != null) {
+						this.screen = xmppListener.handleDataForm(df,
+								Task.CMD_INPUT, this, cmds);
+					}
+					/*
+					screen = new DataFormScreen(df, this);
+					DataFormScreen dfs = (DataFormScreen) screen;
 					dfs.setActions(cmds);
+					*/
 				}
 				break;
 			case Task.CMD_EXECUTING:
@@ -299,7 +289,15 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				break;
 			case Task.CMD_FINISHED:
 				if (df != null) {
+					/*
 					screen = new DataResultScreen(df, this);
+					*/
+					XmppListener xmppListener = XMPPClient.getInstance()
+							.getXmppListener();
+					if (xmppListener != null) {
+						screen = xmppListener.handleDataForm(df,
+								Task.CMD_FINISHED, this, -1);
+					}
 				} else {
 					// XXX handle note here, if present
 					client.showAlert(AlertType.INFO, "Task finished",
@@ -309,31 +307,27 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				}
 				break;
 			case Task.CMD_ERROR:
-				client.showAlert(AlertType.INFO, "Task error",
-						"An error occurred while executing the task", null);
+				String errorText = "An error occurred while executing the task";
+				Element error = (Element) current_element.getChildByName(null,
+						"error");
+				if (error != null) {
+					String code = error.getAttribute("code");
+					if (code != null) errorText += (": " + XMPPClient
+							.getErrorString(code));
+				}
+				client.showAlert(AlertType.INFO, "Task error", errorText, null);
 				break;
 		}
 
-		// #ifdef UI 
-		if (note != null) {
-			client.showAlert(AlertType.INFO, "Note", note, null);
+		if (status != Task.CMD_ERROR) {
+			if (note != null) {
+				client.showAlert(AlertType.INFO, "Note", note, screen);
+			}
+			if (screen != null) {
+				XmppListener xmppListener = client.getXmppListener();
+				xmppListener.showCommand(screen);
+			}
 		}
-		if (screen != null) {
-
-			UICanvas.getInstance().open(screen, true);
-		}
-		// #endif
-// #ifndef UI
-		//@				if (screen != null) {
-		//@					if (note != null) {
-		//@						client.showAlert(AlertType.INFO, "Note", note, screen);
-		//@		
-		//@					} else {
-		//@						LampiroMidlet.disp.setCurrent(screen);
-		//@					}
-		//@				}
-		// #endif 
-
 	}
 
 	public String getLabel() {
@@ -346,6 +340,6 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	}
 
 	public String getFrom() {
-		return usr.jid;
+		return this.chosenResource;
 	}
 }

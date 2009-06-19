@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILabel.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: UILabel.java 1578 2009-06-16 11:07:59Z luca $
 */
 
 /**
@@ -69,6 +69,8 @@ public class UILabel extends UIItem {
 	 * default value is Graphics.VCENTER | Graphics.LEFT.
 	 */
 	int anchorPoint = Graphics.TOP | Graphics.LEFT;
+
+	private int imgAnchorPoint = -1;
 
 	/**
 	 * used to get the different components of the acnhorPoint,
@@ -144,24 +146,39 @@ public class UILabel extends UIItem {
 
 		// first erase background
 		g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-		g.fillRect(0, 0, w, lineHeight);
+		if (this.getGradientColor() < 0) g.fillRect(0, 0, w, lineHeight);
+		else {
+			g.fillRect(0, 0, w, lineHeight / 2);
+			g.setColor(this.getGradientColor());
+			g.fillRect(0, lineHeight / 2, w, lineHeight - (lineHeight / 2));
+		}
+
 		// than paint in case it is needed
 		if (selected) {
 			int offset = 0;
 			if (imgLine != null) offset = imgVerticalOffset;
 			if (textLine != null
 					&& (textVerticalOffset < offset || imgLine == null)) offset = textVerticalOffset;
-			g.setColor(UIConfig.header_bg);
-			g.fillRect(0, offset, w,
-					java.lang.Math.max(imgHeight, textHeight) + 2);
+			g.setColor(this.getSelectedColor());
+			int selHeight = java.lang.Math.max(imgHeight, textHeight) + 2;
+			if (this.getGradientSelectedColor() < 0) g.fillRect(0, offset, w,
+					selHeight);
+			else {
+				g.fillRect(0, offset, w, selHeight / 2);
+				g.setColor(this.getGradientSelectedColor());
+				g.fillRect(0, selHeight / 2, w, selHeight - (selHeight / 2));
+			}
 		}
 
 		g.setColor(selected ? UIConfig.header_fg : UIConfig.fg_color);
-		if (this.fg_color > 0) g.setColor(this.fg_color);
+		if (this.fg_color >= 0) g.setColor(this.fg_color);
 		if (flip == false) {
 			if (this.img != null) {
-				g.drawImage(imgLine, 1 + horizontalSpace,
-						1 + imgVerticalOffset, Graphics.LEFT | Graphics.TOP);
+				// if the imgAnchorPoint is set it means image must be overridden
+				int imgHOffset = 1;
+				if (this.imgAnchorPoint != Graphics.LEFT) imgHOffset += horizontalSpace;
+				g.drawImage(imgLine, imgHOffset, 1 + imgVerticalOffset,
+						Graphics.LEFT | Graphics.TOP);
 				// g.drawString(textLine,
 				// imgLine.getWidth() + 2 + horizontalSpace,
 				// 1 + textVerticalOffset, Graphics.LEFT | Graphics.TOP);
@@ -220,9 +237,10 @@ public class UILabel extends UIItem {
 		this.height = 0;
 		this.width = 0;
 		if (this.img != null) {
-			if (this.text.length() >= 2) this.width += img.getWidth() + 3
-					+ g.getFont().stringWidth(text);
-			else
+			if (this.text != null && this.text.length() >= 2) {
+				this.width += img.getWidth() + 3
+						+ g.getFont().stringWidth(text);
+			} else
 				this.width += img.getWidth() + 2;
 		} else
 			this.width = g.getFont().stringWidth(text) + 2;
@@ -231,17 +249,29 @@ public class UILabel extends UIItem {
 		// we must check that image is not wider than w
 		if (this.wrappable == false) {
 			if (this.width > w && (this.img == null || this.img.getWidth() < w)) {
-				String newText = new String(this.text);
-				do {
-					this.width = 0;
-					int index = newText.length() - 2;
-					if (index < 0) index = 0;
-					newText = newText.substring(0, newText.length() - 2);
-					if (img != null) this.width += img.getWidth() + 3
-							+ g.getFont().stringWidth(newText + "...");
-					else
-						this.width = g.getFont().stringWidth(newText + "...") + 2;
-				} while (this.width > w && newText.length() > 0);
+				//				String newText = new String(this.text);
+				//				do {
+				//					this.width = 0;
+				//					int index = newText.length() - 2;
+				//					if (index < 0) index = 0;
+				//					newText = newText.substring(0, Math.max(newText.length() - 2,0));
+				//					if (img != null) this.width += img.getWidth() + 3
+				//							+ g.getFont().stringWidth(newText + "...");
+				//					else
+				//						this.width = g.getFont().stringWidth(newText + "...") + 2;
+				//				} while (this.width > w && newText.length() > 0);
+
+				String newText = new String("");
+				int index = 0;
+				this.width = 0;
+				while (this.width < w) {
+					newText = newText + this.text.charAt(index);
+					this.width = g.getFont().stringWidth(newText + "...") + 2;
+					if (img != null) this.width += (img.getWidth() + 1);
+					index++;
+				}
+				if (newText.length() > 1) newText = newText.substring(0,
+						newText.length() - 2);
 				newText = newText + "...";
 				paintLine(g, w, h, img, newText);
 			} else {
@@ -270,9 +300,9 @@ public class UILabel extends UIItem {
 		}
 
 		// #mdebug
-//@				System.out.println("Drawn UILabel '" + text + "' at: ("
-//@						+ g.getTranslateX() + ", " + g.getTranslateY() + ")"
-//@						+ (selected ? "S" : ""));
+//@		//				System.out.println("Drawn UILabel '" + text + "' at: ("
+//@		//						+ g.getTranslateX() + ", " + g.getTranslateY() + ")"
+//@		//						+ (selected ? "S" : ""));
 		// #enddebug
 
 		g.setFont(oldFont);
@@ -386,8 +416,7 @@ public class UILabel extends UIItem {
 			}
 			if (img != null) this.height = img.getHeight() + 2;
 			int tempHeight = (fontHeight + 2) * this.textLines.size();
-			if (tempHeight>this.height)
-				this.height = tempHeight;
+			if (tempHeight > this.height) this.height = tempHeight;
 		}
 
 		return height;
@@ -406,10 +435,12 @@ public class UILabel extends UIItem {
 	 * @param _text
 	 */
 	public void setText(String _text) {
+		if (text.equals(_text) == false) this.textLines = null;
 		text = _text;
 		dirty = true;
 		// reset the text lines for wrappable labels
-		this.textLines = null;
+		// only when needed and avoid recomputing lines
+
 	}
 
 	/**
@@ -432,9 +463,11 @@ public class UILabel extends UIItem {
 	 *            the wrappable to set
 	 */
 	public void setWrappable(boolean wrappable, int width) {
+		if (this.img != null) return;
 		if (wrappable != this.wrappable) this.setDirty(true);
 		this.wrappable = wrappable;
-		this.textLines = null;
+		//		if (this.width != width)
+		//			this.textLines = null;
 		this.width = width;
 	}
 
@@ -472,9 +505,11 @@ public class UILabel extends UIItem {
 	 *            the img to set
 	 */
 	public void setImg(Image img) {
+		if (this.img == img) return;
+		this.dirty = true;
 		this.img = img;
 		this.wrappable = false;
-		this.dirty = true;
+
 	}
 
 	/**
@@ -493,4 +528,11 @@ public class UILabel extends UIItem {
 		return textLines;
 	}
 
+	public void setImgAnchorPoint(int imgAnchorPoint) {
+		this.imgAnchorPoint = imgAnchorPoint;
+	}
+
+	public int getImgAnchorPoint() {
+		return imgAnchorPoint;
+	}
 }

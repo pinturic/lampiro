@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AboutScreen.java 1176 2009-02-06 16:53:35Z luca $
+ * $Id: AboutScreen.java 1552 2009-05-28 14:46:49Z luca $
 */
 
 package lampiro.screens;
@@ -11,6 +11,7 @@ import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
+import it.yup.ui.UIUtils;
 import it.yup.xmpp.Config;
 
 import javax.microedition.lcdui.Graphics;
@@ -20,16 +21,27 @@ public class AboutScreen extends UIScreen {
 
 	Image logo;
 
-	private static String[] lines = { "Mobile Messaging", "",
-			"(c) 2007-2008 Bluendo srl", "http://www.bluendo.com", "",
-			Config.getInstance().getProperty(Config.VERSION) , };
+	private static String[] lines = {
+			"Mobile Messaging",
+			"",
+// #ifndef GLIDER
+					"(c) 2007-2009 Bluendo srl",
+					"http://www.bluendo.com",
+			// #endif
+			"",
+			Config.getInstance().getProperty(Config.VERSION),
+			"Available/Total memory:",
+			Runtime.getRuntime().freeMemory() / 1000 + "/"
+					+ Runtime.getRuntime().totalMemory() / 1000 + " Kb" };
 
 	private static UILabel cmd_ok = new UILabel("OK");
 
 	public AboutScreen() {
 		setTitle("ABOUT");
 		try {
-			logo = Image.createImage("/icons/lampiro_icon.png");
+// #ifndef GLIDER
+						logo = Image.createImage("/icons/lampiro_icon.png");
+			// #endif
 		} catch (Exception ex) {
 		}
 		UILabel uimg = new UILabel(logo);
@@ -40,7 +52,7 @@ public class AboutScreen extends UIScreen {
 			ul.setAnchorPoint(Graphics.HCENTER | Graphics.VCENTER);
 			append(ul);
 		}
-		setMenu(UIMenu.easyMenu("", -1, -1, -1, cmd_ok));
+		setMenu(UIUtils.easyMenu("", -1, -1, -1, cmd_ok));
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {

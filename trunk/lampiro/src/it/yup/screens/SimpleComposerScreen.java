@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleComposerScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: SimpleComposerScreen.java 1312 2009-03-24 12:04:13Z luca $
 */
 
 package it.yup.screens;
@@ -28,7 +28,7 @@ public class SimpleComposerScreen extends TextBox implements CommandListener {
 	private Contact user;
 	private Command cmd_send = new Command(rm.getString(ResourceIDs.STR_SEND),
 			Command.OK, 1);
-	private Command cmd_exit = new Command(rm.getString(ResourceIDs.STR_EXIT),
+	private Command cmd_exit = new Command(rm.getString(ResourceIDs.STR_CLOSE),
 			Command.CANCEL, 1);
 
 	public SimpleComposerScreen(Displayable d, Contact u) {
@@ -53,7 +53,7 @@ public class SimpleComposerScreen extends TextBox implements CommandListener {
 			Message msg = new Message(user.jid, "chat");
 			msg.setBody(msgText);
 			XMPPClient.getInstance().sendPacket(msg);
-			user.addMessageToHistory(msg);
+			user.addMessageToHistory(null,msg);
 			LampiroMidlet.disp.setCurrent(next);
 		} else if (cmd == cmd_exit) {
 			LampiroMidlet.disp.setCurrent(next);

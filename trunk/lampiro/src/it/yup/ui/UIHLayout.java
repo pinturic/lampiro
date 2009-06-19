@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIHLayout.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: UIHLayout.java 1471 2009-05-13 21:35:41Z luca $
 */
 
 /**
@@ -24,6 +24,8 @@ public class UIHLayout extends UILayout {
 	 */
 	public UIHLayout(int colNumber) {
 		super(colNumber);
+		this.dirKey1 = Canvas.LEFT;
+		this.dirKey2 = Canvas.RIGHT;
 	}
 
 	/**
@@ -42,6 +44,7 @@ public class UIHLayout extends UILayout {
 		item.setType(type);
 		item.setScreen(screen);
 		item.setContainer(this);
+		item.setDirty(true);
 	}
 
 	/*
@@ -121,79 +124,4 @@ public class UIHLayout extends UILayout {
 		}
 		return height;
 	}
-
-	public boolean keyPressed(int key) {
-		// first forward the keyPressed!!!!
-		if (selectedIndex >= 0 && selectedIndex < this.layoutItems.length
-				&& this.layoutFocused == true
-				&& this.layoutItems[selectedIndex].keyPressed(key) == true) {
-			// this is needed since we cannot know if anything below has been
-			// repainted
-			updateChildren();
-			return true;
-		}
-
-		int ga = UICanvas.getInstance().getGameAction(key);
-		if (this.layoutFocused == true) {
-			switch (ga) {
-				case Canvas.RIGHT:
-					if (this.selectedIndex < this.layoutItems.length - 1) {
-						int newSelectedIndex = this.selectedIndex + 1;
-						if (this.isFocusable()) newSelectedIndex = traverseFocusable(
-								newSelectedIndex, true);
-						if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
-						else
-							return false;
-						updateChildren();
-						return true;
-					}
-					return false;
-				case Canvas.LEFT:
-					if (this.selectedIndex > 0) {
-						int newSelectedIndex = this.selectedIndex - 1;
-						if (this.isFocusable()) newSelectedIndex = traverseFocusable(
-								newSelectedIndex, false);
-						if (newSelectedIndex >= 0) this.selectedIndex = newSelectedIndex;
-						else
-							return false;
-						updateChildren();
-						return true;
-					}
-					return false;
-			}
-		}
-
-		if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)) {
-			if (this.isFocusable()) {
-				this.layoutFocused = true;
-				selectedIndex = traverseFocusable(selectedIndex, true);
-				this.layoutItems[selectedIndex].setSelected(true);
-				updateChildren();
-			}
-		}
-
-		return false;
-	}
-
-	/*
-	 * An helper function that builds an horizontal layout of three items.
-	 * The first and third item are dummy and the second is the passed item.
-	 * Size is the size in pixel od the seconde layout element
-	 * 
-	 * @param item
-	 * 			the item to insert in the middle of the layout
-	 * @param size
-	 * 			the size of the middle element of the layout  
-	 */
-	public static UIHLayout easyCenterLayout (UILabel item, int size){
-		UIHLayout buttonLayout = new UIHLayout(3);
-		UILabel dummyLabel = new UILabel("");
-		item.setAnchorPoint(Graphics.HCENTER);
-		buttonLayout.setGroup(false);
-		buttonLayout.insert(dummyLabel, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		buttonLayout.insert(item, 1, size, UILayout.CONSTRAINT_PIXELS);
-		buttonLayout.insert(dummyLabel, 2, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		return buttonLayout;
-	}
-
 }

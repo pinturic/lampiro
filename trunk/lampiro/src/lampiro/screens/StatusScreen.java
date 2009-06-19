@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: StatusScreen.java 1102 2009-01-12 13:40:17Z luca $
+ * $Id: StatusScreen.java 1561 2009-06-08 13:52:35Z luca $
 */
 
 package lampiro.screens;
@@ -10,6 +10,7 @@ import it.yup.ui.UICanvas;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
+import it.yup.ui.UIPanel;
 import it.yup.ui.UIRadioButtons;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
@@ -32,6 +33,8 @@ import javax.microedition.lcdui.TextField;
  * 
  */
 public class StatusScreen extends UIScreen {
+	
+	private UIPanel statusPanel = new UIPanel(true,false);
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
 			"en");
@@ -61,7 +64,7 @@ public class StatusScreen extends UIScreen {
 		closeMenu = new UIMenu("");
 		closeMenu.append(cmd_exit);
 
-		if (myContact != null) {
+		if (myContact != null && myContact.getPresence() != null) {
 			Presence p = myContact.getPresence();
 			show = p.getShow();
 			messageStatus = p.getStatus();
@@ -86,7 +89,7 @@ public class StatusScreen extends UIScreen {
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
 		ch_status.setSubmenu(closeMenu);
-		append(ch_status);
+		this.statusPanel.addItem(ch_status);
 		for (int i = 0; i < mapping.length; i++) {
 			ch_status.getItem(i).setSubmenu(closeMenu);
 		}
@@ -94,23 +97,26 @@ public class StatusScreen extends UIScreen {
 				.getString(ResourceIDs.STR_STATUS_MESSAGE), messageStatus, 128,
 				TextField.ANY);
 		tf_status.setSubmenu(closeMenu);
-		append(tf_status);
+		this.statusPanel.addItem(tf_status);
 		priority = new UITextField(rm.getString(ResourceIDs.STR_PRIORITY),
 				priorityVal, 10, TextField.NUMERIC);
 		priority.setSubmenu(closeMenu);
-		append(priority);
+		this.statusPanel.addItem(priority);
 
 		//menu.append(cmd_exit);
 		menu.append(cmd_status);
 		this.setSelectedIndex(0);
 
 		this.setFreezed(false);
+		this.append(statusPanel);
+		
 		this.askRepaint();
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_exit) {
 			UICanvas.getInstance().close(this);
+			UICanvas.getInstance().show(RosterScreen.getInstance());
 		} else if (cmd == cmd_status) {
 			XMPPClient client = XMPPClient.getInstance();
 			String msg = tf_status.getText();
@@ -136,7 +142,7 @@ public class StatusScreen extends UIScreen {
 						.parseInt(priorityString));
 			}
 
-			UICanvas.getInstance().close(this);
+			RosterScreen.closeAndOpenRoster(this);
 		}
 	}
 }

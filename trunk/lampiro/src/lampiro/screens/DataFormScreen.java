@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 1136 2009-01-28 11:25:30Z luca $
+ * $Id: DataFormScreen.java 1578 2009-06-16 11:07:59Z luca $
 */
 
 /**
@@ -9,13 +9,11 @@
  */
 package lampiro.screens;
 
-import java.util.Enumeration;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
 import it.yup.ui.UICombobox;
-import it.yup.ui.UIEmoLabel;
+import it.yup.ui.UIGauge;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
@@ -23,15 +21,20 @@ import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
+import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
-import it.yup.ui.UITextPanel;
+import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.xmpp.DataFormListener;
 import it.yup.xmpp.packets.DataForm;
 
 import javax.microedition.lcdui.Canvas;
+import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
+
+import lampiro.screens.RosterScreen.WaitScreen;
 
 /**
  * <p>
@@ -84,37 +87,7 @@ import javax.microedition.lcdui.TextField;
  * </i>
  * 
  */
-public class DataFormScreen extends UIScreen {
-
-	/**
-	 * This interface is used to notify of an action that the user invoked on
-	 * the form.
-	 */
-	public interface DataFormListener {
-
-		/** available actions */
-		/** next button pressed (aka SUBMIT) available for ad hoc commands */
-		public static final int CMD_NEXT = 0x01;
-		/** prev button pressed, available for ad ho commands */
-		public static final int CMD_PREV = 0x02;
-		/** submit form */
-		public static final int CMD_SUBMIT = 0x04;
-		/** cancel form */
-		public static final int CMD_CANCEL = 0x08;
-		/** keep form for future use */
-		public static final int CMD_DELAY = 0x10;
-		/** destroy form (don't send anything to other peer) */
-		public static final int CMD_DESTROY = 0x20;
-
-		/**
-		 * executes an action for the given dataForm. Available actions are one
-		 * of the CMD_* constansts.
-		 * 
-		 * @param cmd
-		 *            The command to execute (one of the CMD_* constants)
-		 */
-		public void execute(int cmd);
-	}
+public class DataFormScreen extends UIScreen implements WaitScreen {
 
 	private static ResourceManager rm = ResourceManager.getManager("common",
 			"en");
@@ -153,14 +126,27 @@ public class DataFormScreen extends UIScreen {
 	/** the item array created to represent the form */
 	private UIItem[] items;
 
+	UIGauge progress_gauge = new UIGauge(rm.getString(ResourceIDs.STR_WAIT),
+			false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING);
+
 	/*
 	 * To construct the "Expand" support
 	 */
 	UIMenu zoomSubmenu;
 	UILabel zoomLabel = new UILabel("EXPAND");
 
+	private UIHLayout mainLayout = new UIHLayout(3);
+	private UIPanel mainPanel = new UIPanel(true, false);
+
 	public DataFormScreen(DataForm df, DataFormListener dfl) {
 		setTitle(rm.getString(ResourceIDs.STR_FILL_FORM));
+
+		UISeparator separator = new UISeparator(0);
+		mainLayout.setGroup(false);
+		mainLayout.insert(separator, 0, 3, UILayout.CONSTRAINT_PIXELS);
+		mainLayout.insert(mainPanel, 1, 100, UILayout.CONSTRAINT_PERCENTUAL);
+		mainLayout.insert(separator, 2, 3, UILayout.CONSTRAINT_PIXELS);
+		this.append(mainLayout);
 
 		this.df = df;
 		this.dfl = dfl;
@@ -174,17 +160,17 @@ public class DataFormScreen extends UIScreen {
 		menu.append(menu_cancel);
 		//menu.append(cmd_delay);
 		actions = DataFormListener.CMD_SUBMIT | DataFormListener.CMD_CANCEL;
-		instruction_menu = UIMenu.easyMenu(rm
+		instruction_menu = UIUtils.easyMenu(rm
 				.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 20, this
 				.getWidth() - 10, null);
 		//		desc_menu.setAbsoluteX(10);
 		//		desc_menu.setAbsoluteY(20);
 		//		desc_menu.setWidth(this.getWidth() - 10);
 		desc_menu.append(show_desc_label);
-		show_instruction = UIMenu.easyMenu("", 10, 20, this.getWidth() - 10,
+		show_instruction = UIUtils.easyMenu("", 10, 20, this.getWidth() - 10,
 				show_instruction_label);
 		// prepare zoomSubMenu
-		zoomSubmenu = UIMenu.easyMenu("", 10, 10, this.getWidth() - 30,
+		zoomSubmenu = UIUtils.easyMenu("", 10, 10, this.getWidth() - 30,
 				zoomLabel);
 		zoomLabel.setAnchorPoint(Graphics.HCENTER);
 		createControls();
@@ -212,7 +198,7 @@ public class DataFormScreen extends UIScreen {
 		// i love the battery life
 		this.setFreezed(true);
 
-		removeAll();
+		this.mainPanel.removeAllItems();
 
 		/* do I create this only once? */
 		items = new UIItem[df.fields.size()];
@@ -233,7 +219,7 @@ public class DataFormScreen extends UIScreen {
 				} else {
 					cgrp.setChecked(false);
 				}
-				append(cgrp);
+				mainPanel.addItem(cgrp);
 				items[i] = cgrp;
 				continue;
 			}
@@ -254,7 +240,7 @@ public class DataFormScreen extends UIScreen {
 					}
 				}
 				cgrp.setSelectedFlags(flags);
-				append(cgrp);
+				mainPanel.addItem(cgrp);
 				items[i] = cgrp;
 				continue;
 			}
@@ -280,10 +266,12 @@ public class DataFormScreen extends UIScreen {
 				// XXX: Which the maximum allowed length? We use 1k for the
 				// moment
 				UITextField tf = new UITextField(title, fld.dValue, 1024, flags);
-				append(tf);
+				mainPanel.addItem(tf);
 				if (fld.type == DataForm.FLT_TXTMULTI
 						|| fld.type == DataForm.FLT_FIXED) {
-					//tf.setMaxHeight(50);
+					if (fld.type == DataForm.FLT_TXTMULTI) {
+						tf.setMinLines(4);
+					}
 					tf.setWrappable(true);
 				}
 				items[i] = tf;
@@ -369,8 +357,8 @@ public class DataFormScreen extends UIScreen {
 		}
 		uhl2.insert(insertItem, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
 
-		if (addUhl1) append(uhl1);
-		if (addUhl2) append(uhl2);
+		if (addUhl1) mainPanel.addItem(uhl1);
+		if (addUhl2) mainPanel.addItem(uhl2);
 
 		this.setSelectedIndex(0);
 		this.setFreezed(false);
@@ -391,7 +379,7 @@ public class DataFormScreen extends UIScreen {
 		super.paint(g, w, h);
 
 		// longest textfield handling 
-		UIItem panelItem = this.getSelectedItem();
+		UIItem panelItem = mainPanel.getSelectedItem();
 		if (panelItem instanceof UITextField) {
 			Graphics tg = getGraphics();
 			int labelHeight = panelItem.getHeight(tg);
@@ -408,7 +396,6 @@ public class DataFormScreen extends UIScreen {
 				g.setClip(0, 0, ci.getWidth(), ci.getHeight() + 1);
 				this.askRepaint();
 			}
-
 		}
 	}
 
@@ -418,17 +405,22 @@ public class DataFormScreen extends UIScreen {
 	public void menuAction(UIMenu menu, UIItem cmd) {
 
 		int comm = -1;
+		boolean setWaiting = false;
 
 		if (cmd == cmd_cancel || cmd == menu_cancel) {
 			comm = DataFormListener.CMD_CANCEL;
 		} else if (cmd == cmd_submit) {
 			comm = DataFormListener.CMD_SUBMIT;
+			setWaiting = true;
 		} else if (cmd == cmd_next) {
 			comm = DataFormListener.CMD_NEXT;
+			setWaiting = true;
 		} else if (cmd == cmd_prev) {
 			comm = DataFormListener.CMD_PREV;
+			setWaiting = true;
 		} else if (cmd == cmd_delay) {
 			comm = DataFormListener.CMD_DELAY;
+			setWaiting = true;
 		} else if (cmd == this.zoomLabel) {
 			UITextField selLabel = (UITextField) this.getSelectedItem();
 			selLabel.handleScreen();
@@ -438,11 +430,11 @@ public class DataFormScreen extends UIScreen {
 			UITextField descField = new UITextField("", desc, desc.length(),
 					TextField.UNEDITABLE);
 			descField.setWrappable(true);
-			UIMenu descriptionMenu = UIMenu.easyMenu(rm
+			UIMenu descriptionMenu = UIUtils.easyMenu(rm
 					.getString(ResourceIDs.STR_DESC), 10, 20,
 					this.getWidth() - 20, descField);
 			//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
-			descriptionMenu.append(descField);
+
 			descriptionMenu.cancelMenuString = "";
 			descriptionMenu.selectMenuString = rm.getString(
 					ResourceIDs.STR_CLOSE).toUpperCase();
@@ -461,9 +453,18 @@ public class DataFormScreen extends UIScreen {
 		}
 
 		fillForm();
-		dfl.execute(comm);
+		// if the dataform will have an answer, e.g. an IQ contained dataform 
+		setWaiting &= dfl.execute(comm);
 		// #ifdef UI
-		UICanvas.getInstance().close(this);
+		if (setWaiting == true) {
+			mainPanel.removeAllItems();
+			mainPanel.addItem(progress_gauge);
+			progress_gauge.start();
+			RosterScreen.getInstance().setWaitingDF(this);
+			this.askRepaint();
+		} else {
+			this.stopWaiting();
+		}
 		// #endif
 	}
 
@@ -549,5 +550,10 @@ public class DataFormScreen extends UIScreen {
 			}
 		}
 
+	}
+
+	public void stopWaiting() {
+		progress_gauge.cancel();
+		UICanvas.getInstance().close(this);
 	}
 }

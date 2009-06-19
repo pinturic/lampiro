@@ -1,12 +1,12 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Stanza.java 1132 2009-01-26 16:05:01Z luca $
+ * $Id: Stanza.java 1220 2009-02-27 09:41:06Z luca $
 */
 
 package it.yup.xmpp.packets;
 
-import it.yup.xmlstream.Element;
+import it.yup.xml.Element;
 
 public class Stanza extends Element {
 
@@ -20,13 +20,13 @@ public class Stanza extends Element {
 	protected Stanza(String name, String to, String type, String id) {
 		super(NS_JABBER_CLIENT, name);
 		if (to != null) {
-			attributes.addElement(new String[] { null,ATT_TO, to });
+			setAttribute(ATT_TO, to );
 		}
 		if (type != null) {
-			attributes.addElement(new String[] { null,ATT_TYPE, type });
+			setAttribute(ATT_TYPE, type );
 		}
 		if (id != null) {
-			attributes.addElement(new String[] { null,ATT_ID, id });
+			setAttribute(ATT_ID, id );
 		}
 	}
 
