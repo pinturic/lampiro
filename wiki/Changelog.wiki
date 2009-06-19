@@ -11,6 +11,8 @@ Lampiro 9.6.0:
 
  * *Added*:     Multimedia related functions: camera , voice recording, multimedia album and file transfer
  * *Added*:     Group management functions in roster screen
+ * *Added*:     Support for "qwerty" based devices (like Blackberry)
+ * *Added*:     Support for touchpads
  * *Improved*:  Improved user interface experience
  * *Improved*:  Stunning graphics and theming support
  * *Improved*:  Improved usability
