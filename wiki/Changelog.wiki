@@ -9,9 +9,9 @@ When updates are available this page will describe the improvements or additions
 Lampiro 10.1:
 
 
- * *Added*:     Italian and spanish translation
- * *Added*:     Many new features to handle roster contacts: change roster contact names, message forwarding, contact search, group handling, gateway management
- * *Added*:     A screan to handle gateway subscription
+ * *Added*:     Italian and spanish translations
+ * *Added*:     Many new features to handle roster contacts: change contact and group names, message forwarding, contact search, group handling, gateway management
+ * *Added*:     A screen to handle gateway subscriptions
  * *Improved*:  Audio and graphic effects
  * *Improved*:  Startup connection and roster retrieval
  * *Improved*:  Multi user chat experience; muc bookmarking for later retrieval
