@@ -9,6 +9,8 @@ import java.util.Vector;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.TextField;
 
+import lampiro.screens.rosterItems.UIContactGroup;
+
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
 import it.yup.ui.UIItem;
@@ -32,7 +34,7 @@ import it.yup.xmpp.packets.Iq;
  */
 public class GroupsScreen extends UIScreen {
 
-	private ResourceManager rm = ResourceManager.getManager("common", "en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel cmd_submit = new UILabel(rm.getString(
 			ResourceIDs.STR_SUBMIT).toUpperCase());
@@ -71,18 +73,20 @@ public class GroupsScreen extends UIScreen {
 		group_name = new UITextField(rm.getString(ResourceIDs.STR_NEW_GROUP),
 				"", 255, TextField.ANY);
 		contactPanel.addItem(group_name);
-		
+
 		UISeparator sep = new UISeparator(2);
 		sep.setFg_color(0xAAAAAA);
 		contactPanel.addItem(sep);
-		
-		UILabel existingGroups = new UILabel(rm.getString(ResourceIDs.STR_EXISTING_GROUPS));
+
+		UILabel existingGroups = new UILabel(rm
+				.getString(ResourceIDs.STR_EXISTING_GROUPS));
 		contactPanel.addItem(existingGroups);
-		Font xFont = UICanvas.getInstance().getCurrentScreen().getGraphics().getFont();
+		Font xFont = UICanvas.getInstance().getCurrentScreen().getGraphics()
+				.getFont();
 		Font lFont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
 				.getSize());
 		existingGroups.setFont(lFont);
-		
+
 		// we should collect all the groups
 		// even the groups of the offline contacts
 		Roster roster = XMPPClient.getInstance().getRoster();
@@ -93,7 +97,11 @@ public class GroupsScreen extends UIScreen {
 			String[] contactGroups = ithContact.getGroups();
 			for (int i = 0; i < contactGroups.length; i++) {
 				String ithGroup = contactGroups[i];
-				if (groups.contains(ithGroup) == false) groups
+				boolean virtualGroup = false;
+				UIContactGroup uiGroup = UIContactGroup.getContactGroup(
+						ithGroup, null, false);
+				if (uiGroup != null) virtualGroup = uiGroup.virtualGroup;
+				if (virtualGroup == false && groups.contains(ithGroup) == false) groups
 						.addElement(ithGroup);
 			}
 		}
@@ -114,10 +122,6 @@ public class GroupsScreen extends UIScreen {
 		this.setSelectedItem(contactPanel);
 	}
 
-	public void itemAction(UIItem item) {
-
-	}
-
 	public void menuAction(UIMenu menu, UIItem c) {
 		if (c == cmd_submit) {
 			Vector newGroups = new Vector();
@@ -125,8 +129,9 @@ public class GroupsScreen extends UIScreen {
 			if (groupName.length() > 0) newGroups.addElement(groupName);
 
 			Iq iq_roster = new Iq(null, Iq.T_SET);
-			Element query = iq_roster.addElement(Roster.NS_IQ_ROSTER, Iq.QUERY);
-			Element item = query.addElement(Roster.NS_IQ_ROSTER, "item");
+			Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER,
+					Iq.QUERY);
+			Element item = query.addElement(XMPPClient.NS_IQ_ROSTER, "item");
 			item.setAttribute("jid", this.contact.jid);
 			if (contact.name.length() > 0) {
 				item.setAttribute("name", contact.name);
@@ -142,13 +147,14 @@ public class GroupsScreen extends UIScreen {
 						.getText());
 			}
 			en = newGroups.elements();
-			while (en.hasMoreElements()){
-				item.addElement(Roster.NS_IQ_ROSTER, "group").addText((String) en.nextElement());
+			while (en.hasMoreElements()) {
+				item.addElement(XMPPClient.NS_IQ_ROSTER, "group").addText(
+						(String) en.nextElement());
 			}
 			XMPPClient.getInstance().sendIQ(iq_roster, null);
-			RosterScreen.closeAndOpenRoster(this);
+			UICanvas.getInstance().close(this);
 		} else if (c == cmd_cancel) {
-			RosterScreen.closeAndOpenRoster(this);
+			UICanvas.getInstance().close(this);
 		}
 	}
 }

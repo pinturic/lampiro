@@ -94,9 +94,9 @@ public class RMSIndex {
 					tempRs.closeRecordStore();
 				} catch (Exception e) {
 					// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println("In rmExists" + e.getMessage()
-//@							+ e.getClass());
+					//@					e.printStackTrace();
+					//@					System.out.println("In rmExists" + e.getMessage()
+					//@							+ e.getClass());
 					// #enddebug
 				}
 			}
@@ -190,17 +190,17 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@						// XXX clean dirty records! how ??!?
-//@						e.printStackTrace();
-//@						System.out.println("In deleting splitted records" + e.getMessage()
-//@								+ e.getClass());
+			//@			// XXX clean dirty records! how ??!?
+			//@			e.printStackTrace();
+			//@			System.out.println("In deleting splitted records" + e.getMessage()
+			//@					+ e.getClass());
 			// #enddebug
 		}
 	}
 
 	private void join(Item firstItem, Item secondItem) {
 		// #mdebug
-//@				System.out.println("join");
+		//@		System.out.println("join");
 		// #enddebug
 		try {
 			Vector firstChunk, secondChunk;
@@ -225,8 +225,8 @@ public class RMSIndex {
 			saveChunk(1, chunk_index);
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 	}
@@ -316,9 +316,9 @@ public class RMSIndex {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println("In loading a chuck " + e.getMessage()
-//@								+ e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println("In loading a chuck " + e.getMessage()
+			//@					+ e.getClass());
 			// #enddebug
 		}
 		return chunk;
@@ -415,10 +415,10 @@ public class RMSIndex {
 				len = dataBuf.length;
 			} catch (Exception e) {
 				// #mdebug
-//@								// XXX clean dirty records! how ??!?
-//@								e.printStackTrace();
-//@								System.out.println("Error in serialize split chunks "
-//@										+ e.getMessage() + e.getClass());
+				//@				// XXX clean dirty records! how ??!?
+				//@				e.printStackTrace();
+				//@				System.out.println("Error in serialize split chunks "
+				//@						+ e.getMessage() + e.getClass());
 				// #enddebug
 			}
 		}
@@ -441,10 +441,10 @@ public class RMSIndex {
 			return recordId;
 		} catch (Exception e) {
 			// #mdebug
-//@						// XXX clean dirty records! how ??!?
-//@						e.printStackTrace();
-//@						System.out.println("Error in final write " + e.getMessage()
-//@								+ e.getClass());
+			//@			// XXX clean dirty records! how ??!?
+			//@			e.printStackTrace();
+			//@			System.out.println("Error in final write " + e.getMessage()
+			//@					+ e.getClass());
 			// #enddebug
 		}
 
@@ -496,10 +496,16 @@ public class RMSIndex {
 				default:
 					break;
 			}
+			// #mdebug
+			//@		} catch (InvalidRecordIDException e) {
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
+			//@		
+			// #enddebug
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return null;
@@ -512,8 +518,8 @@ public class RMSIndex {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return new int[] { 0, 0 };
@@ -587,7 +593,7 @@ public class RMSIndex {
 					} else {
 						// split the chunk before saving
 						// #mdebug
-//@												System.out.println("split");
+						//@						System.out.println("split");
 						// #enddebug
 						Vector new_chunk = new Vector();
 						int end = current_chunk.size();
@@ -608,23 +614,47 @@ public class RMSIndex {
 						sorted_insert(chunk_index, new_index);
 						saveChunk(1, chunk_index);
 						// #mdebug
-//@												for (int i = 0; i < chunk_index.size(); i++) {
-//@													System.out.println("~"
-//@															+ i
-//@															+ "~:"
-//@															+ new String(((Item) chunk_index
-//@																	.elementAt(i)).key));
-//@												}
+						//@						for (int i = 0; i < chunk_index.size(); i++) {
+						//@							System.out.println("~"
+						//@									+ i
+						//@									+ "~:"
+						//@									+ new String(((Item) chunk_index
+						//@											.elementAt(i)).key));
+						//@						}
 						// #enddebug
 					}
 				}
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
+	}
+
+	public synchronized boolean hasKey(byte key[]) {
+		try {
+			Item ci = get_item(chunk_index, key, false);
+			if (ci != current_index) {
+				current_chunk = loadChunk(ci.id);
+				current_index = ci;
+				current_index.num = (short) current_chunk.size();
+			}
+			if (current_chunk == null) return false;
+			Item ii = get_item(current_chunk, key, true);
+			if (ii != null) {
+				return true;
+			} else {
+				return false;
+			}
+		} catch (Exception e) {
+			// #mdebug
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
+			// #enddebug
+		}
+		return false;
 	}
 
 	public synchronized byte[] load(byte key[]) {
@@ -635,8 +665,7 @@ public class RMSIndex {
 				current_index = ci;
 				current_index.num = (short) current_chunk.size();
 			}
-			if (current_chunk==null)
-				return null;
+			if (current_chunk == null) return null;
 			Item ii = get_item(current_chunk, key, true);
 			if (ii != null) {
 				return physicalRead(ii);
@@ -645,8 +674,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return null;
@@ -704,8 +733,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 	}
@@ -715,8 +744,8 @@ public class RMSIndex {
 			this.rs.closeRecordStore();
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 			return false;
 		}
@@ -727,12 +756,19 @@ public class RMSIndex {
 		return new KeyEnumeration();
 	}
 
+	/*
+	 * The name cannot be longer than 31 characters
+	 */
 	public RMSIndex(String name) {
 		this.name = name;
 		comparator = new DefaultUTF8Comparator();
 		//init(name);
 	}
 
+	/*
+	 * The name cannot be longer than 31 characters
+	 * The recordMaxlength is used to divide longest records in small ones
+	 */
 	public RMSIndex(String name, int recordMaxLength) {
 		this(name);
 		this.recordMaxLength = recordMaxLength;
@@ -752,8 +788,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println(e.getMessage() + e.getClass());
+			//@			e.printStackTrace();
+			//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 			return false;
 		}

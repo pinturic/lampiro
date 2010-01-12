@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 1545 2009-05-27 07:33:17Z luca $
+ * $Id: DataResultScreen.java 1858 2009-10-16 22:42:29Z luca $
 */
 
 /**
@@ -19,7 +19,6 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
-import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xmpp.DataFormListener;
@@ -27,17 +26,14 @@ import it.yup.xmpp.packets.DataForm;
 
 import java.util.Hashtable;
 
-import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.TextField;
-
 
 /**
  * Class that shows the results in a data form.
  */
 public class DataResultScreen extends UIScreen {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel cmd_close = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
 			.toUpperCase());
@@ -56,7 +52,7 @@ public class DataResultScreen extends UIScreen {
 	private DataFormListener listener;
 
 	private UIHLayout mainLayout = new UIHLayout(3);
-	private UIPanel mainPanel = new UIPanel();
+	UIPanel mainPanel = new UIPanel();
 
 	private UIMenu desc_menu = new UIMenu("");
 
@@ -82,18 +78,14 @@ public class DataResultScreen extends UIScreen {
 		mainLayout.insert(separator, 2, 3, UILayout.CONSTRAINT_PIXELS);
 		this.append(mainLayout);
 		mainPanel.setMaxHeight(-1);
-		
+
 		desc_menu.append(show_desc_label);
 
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
 		menu.append(cmd_close);
 
-		this.setFreezed(true);
 		showCurrent();
-		this.setFreezed(false);
-		this.setDirty(true);
-		this.askRepaint();
 	}
 
 	/**
@@ -110,7 +102,8 @@ public class DataResultScreen extends UIScreen {
 		mainPanel.removeAllItems();
 
 		if (pos == -1) {
-			mainPanel.addItem(new UILabel(rm.getString(ResourceIDs.STR_INSTRUCTIONS)));
+			mainPanel.addItem(new UILabel(rm
+					.getString(ResourceIDs.STR_INSTRUCTIONS)));
 			mainPanel.addItem(si_instructions);
 		} else {
 			Hashtable res = (Hashtable) df.results.elementAt(pos);
@@ -140,12 +133,14 @@ public class DataResultScreen extends UIScreen {
 					uit.setWrappable(true);
 					ithItem = uit;
 					//uit.setMaxHeight(50);
-				} else {
-					if (lbl.length() > 0) append(new UILabel(lbl));
+				} else if (fld.type != DataForm.FLT_HIDDEN) {
+					if (lbl.length() > 0) {
+						mainPanel.addItem(new UILabel(lbl));
+					}
 					ithItem = new UILabel(val);
 					mainPanel.addItem(ithItem);
 				}
-				if (fld.desc != null) {
+				if (fld.desc != null && ithItem != null) {
 					ithItem.setSubmenu(desc_menu);
 				}
 			}
@@ -167,27 +162,13 @@ public class DataResultScreen extends UIScreen {
 	public boolean keyPressed(int kc) {
 		if (super.keyPressed(kc)) return true;
 
-		if (this.popupList.size() == 0
-				&& this.getMenu().isOpenedState() == false) {
-			int ga = UICanvas.getInstance().getGameAction(kc);
-
-			switch (ga) {
-				case Canvas.RIGHT: {
-					RosterScreen.showNextScreen(this);
-					return true;
-				}
-				case Canvas.LEFT: {
-					RosterScreen.showPreviousScreen(this);
-					return true;
-				}
-			}
-		}
-		return false;
+		return RosterScreen.makeRoll(kc, this);
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_close) {
 			listener.execute(DataFormListener.CMD_DESTROY);
+			RosterScreen.getInstance()._handleTask(listener);
 			// #ifdef UI
 			UICanvas.getInstance().close(this);
 			// #endif
@@ -197,20 +178,7 @@ public class DataResultScreen extends UIScreen {
 		} else if (cmd == cmd_prev) {
 			pos--;
 		} else if (cmd == show_desc_label) {
-			int index = this.getSelectedIndex();
-			String desc = ((DataForm.Field) this.df.fields.elementAt(index)).desc;
-			UITextField descField = new UITextField("", desc, desc.length(),
-					TextField.UNEDITABLE);
-			descField.setWrappable(true);
-			UIMenu descriptionMenu = UIUtils.easyMenu(rm
-					.getString(ResourceIDs.STR_DESC), 10, 20, this.getWidth() - 20, descField);
-			//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
-			descriptionMenu.cancelMenuString = "";
-			descriptionMenu.selectMenuString = rm.getString(
-					ResourceIDs.STR_CLOSE).toUpperCase();
-			descriptionMenu.setSelectedIndex(1);
-			this.addPopup(descriptionMenu);
-			descField.expand();
+			DataFormScreen.openDescription(this, df);
 		}
 
 		showCurrent();

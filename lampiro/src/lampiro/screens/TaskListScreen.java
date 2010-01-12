@@ -1,11 +1,12 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: TaskListScreen.java 1564 2009-06-09 14:17:08Z luca $
+ * $Id: TaskListScreen.java 1770 2009-09-16 20:40:01Z luca $
 */
 
 package lampiro.screens;
 
+import it.yup.ui.UICanvas;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
@@ -19,8 +20,7 @@ import it.yup.xmpp.Task;
  */
 public class TaskListScreen extends UIScreen {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel cmd_cancel = new UILabel(rm.getString(
 			ResourceIDs.STR_CANCEL).toUpperCase());
@@ -44,7 +44,7 @@ public class TaskListScreen extends UIScreen {
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_cancel) {
-			RosterScreen.closeAndOpenRoster(this);
+			UICanvas.getInstance().close(this);
 		}
 	}
 

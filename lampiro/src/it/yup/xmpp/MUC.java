@@ -1,27 +1,43 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUC.java 1459 2009-05-11 16:51:14Z luca $
+ * $Id: MUC.java 1770 2009-09-16 20:40:01Z luca $
 */
 
 package it.yup.xmpp;
 
 import java.util.Vector;
 
+import it.yup.xml.Element;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
 
 public class MUC extends Contact {
 
+	public static final String MUC = "muc";
+	public static final String MUC_OFFLINE = "muc-offline";
+	public static final String AUTO_JOIN = "autojoin";
+	public static final String LAMPIRO_AUTO_JOIN = "lampiro_autojoin";
+	public static String GROUP_CHATS = "";
+	
 	// the topic can be null at start
 	public String topic = "";
+	public String nick=null;
+	public String pwd=null;
 
-	public MUC(String jid, String name) {
-		super(jid, name, "both", null);
+	public MUC(String jid, String name,String nick,String pwd) {
+		// auto assign a group with value MUCS
+		super(jid, name, "both", new String []{GROUP_CHATS});
+		this.nick=nick;
+		this.pwd=pwd;
 		
 		// MUCs have only one conversation
 		convs.addElement(new Object[] { this.jid, new Vector() });
+	}
+	
+	public Element store() {
+		return null;
 	}
 	
 	public void addMessageToHistory(String preferredResource, Message msg) {
@@ -33,7 +49,13 @@ public class MUC extends Contact {
 		if (type==null)
 			type= Message.NORMAL;
 		
+		unread_msg=true;
 		compileMessage(preferredResource, msg, type);
+	}
+	
+	public boolean isVisible() {
+		// MUCS are always shown in rosterscreen
+		return true;
 	}
 
 	/**
@@ -45,9 +67,7 @@ public class MUC extends Contact {
 		if (Presence.T_UNAVAILABLE.equals(p.getAttribute(Stanza.ATT_TYPE))) {
 			String offlineResource = Contact.resource(p
 					.getAttribute(Stanza.ATT_FROM));
-			String myResource = Contact.user(XMPPClient.getInstance()
-					.getMyContact().jid);
-			if (offlineResource.compareTo(myResource) == 0) {
+			if (offlineResource.compareTo(nick) == 0) {
 				availability = AV_UNAVAILABLE;
 				this.resources = null;
 			} else {
@@ -60,29 +80,14 @@ public class MUC extends Contact {
 				// first resource create the list
 				resources = new Presence[] { p };
 			} else {
-				// add or update and finally sort
-				String jid = p.getAttribute(Stanza.ATT_FROM);
-				boolean found = false;
-				// check if we can just update
-				for (int i = 0; i < resources.length; i++) {
-					if (jid.equals(resources[i].getAttribute(Stanza.ATT_FROM))) {
-						resources[i] = p;
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					// new resource found, add it
-					Presence v[] = new Presence[resources.length + 1];
-					v[0] = p;
-					for (int i = 0; i < resources.length; i++) {
-						v[i + 1] = resources[i];
-					}
-					resources = v;
-				}
+				
+				addPresence(p);
 			}
 			availability = AV_ONLINE;
 		}
+	}
+	
+	public boolean supportsMUC(Presence p) {
+		return false;
 	}
 }

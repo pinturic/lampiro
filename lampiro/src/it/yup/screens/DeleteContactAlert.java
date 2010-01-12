@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DeleteContactAlert.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: DeleteContactAlert.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 package it.yup.screens;
@@ -20,8 +20,7 @@ import javax.microedition.lcdui.Displayable;
 
 public class DeleteContactAlert extends Alert implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private Command cmd_yes = new Command(rm.getString(ResourceIDs.STR_YES),
 			Command.OK, 1);

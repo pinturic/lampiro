@@ -3,6 +3,7 @@
  */
 package lampiro.screens;
 
+import it.yup.ui.UICanvas;
 import it.yup.ui.UIGauge;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
@@ -32,8 +33,7 @@ import javax.microedition.lcdui.Image;
 //#enddebug
 
 class FTScreen extends UIScreen {
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel cmd_exit = null;
 
@@ -80,11 +80,9 @@ class FTScreen extends UIScreen {
 	}
 
 	public static void startFtreceive(OpenListener ftrp) {
-		synchronized (fts) {
-			FTItem ithObject = new FTItem(ftrp, FTItem.STATUS_ONGOING,
-					FTItem.DIRECTION_IN, 0, ftrp.fileName);
-			fts.addElement(ithObject);
-		}
+		FTItem ithObject = new FTItem(ftrp, FTItem.STATUS_ONGOING,
+				FTItem.DIRECTION_IN, 0, ftrp.fileName);
+		fts.addElement(ithObject);
 	}
 
 	static {
@@ -93,18 +91,16 @@ class FTScreen extends UIScreen {
 			leftImage = Image.createImage("/icons/leftarrow.png");
 		} catch (IOException e) {
 			// #mdebug
-//@						System.out.println("In allocating menuImage" + e.getMessage());
+//@			System.out.println("In allocating menuImage" + e.getMessage());
 			// #enddebug
 		}
 	}
 
 	public static FTScreen getInstance() {
-		synchronized (fts) {
-			if (_instance == null) {
-				_instance = new FTScreen();
-			}
-			_instance.fillScreen();
+		if (_instance == null) {
+			_instance = new FTScreen();
 		}
+		_instance.fillScreen();
 		return _instance;
 	}
 
@@ -118,22 +114,19 @@ class FTScreen extends UIScreen {
 		this.setTitle(rm.getString(ResourceIDs.STR_FT));
 		this.append(ftPanel);
 
-		synchronized (fts) {
-			fillScreen();
-		}
+		fillScreen();
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_exit) {
-			synchronized (fts) {
-				_instance = null;
-			}
-			RosterScreen.closeAndOpenRoster(this);
+			_instance = null;
+			UICanvas.getInstance().close(this);
 		}
 	}
 
 	public static void ftFinished(Object sender) {
-		synchronized (fts) {
+		try {
+			UICanvas.lock();
 			Enumeration en = fts.elements();
 			while (en.hasMoreElements()) {
 				FTItem ithObject = (FTItem) en.nextElement();
@@ -143,11 +136,19 @@ class FTScreen extends UIScreen {
 				}
 			}
 			if (_instance != null) _instance.fillScreen();
+		} catch (Exception e) {
+			// #mdebug
+//@			Logger.log("In ftFinished:" + e.getClass());
+//@			e.printStackTrace();
+			// #enddebug
+		} finally {
+			UICanvas.unlock();
 		}
 	}
 
 	public static void ftAccept(FTSender sender, boolean accept) {
-		synchronized (fts) {
+		try {
+			UICanvas.lock();
 			Enumeration en = fts.elements();
 			while (en.hasMoreElements()) {
 				FTItem ithObject = (FTItem) en.nextElement();
@@ -158,16 +159,21 @@ class FTScreen extends UIScreen {
 				}
 			}
 			if (_instance != null) _instance.fillScreen();
+		} catch (Exception e) {
+			// #mdebug
+//@			Logger.log("In ftaccept:" + e.getClass());
+//@			e.printStackTrace();
+			// #enddebug
+		} finally {
+			UICanvas.unlock();
 		}
 	}
 
 	public static void addFileSend(FTSender sender, String fileName) {
-		synchronized (fts) {
-			FTItem ithObject = new FTItem(sender, FTItem.STATUS_WAITING,
-					FTItem.DIRECTION_OUT, 0, fileName);
-			fts.addElement(ithObject);
-			if (_instance != null) _instance.fillScreen();
-		}
+		FTItem ithObject = new FTItem(sender, FTItem.STATUS_WAITING,
+				FTItem.DIRECTION_OUT, 0, fileName);
+		fts.addElement(ithObject);
+		if (_instance != null) _instance.fillScreen();
 	}
 
 	private void fillScreen() {
@@ -196,7 +202,7 @@ class FTScreen extends UIScreen {
 
 					UIHLayout ithHLayout = new UIHLayout(2);
 					ithHLayout.setGroup(false);
-					
+
 					UIVLayout ithVLayout = new UIVLayout(2, 100);
 					ithVLayout.setGroup(false);
 
@@ -247,34 +253,36 @@ class FTScreen extends UIScreen {
 
 					UIGauge ithGauge = new UIGauge(fileName, false, 10, 0);
 					ithGauge.setFocusable(true);
-					ithGauge.setValue(Math.min(ithObject.percentage,10));
+					ithGauge.setValue(Math.min(ithObject.percentage, 10));
 					ithVLayout.insert(ithGauge, 1, ithGauge.getHeight(g),
 							UILayout.CONSTRAINT_PIXELS);
 					ithVLayout.setHeight(ithGauge.getHeight(g)
 							+ ithLabel.getHeight(g));
 
-					ithHLayout.insert(ithVLayout, 0, 100, UILayout.CONSTRAINT_PERCENTUAL);
-					ithHLayout.insert(new UISeparator(0), 1, 16, UILayout.CONSTRAINT_PIXELS);
-					
+					ithHLayout.insert(ithVLayout, 0, 100,
+							UILayout.CONSTRAINT_PERCENTUAL);
+					ithHLayout.insert(new UISeparator(0), 1, 16,
+							UILayout.CONSTRAINT_PIXELS);
+
 					this.ftPanel.addItem(ithHLayout);
 				}
 			}
 			this.ftPanel.setSelectedIndex(oldSelectedIndex);
 		} catch (Exception e) {
 			// #mdebug
-//@						Logger.log("In fillScreen:" + e.getClass());
-//@						e.printStackTrace();
+//@			Logger.log("In fillScreen:" + e.getClass());
+//@			e.printStackTrace();
 			// #enddebug
 		}
 
 		this.setFreezed(false);
-
 		this.askRepaint();
 	}
 
 	public static void chunkTransferred(int sentBytes, int length,
 			Object ftEntity) {
-		synchronized (fts) {
+		try {
+			UICanvas.lock();
 			Enumeration en = fts.elements();
 			while (en.hasMoreElements()) {
 				FTItem ithObject = (FTItem) en.nextElement();
@@ -284,8 +292,13 @@ class FTScreen extends UIScreen {
 				}
 			}
 			if (_instance != null) _instance.fillScreen();
+		} catch (Exception e) {
+			// #mdebug
+//@			Logger.log("In chunktransferred:" + e.getClass());
+//@			e.printStackTrace();
+			// #enddebug
+		} finally {
+			UICanvas.unlock();
 		}
-
 	}
-
 }

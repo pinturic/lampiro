@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIGauge.java 1574 2009-06-11 14:31:59Z luca $
+ * $Id: UIGauge.java 1897 2009-11-05 09:19:30Z luca $
 */
 
 /**
@@ -92,7 +92,6 @@ public class UIGauge extends UIItem {
 		/* get gfx state */
 		int oc = g.getColor();
 		Font of = g.getFont();
-
 		/* clear area */
 		int tempBgColor = (getBg_color() >= 0 ? getBg_color()
 				: UIConfig.bg_color);
@@ -244,7 +243,6 @@ public class UIGauge extends UIItem {
 
 		value = newVal;
 		dirty = true;
-		askRepaint();
 	}
 
 	/**
@@ -262,7 +260,14 @@ public class UIGauge extends UIItem {
 	}
 
 	public void cancel() {
-		this.ticker.cancel();
+		try {
+			this.ticker.cancel();
+		} catch (Exception e) {
+			// #mdebug 
+//@			System.out.println("Cancelling ticker");
+//@			e.printStackTrace();
+			// #enddebug
+		}
 	}
 
 	public void start() {
@@ -273,20 +278,21 @@ public class UIGauge extends UIItem {
 		}
 	}
 
-	/**
+		/**
 	 * @return the current maximum value
 	 */
 	public int getMaxValue() {
 		return maxValue;
 	}
 
+	public void setMaxValue(int newValue) {
+		maxValue = newValue;
+		this.dirty = true;
+	}
+
 	public void setOffset(int offset) {
-		if (screen == null)
-			return ;
-		synchronized (screen) {
-			this.offset = offset;
-			if (value < offset) value = offset;
-		}
+		this.offset = offset;
+		if (value < offset) value = offset;
 	}
 
 	public int getOffset() {
@@ -311,16 +317,22 @@ public class UIGauge extends UIItem {
 		public void run() {
 			if (behaviour == Gauge.CONTINUOUS_RUNNING) {
 				/* ticks in blocks of 10% */
-				if (screen != null) {
-					synchronized (screen) {
-						value += 10;
-						if (value > 100) {
-							value = offset;
-						}
+				UICanvas.lock();
+				try {
+					value += 10;
+					if (value > 100) {
+						value = offset;
 					}
+					dirty = true;
+					askRepaint();
+				} catch (Exception e) {
+					// #mdebug 
+//@					System.out.println("Repainting gauge");
+//@					e.printStackTrace();
+					// #enddebug
+				} finally {
+					UICanvas.unlock();
 				}
-				dirty = true;
-				askRepaint();
 			}
 		}
 	}

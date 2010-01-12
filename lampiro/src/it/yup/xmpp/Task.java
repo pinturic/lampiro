@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Task.java 1272 2009-03-13 14:05:51Z luca $
+ * $Id: Task.java 1833 2009-10-09 08:17:44Z luca $
 */
 
 package it.yup.xmpp;
@@ -67,4 +67,12 @@ public interface Task {
 
 	/** Get the jid originating the task */
 	public String getFrom();
+
+	public void setEnableDisplay(boolean display);
+
+	public void setEnableNew(boolean b);
+	
+	public boolean getEnableDisplay();
+
+	public boolean getEnableNew();
 }

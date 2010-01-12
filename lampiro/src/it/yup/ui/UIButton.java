@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIButton.java 1548 2009-05-28 09:24:01Z luca $
+ * $Id: UIButton.java 1768 2009-09-15 14:18:34Z luca $
 */
 
 /**
@@ -9,6 +9,7 @@
  */
 package it.yup.ui;
 
+import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
@@ -24,8 +25,10 @@ public class UIButton extends UILabel {
 	/*
 	 * the horizontal padding from button borders to text 
 	 */
-	private int hPadding = 2;
+	private int buttonHPadding = 2;
 
+	private int buttonColor = -1;
+	
 	/**
 	 * @param text
 	 * @param screen
@@ -35,6 +38,7 @@ public class UIButton extends UILabel {
 		this.focusable = true;
 		this.wrappable = false;
 		this.anchorPoint = Graphics.HCENTER;
+		//this.setSelectedColor(UIConfig.button_selected_color);
 	}
 
 	public UIButton(Image img, String text) {
@@ -42,6 +46,24 @@ public class UIButton extends UILabel {
 		this.focusable = true;
 		this.wrappable = false;
 		this.anchorPoint = Graphics.HCENTER;
+		//this.setSelectedColor(UIConfig.button_selected_color);
+	}
+
+	public boolean keyPressed(int key) {
+		if (UICanvas.getInstance().getGameAction(key) == Canvas.FIRE) {
+			int oldBgColor = this.getSelectedColor();
+			this.setSelectedColor(0xAAAAAA);
+			this.setDirty(true);
+			this.askRepaint();
+			this.setSelectedColor(oldBgColor);
+			this.setDirty(true);
+			this.askRepaint();
+		}
+		return false;
+	}
+	
+	public int getSelectedColor() {
+		return selectedColor ;
 	}
 
 	protected void paint(Graphics g, int w, int h) {
@@ -50,15 +72,16 @@ public class UIButton extends UILabel {
 
 		Font usedFont = (this.font != null ? this.font : g.getFont());
 		this.height = this.getHeight(g);
-		this.width = usedFont.stringWidth(text) + 8 + 2 * hPadding;
+		this.width = usedFont.stringWidth(text) + 8 + 2 * buttonHPadding;
 
 		if (this.wrappable == true && this.getTextLines() == null) {
-			computeTextLines(usedFont, w - 8 - 2 * hPadding);
+			int availableWidth = w - 8 - 2 * buttonHPadding;
+			computeTextLines(usedFont, availableWidth);
 			// if h is lower then 0 it means
 			// use the minimum height
-			if (h < 0) paint(g, w, this.getHeight(g));
+			if (h < 0) paint(g, availableWidth, this.getHeight(g));
 			else
-				paint(g, w, h);
+				paint(g, availableWidth, h);
 			return;
 		}
 
@@ -71,23 +94,26 @@ public class UIButton extends UILabel {
 		// change colors for the UILabel
 		int oldBgColor = this.getBg_color();
 		int oldSelectedColor = this.getSelectedColor();
-		this.setBg_color(UIConfig.button_color);
-		this.setSelectedColor(UIConfig.button_selected_color);
+		this
+				.setBg_color(buttonColor >= 0 ? buttonColor
+						: UIConfig.button_color);
+		this.setSelectedColor(oldSelectedColor > 0 ? oldSelectedColor
+				: UIConfig.button_selected_color);
 		g.translate(3, 3);
 		g.setColor(selected ? this.getSelectedColor() : this.getBg_color());
 		g.fillRect(0, 0, w - 5, h - 5);
 
-		g.translate(1 + hPadding, 1);
-		super.paint(g, w - 8 - +2 * hPadding, h - 8);
+		g.translate(1 + buttonHPadding, 1);
+		super.paint(g, w - 8 - 2 * buttonHPadding, h - 8);
 
 		this.setBg_color(oldBgColor);
 		this.setSelectedColor(oldSelectedColor);
 		this.height = this.getHeight(g);
 		g.translate(originalX - g.getTranslateX(), originalY
 				- g.getTranslateY());
-		g.translate(0, (h - this.height) / 2);
+		//		g.translate(0, (h - this.height) / 2);
 
-		int x0 = 1, x1 = w - 2, y0 = 1, y1 = this.height - 2;
+		int x0 = 1, x1 = w - 2, y0 = 1, y1 = h - 2;
 
 		int oldColor = g.getColor();
 		int currentbbColor = selected ? UIConfig.bbs_color : UIConfig.bb_color;
@@ -114,9 +140,9 @@ public class UIButton extends UILabel {
 		drawBorder(g, new int[] { x0, y0, x1, y1 }, colors, border);
 		if (UIConfig.menu_3d == true) {
 			g.setColor(innerDown);
-			this.drawPixel(g, x1 - 1, y0 + 1);
-			this.drawPixel(g, x0 + 1, y1 - 1);
-			this.drawPixel(g, x1 - 1, y1 - 1);
+			UIUtils.drawPixel(g, x1 - 1, y0 + 1);
+			UIUtils.drawPixel(g, x0 + 1, y1 - 1);
+			UIUtils.drawPixel(g, x1 - 1, y1 - 1);
 		}
 		g.setColor(oldColor);
 
@@ -191,11 +217,19 @@ public class UIButton extends UILabel {
 		return super.getHeight(g) + 8;
 	}
 
-	public void setHPadding(int hPadding) {
-		this.hPadding = hPadding;
+	public void setButtonHPadding(int hPadding) {
+		this.buttonHPadding = hPadding;
 	}
 
-	public int getHPadding() {
-		return hPadding;
+	public int buttonHPadding() {
+		return buttonHPadding;
+	}
+
+	public void setButtonColor(int buttonColor) {
+		this.buttonColor = buttonColor;
+	}
+
+	public int getButtonColor() {
+		return buttonColor;
 	}
 }

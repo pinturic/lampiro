@@ -36,11 +36,11 @@
 36	MENU
 37	ACTIONS
 38	SELECT
-39	Show offline
-40	IM Gateways
+39	Show offline contacts
+40	Import contacts
 41	Gateways
 42	registration data sent, existing contacts will be imported automatically. Should the registration fail please check username and password and register again.
-43	Hide offline
+43	Hide offline contacts
 44	Im network
 45	Refresh
 46	Traffic
@@ -49,7 +49,7 @@
 49	Description
 50	Error during registration
 51	Please choose a username and a jabber server such as Gmail.com, jabber.bluendo.com, jabber.org, or any other jabber compliant server.
-52	This is your first login!< To add MSN, Yahoo, ICQ and Aim contacts select "IM Gateways" from the menu.< To add contacts please select add contact from the menu.
+52	This is your first login!< To add MSN, Yahoo, ICQ and Aim contacts select "IM Gateways" from the menu or from the contact list.< To add contacts please select add contact from the menu.
 53	Initial Status
 54	Loading ...
 55	Contact id
@@ -68,18 +68,27 @@
 68	Waiting acceptance
 69	Declined
 70	Once logged in you will be able to add Jabber, MSN, Yahoo, ICQ and Aim contacts
-71	Key Configuration
+71	Keyboard config
+72	Close application
+73	Old message
+74	Lampiro's priority is lower than other clients one; you can change it in the status screen
+75	Phone hold on, message could remain unread for a while
+76	News
+77	Services
+78	Send code
 100	Write message
 101	Chat with
 102	Clear chat
 103	... new messages ...
 104	Use urls
 105	Invite contact
-106	expand
+106	Expand
 107	Forward selected message
 108	Forward
 109	To
-110	Forwarded message from  
+110	Forwarded message from
+111	Participants
+112	Displayed name
 200	Jabber ID
 202	Email address (optional)
 203	Register new account
@@ -94,7 +103,7 @@
 212	Group chat
 213	Choose name
 214	Accept a group chat invitation by
-215	Exit group chat
+215	Leave group chat
 216	joined the
 217	left the
 218	Topic
@@ -127,8 +136,26 @@
 245	Initialized
 246	Reset config and login
 247	Reset all data and login
-248	Close group chat
+248	Delete group chat
 249	Room name
+250	Join group chat
+251	Add to bookmarks
+252	Yes, always
+253	No, never
+254	Join/create group chat
+255	Yes, from Lampiro only
+256	Yes, from other clients only
+257	Autojoin
+258	Invitation sent to
+259	Rename contact
+260	Command info
+261	Data
+262	Connection
+263	Data submitted: awaiting a response from the server
+264	Command canceled: awaiting a response from the server
+265	The task has been succesfully canceled
+266	Task finished
+267	An error occurred while executing the task
 300	Send message to
 500	Fill the form
 700	Send message
@@ -180,7 +207,16 @@
 747	Send group message
 748	Size
 749	Press <FIRE> to capture
-750	At the moment it is not possible to connect to these networks with gmail accounts. 
+751	Resend authorization 
+752	Re-request authorization 
+753	Your album screen is empty. First you need to capture audio or images.  
+754	Manage group chat  
+755	Deleting a group chat will definitely remove it and all users will be disconnected; this operation cannot be undone.
+756	IM Newtworks
+757	Log on / Log off  
+758	Unregister network
+759	Active sessions
+760	Change group name
 800	Set status
 801	Choose status
 802	Status message
@@ -198,17 +234,19 @@
 909	not
 910	Receiver
 911	I uploaded a file for you at:
+912	Reject
 1001	Choose a command
 1002	Execute
 1003	Task History
 1004	No commands available.
-1101	An error occurred while processing command:
+1005	Available commands for: 
+1101	An error occurred while processing command
 1200	Setup options
 1201	When receiving new messages
-1202	Vibrate if midlet is
+1202	Vibrate if Lampiro is
 1203	hidden
 1204	active
-1205	Play tone if midlet is
+1205	Play tone if Lampiro is
 1206	Tone volume
 1207	Keep-alive interval
 1208	Some new settings may take effect after next restart
@@ -232,4 +270,20 @@
 1226	High <640x480>
 1227	Huge <1024x768>
 1228	Error accessing phone camera
+1300	news updates
+1301	Saved news count
+1302	Mark as unread
+1303	Message has been forwarded
+1304	Show all
+1305	Show unread
+1306	Mark all as read
+1307	Remove feed
+1308	To be loaded
+1309	Synchronize
+1310	Data synchronization done
+1311	Synchronize all feeds
+1312	You are not registered to any feed at the moment.
+1313	Synch and go offline
+1314	Stop sync
+1315	Sync status
 100000	dummy

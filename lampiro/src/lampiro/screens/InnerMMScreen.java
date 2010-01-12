@@ -36,8 +36,7 @@ import javax.microedition.media.Control;
  */
 class InnerMMScreen extends Canvas implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	/**
 	 * 
@@ -92,7 +91,7 @@ class InnerMMScreen extends Canvas implements CommandListener {
 		this.mPlayer = player;
 		this.fullJid = contactToSend;
 
-		if (screenType == Config.imgType) {
+		if (screenType == Config.IMG_TYPE) {
 			//this.setTitle(rm.getString(ResourceIDs.STR_CAPTURE_CAPTION));
 
 			cmd_default = new Command(rm
@@ -124,17 +123,17 @@ class InnerMMScreen extends Canvas implements CommandListener {
 				tempVideoControl.setDisplaySize(width - 4, height - 4);
 			} catch (MediaException me) {
 				// #mdebug
-//@								me.printStackTrace();
-//@								Logger.log("In setup video 1" + me.getClass().getName() + "\n"
-//@										+ me.getMessage());
+//@				me.printStackTrace();
+//@				Logger.log("In setup video 1" + me.getClass().getName() + "\n"
+//@						+ me.getMessage());
 				//#enddebug
 				try {
 					tempVideoControl.setDisplayFullScreen(true);
 				} catch (MediaException me2) {
 					// #mdebug
-//@										me2.printStackTrace();
-//@										Logger.log("In setup video 2" + me2.getClass().getName()
-//@												+ "\n" + me.getMessage());
+//@					me2.printStackTrace();
+//@					Logger.log("In setup video 2" + me2.getClass().getName()
+//@							+ "\n" + me.getMessage());
 					//#enddebug
 				}
 			}
@@ -163,13 +162,13 @@ class InnerMMScreen extends Canvas implements CommandListener {
 				recordedSoundArray = output.toByteArray();
 				this.mPlayer.close();
 				handleMMFile(recordedSoundArray, Config.audioTypes[typeIndex],
-						Config.audioType);
+						Config.AUDIO_TYPE);
 			} catch (IOException e) {
 				// #mdebug
-//@								e.printStackTrace();
-//@								Logger.log("In capturing audio" + e.getClass().getName() + "\n"
-//@										+ e.getMessage()
-//@										+ System.getProperty("audio.encodings"));
+//@				e.printStackTrace();
+//@				Logger.log("In capturing audio" + e.getClass().getName() + "\n"
+//@						+ e.getMessage()
+//@						+ System.getProperty("audio.encodings"));
 				//#enddebug
 			}
 		} else if (c == this.cmd_default) {
@@ -204,8 +203,8 @@ class InnerMMScreen extends Canvas implements CommandListener {
 		this.removeCommand(cmd_capture);
 		new Thread() {
 			public void run() {
-				if (screenType == Config.imgType) captureVideo();
-				if (screenType == Config.audioType) captureAudio();
+				if (screenType == Config.IMG_TYPE) captureVideo();
+				if (screenType == Config.AUDIO_TYPE) captureAudio();
 			}
 		}.start();
 	}
@@ -221,9 +220,9 @@ class InnerMMScreen extends Canvas implements CommandListener {
 			this.mPlayer.start();
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						Logger.log("In capturing audio" + e.getClass().getName() + "\n"
-//@								+ e.getMessage() + System.getProperty("audio.encodings"));
+//@			e.printStackTrace();
+//@			Logger.log("In capturing audio" + e.getClass().getName() + "\n"
+//@					+ e.getMessage() + System.getProperty("audio.encodings"));
 			//#enddebug
 		}
 	}
@@ -287,9 +286,9 @@ class InnerMMScreen extends Canvas implements CommandListener {
 				closeScreen();
 			} catch (Exception e) {
 				//#mdebug
-//@								e.printStackTrace();
-//@								Logger.log("In capturing image 1" + e.getClass().getName()
-//@										+ "\n" + e.getMessage());
+//@				e.printStackTrace();
+//@				Logger.log("In capturing image 1" + e.getClass().getName()
+//@						+ "\n" + e.getMessage());
 				//#enddebug
 				try {
 					raw = tempVideoControl.getSnapshot(foundType);
@@ -297,9 +296,9 @@ class InnerMMScreen extends Canvas implements CommandListener {
 					closeScreen();
 				} catch (Exception e2) {
 					//#mdebug
-//@										e.printStackTrace();
-//@										Logger.log("In capturing image 2" + e.getClass().getName()
-//@												+ "\n" + e.getMessage());
+//@					e.printStackTrace();
+//@					Logger.log("In capturing image 2" + e.getClass().getName()
+//@							+ "\n" + e.getMessage());
 					//#enddebug
 					try {
 						raw = tempVideoControl.getSnapshot(null);
@@ -307,15 +306,16 @@ class InnerMMScreen extends Canvas implements CommandListener {
 						closeScreen();
 					} catch (Exception e3) {
 						//#mdebug
-//@											e.printStackTrace();
-//@											Logger.log("In capturing image 2" + e.getClass().getName()
-//@													+ "\n" + e.getMessage());
+//@						e.printStackTrace();
+//@						Logger.log("In capturing image 2"
+//@								+ e.getClass().getName() + "\n"
+//@								+ e.getMessage());
 						//#enddebug
 						closeScreen();
 					}
 				}
 			}
-			handleMMFile(raw, Config.imageTypes[typeIndex], Config.imgType);
+			handleMMFile(raw, Config.imageTypes[typeIndex], Config.IMG_TYPE);
 			// Shut down the player.
 			mPlayer.close();
 			UICanvas.display(null);
@@ -323,19 +323,33 @@ class InnerMMScreen extends Canvas implements CommandListener {
 			multimediaControl = null;
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						Logger.log("In capturing image" + e.getClass().getName() + "\n"
-//@								+ e.getMessage());
+//@			e.printStackTrace();
+//@			Logger.log("In capturing image" + e.getClass().getName() + "\n"
+//@					+ e.getMessage());
 			//#enddebug
 		}
 	}
 
 	private void handleMMFile(byte[] raw, String type, int mmType) {
-		UIScreen sendImageScreen = new SendMMScreen(raw, null, type, null,
-				mmType, fullJid);
-		RosterScreen.getInstance().setFreezed(false);
-		UICanvas.getInstance().open(sendImageScreen, true);
-		UICanvas.display(null);
+		try {
+			UIScreen handleImageScreen = null;
+			if (RosterScreen.isOnline()) {
+				handleImageScreen = new SendMMScreen(raw, null, type, null,
+						mmType, fullJid);
+			} else {
+				handleImageScreen = new ShowMMScreen(raw, type, mmType);
+			}
+			RosterScreen.getInstance().setFreezed(false);
+			UICanvas.getInstance().open(handleImageScreen, true);
+			UICanvas.display(null);
+		} catch (Exception e) {
+			// #mdebug
+//@			e.printStackTrace();
+//@			Logger.log("In handle MM file : " + e.getClass());
+			// #enddebug
+		} finally {
+			UICanvas.unlock();
+		}
 	}
 
 	protected void keyPressed(int key) {
@@ -345,7 +359,7 @@ class InnerMMScreen extends Canvas implements CommandListener {
 	}
 
 	protected void paint(Graphics g) {
-		if (screenType != Config.imgType) { return; }
+		if (screenType != Config.IMG_TYPE) { return; }
 		int height = getHeight();
 		int width = getWidth();
 		g.setColor(0x000000);

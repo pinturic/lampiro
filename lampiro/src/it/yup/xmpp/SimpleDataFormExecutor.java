@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleDataFormExecutor.java 1566 2009-06-10 13:13:15Z luca $
+ * $Id: SimpleDataFormExecutor.java 1833 2009-10-09 08:17:44Z luca $
 */
 
 package it.yup.xmpp;
@@ -31,6 +31,8 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	private DataForm df;
 	private byte status;
 	private Date arrive_time;
+	public boolean enableDisplay = false;
+	public boolean enableNew = false;
 
 	public SimpleDataFormExecutor(Element el) {
 		this.form_element = el;
@@ -80,12 +82,8 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 
 		client.updateTask(this);
 
-		XmppListener xmppListener = XMPPClient.getInstance().getXmppListener();
-		if (xmppListener!=null){
-			xmppListener.commandExecuted(null);
-		}
 		// true if the form_element is an IQ 
-		return Iq.IQ.equals(form_element.name) ;
+		return Iq.IQ.equals(form_element.name);
 	}
 
 	/**
@@ -118,7 +116,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	public void display() {
 		// #endif
 // #ifndef UI
-//@			public void display(Display disp, Displayable nextDisplay) {
+		//@			public void display(Display disp, Displayable nextDisplay) {
 		// #endif
 
 		Element form = form_element.getChildByName(DataForm.NAMESPACE,
@@ -132,9 +130,10 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		XmppListener xmppListener = XMPPClient.getInstance().getXmppListener();
 		if (xmppListener != null) {
 			if (df.type == DataForm.TYPE_FORM) {
-				xmppListener.handleDataForm(df,Task.CMD_INPUT,this,-1);
+				xmppListener.handleDataForm(df, Task.CMD_INPUT, this, -1, null);
 			} else if (df.type == DataForm.TYPE_RESULT) {
-				xmppListener.handleDataForm(df,Task.CMD_FINISHED,this,-1);
+				xmppListener.handleDataForm(df, Task.CMD_FINISHED, this, -1,
+						null);
 			} else {
 				/* should log it... */
 				return;
@@ -154,4 +153,19 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		return form_element.getAttribute("from");
 	}
 
+	public void setEnableDisplay(boolean enableDisplay) {
+		this.enableDisplay=enableDisplay;
+	}
+
+	public void setEnableNew(boolean enableNew) {
+		this.enableNew = enableNew;
+	}
+	
+	public boolean getEnableDisplay() {
+		return this.enableDisplay;
+	}
+
+	public boolean getEnableNew() {
+		return this.enableNew;
+	}
 }

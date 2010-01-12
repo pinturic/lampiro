@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: OptionsScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: OptionsScreen.java 1653 2009-08-10 16:55:11Z luca $
 */
 
 package it.yup.screens;
@@ -25,8 +25,7 @@ import javax.microedition.lcdui.TextField;
 
 public class OptionsScreen extends Form implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private Command cmd_save = new Command(rm.getString(ResourceIDs.STR_SAVE),
 			Command.OK, 0);
@@ -43,8 +42,8 @@ public class OptionsScreen extends Form implements CommandListener {
 		super(rm.getString(ResourceIDs.STR_OPTIONS_SETUP));
 		boolean flags[] = new boolean[2];
 		Config cfg = Config.getInstance();
-		String selected_status = cfg
-				.getProperty(Config.VIBRATION_AND_TONE_SETTINGS, "1");
+		String selected_status = cfg.getProperty(
+				Config.VIBRATION_AND_TONE_SETTINGS, "1");
 
 		// prepare the form
 		// tone and vibration settings
@@ -99,7 +98,7 @@ public class OptionsScreen extends Form implements CommandListener {
 			cfg.setProperty(Config.VIBRATION_AND_TONE_SETTINGS, Utils
 					.flags2str(flags, 0));
 			cfg.setProperty(Config.TONE_VOLUME, "" + g_volume.getValue());
-			cfg.setProperty(Config.KEEP_ALIVE, "" + ""
+			cfg.setProperty(Config.KEEP_ALIVE, ""
 					+ Integer.parseInt(tf_keepalive.getString()) * 1000);
 			cfg.saveToStorage();
 

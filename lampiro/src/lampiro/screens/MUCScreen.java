@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUCScreen.java 1586 2009-06-17 12:26:55Z luca $
+ * $Id: MUCScreen.java 1873 2009-10-21 16:41:20Z luca $
 */
 
 package lampiro.screens;
@@ -11,7 +11,6 @@ import it.yup.ui.UICombobox;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
-import it.yup.ui.UIScreen;
 import it.yup.util.ResourceIDs;
 import it.yup.xml.Element;
 import it.yup.xmlstream.PacketListener;
@@ -22,22 +21,38 @@ import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
-
 import java.util.Enumeration;
 import java.util.Vector;
-
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
+import lampiro.screens.HandleMucScreen.HMC_CONSTANTS;
+
+//#mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+//#enddebug
 
 public class MUCScreen extends ChatScreen implements PacketListener {
 
 	public static int unnamedMUCCounter = 0;
 
 	UICombobox rosterCombo;
+	UICombobox mucParticipants;
+
 	private Vector mucCandidates = new Vector();
 
 	private UILabel cmd_topic = new UILabel(rm
 			.getString(ResourceIDs.STR_SET_TOPIC));
+
+	private UILabel cmd_add_bookmarks = new UILabel(rm
+			.getString(ResourceIDs.STR_PERSISTENT));
+
+	protected UILabel cmd_handle_groups = new UILabel(rm
+			.getString(ResourceIDs.STR_MANAGE_GC));
+
+	protected UILabel cmd_change_nick = new UILabel(rm
+			.getString(ResourceIDs.STR_CHANGE_NICK));
 
 	private Vector orderedContacts;
 
@@ -45,27 +60,32 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		super(u, u.jid);
 		chatLineStart = 1;
 		//this.setFreezed(true);
-		this.getMenu().insert(1, cmd_topic);
-		this.getMenu().remove(this.cmd_capture_img);
-		this.getMenu().remove(this.cmd_capture_aud);
-		this.getMenu().remove(this.cmd_send_file);
+		toggleMenu();
+
+		if (XMPPClient.getInstance().getRoster().getBookmarkByJid(u.jid, false) == null) {
+			this.getMenu().insert(this.getMenu().indexOf(cmd_exit),
+					cmd_add_bookmarks);
+		}
 
 		setTitle(rm.getString(ResourceIDs.STR_GROUP_CHAT) + " "
 				+ user.getPrintableName());
 		this.rosterCombo = new UICombobox(rm
 				.getString(ResourceIDs.STR_ADD_USER), true);
 		this.rosterCombo.setSubmenu(this.closeMenu);
-		
-		addUser.setText(rm
-				.getString(ResourceIDs.STR_ADD_USER));
 
-		this.chatPanel.insertItemAt(rosterCombo, 0);
-		this.rosterCombo.setSelected(false);
+		this.mucParticipants = new UICombobox(rm
+				.getString(ResourceIDs.STR_PARTICIPANTS), false);
+		this.mucParticipants.setSubmenu(this.closeMenu);
+
+		addUser.setText(rm.getString(ResourceIDs.STR_ADD_USER));
+
+		this.chatPanel.insertItemAt(mucParticipants, 0);
+		this.mucParticipants.setSelected(false);
 		if (chatPanel.getItems().size() > 5) {
 			// remember the separator
 			chatPanel.setSelectedIndex(chatPanel.getItems().size() - 2);
 		} else {
-			chatPanel.setSelectedItem(rosterCombo);
+			chatPanel.setSelectedItem(mucParticipants);
 		}
 		chatPanel.setDirty(true);
 		UILabel mucName = (UILabel) header.getItem(0);
@@ -75,16 +95,53 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		this.askRepaint();
 	}
 
+	/**
+	 * 
+	 */
+	void toggleMenu() {
+		super.toggleMenu();
+		if (RosterScreen.isOnline()) {
+			this.getMenu().insert(getMenu().indexOf(cmd_write) + 1, cmd_topic);
+			this.getMenu().insert(getMenu().indexOf(cmd_topic) + 1,
+					cmd_change_nick);
+			this.getMenu().insert(getMenu().indexOf(cmd_change_nick) + 1,
+					cmd_handle_groups);
+			this.getMenu().remove(addUser);
+			this.getMenu().insert(getMenu().indexOf(cmd_handle_groups) + 1,
+					addUser);
+		}
+		//		this.getMenu().remove(this.cmd_capture_img);
+		//		this.getMenu().remove(this.cmd_capture_aud);
+	}
+
+	private void populateParticipants() {
+		mucParticipants.removeAll();
+		Presence[] res = this.user.getAllPresences();
+		this.mucParticipants.append(rm.getString(ResourceIDs.STR_ADD_USER));
+		for (int i = 0; res != null && i < res.length; i++) {
+			Presence ithPresence = res[i];
+			String ithNick = Contact.resource(ithPresence
+					.getAttribute(Presence.ATT_FROM));
+			this.mucParticipants.append(ithNick).setFocusable(false);
+		}
+	}
+
+	protected void paint(Graphics g, int w, int h) {
+		this.mucParticipants.setSelectedIndex(-1);
+		super.paint(g, w, h);
+	}
+
 	private void populateRosterCombo() {
 		rosterCombo.removeAll();
 		mucCandidates.removeAllElements();
 
-		this.orderedContacts = RosterScreen.getOrderedContacts();
+		this.orderedContacts = RosterScreen.getOrderedContacts(false);
 
 		for (Enumeration en = orderedContacts.elements(); en.hasMoreElements();) {
 			Contact c = (Contact) en.nextElement();
 			String printableName = c.getPrintableName();
 			Presence[] ps = c.getAllPresences();
+			if (ps == null) continue;
 			if (ps.length == 1 && c.supportsMUC(ps[0])) {
 				this.rosterCombo.append(printableName);
 				this.mucCandidates.addElement(ps[0]);
@@ -108,20 +165,36 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			int ga = UICanvas.getInstance().getGameAction(kc);
 
 			if (ga == Canvas.FIRE) {
-				if (this.chatPanel.getItems().elementAt(
-						chatPanel.getSelectedIndex()) == rosterCombo) {
-					populateRosterCombo();
+				if (RosterScreen.isOnline()
+						&& this.chatPanel.getItems().elementAt(
+								chatPanel.getSelectedIndex()) == mucParticipants) {
+					populateParticipants();
+					mucParticipants.setScreen(this);
 				}
+				//				else if (this.chatPanel.getItems().elementAt(
+				//						chatPanel.getSelectedIndex()) == rosterCombo) {
+				//					populateRosterCombo();
+				//				}
 			}
 		}
 		return super.keyPressed(kc);
 	}
 
 	public void menuAction(UIMenu menu, UIItem c) {
-		if (c == cmd_exit || c == this.closeLabel) {
-			// for MUCs the conversation is downloaded again at any reconnection
-			// conversations.remove(user.jid);
-			closeMe();
+		if (c == cmd_handle_groups) {
+			RosterScreen.getInstance().handleMuc(this.user.jid, this);
+		} else if (c == cmd_change_nick) {
+			String jid = Contact.userhost(this.user.jid);
+			HandleMucScreen cms = new HandleMucScreen(jid, Contact
+					.domain(this.user.jid), HMC_CONSTANTS.CHANGE_NICK
+					| HMC_CONSTANTS.JOIN_NOW, this);
+			cms.infoLabel.setText(rm.getString(ResourceIDs.STR_CHANGE_NICK));
+			cms.muc_name_field.setText(Contact.user(jid));
+			UICanvas.getInstance().open(cms, true);
+		} else if (c == cmd_add_bookmarks) {
+			XMPPClient.getInstance().getRoster().saveMUC((MUC) this.user, true,
+					false, false);
+			this.getMenu().remove(cmd_add_bookmarks);
 		} else if (c == topic_button) {
 			String topicName = this.topic_name_field.getText();
 			XMPPClient client = XMPPClient.getInstance();
@@ -138,8 +211,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			this.setSelectedIndex(this.indexOf(this.rosterCombo));
 			chatPanel.setSelected(false);
 			chatPanel.setDirty(true);
-			populateRosterCombo();
-			this.rosterCombo.openMenu();
+			openInvitation();
 			return;
 		} else if (c == cmd_clear) {
 			super.menuAction(menu, c);
@@ -176,16 +248,20 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 	}
 
 	void updateResource() {
+		// the MUCScreen does not have to update the resource:
+		// it is made by the presence handling logic
+	}
 
+	protected void openComposer() {
+		SimpleComposerScreen cs = new MUCComposerScreen(this, (MUC) user);
+		UICanvas.display(cs);
 	}
 
 	static void handlePresence(MUC presenceMUC, Element e, String type) {
 		String jidName = Contact.resource(e.getAttribute(Message.ATT_FROM));
 		// avoid printing myself data here 
-		boolean goingOffline = type != null
-				&& type.compareTo("unavailable") == 0;
-		if (jidName.equals(Contact.user(XMPPClient.getInstance().my_jid))
-				&& goingOffline) return;
+		boolean goingOffline = "unavailable".equals(type);
+		//if (jidName.equals(presenceMUC.nick)) return;
 		Message msg = null;
 		msg = new Message(presenceMUC.jid, Message.HEADLINE);
 		msg.setAttribute(Message.ATT_FROM, e.getAttribute(Message.ATT_FROM));
@@ -204,15 +280,27 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		}
 		if (send == true) {
 			msg.setBody(msgText);
-			presenceMUC.lastResource = null;
+			//presenceMUC.lastResource = null;
 			presenceMUC
 					.addMessageToHistory(e.getAttribute(Message.ATT_TO), msg);
 			RosterScreen rs = RosterScreen.getInstance();
-			rs.updateContact(presenceMUC, Contact.CH_MESSAGE_NEW);
-			rs.askRepaint();
-			UIScreen ms = (UIScreen) RosterScreen.getChatScreenList().get(
-					presenceMUC.jid);
-			if (ms != null) UICanvas.getInstance().askRepaint(ms);
+			try {
+				UICanvas.lock();
+				rs._updateContact(presenceMUC, Contact.CH_MESSAGE_NEW);
+				rs.askRepaint();
+				MUCScreen ms = (MUCScreen) RosterScreen.getChatScreenList()
+						.get(presenceMUC.jid);
+				if (ms != null) {
+					ms.askRepaint();
+				}
+			} catch (Exception ex) {
+				// #mdebug
+//@				Logger.log("In handling presence error:");
+//@				ex.printStackTrace();
+				// #enddebug
+			} finally {
+				UICanvas.unlock();
+			}
 		}
 	}
 
@@ -228,13 +316,13 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 
 	protected void getPrintableHeight(Graphics g, int h) {
 		super.getPrintableHeight(g, h);
-		if (rosterCombo == null) {
-			// this method could be called without rosterCombo 
+		if (mucParticipants == null) {
+			// this method could be called without mucParticipants 
 			// being initialized.
-			this.rosterCombo = new UICombobox(rm
+			this.mucParticipants = new UICombobox(rm
 					.getString(ResourceIDs.STR_ADD_USER), true);
 		}
-		this.printableHeight -= this.rosterCombo.getHeight(g);
+		this.printableHeight -= this.mucParticipants.getHeight(g);
 	}
 
 	ConversationEntry wrapMessage(String text[]) {
@@ -243,9 +331,14 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		// @ long t1 = System.currentTimeMillis();
 		// #endif
 
-		byte type = (text[2] != null && Contact.resource(text[2]) != null && Contact
-				.resource(text[2]).equals(Contact.user(text[0]))) ? ConversationEntry.ENTRY_TO
-				: ConversationEntry.ENTRY_FROM;
+		//		byte type = (text[2] != null && Contact.resource(text[2]) != null && Contact
+		//				.resource(text[2]).equals(Contact.user(text[0]))) ? ConversationEntry.ENTRY_TO
+		//				: ConversationEntry.ENTRY_FROM;
+
+		String otherNick = Contact.resource(text[4]);
+		byte type = (otherNick == null || otherNick
+				.equals(((MUC) this.user).nick)) ? ConversationEntry.ENTRY_FROM
+				: ConversationEntry.ENTRY_TO;
 
 		// #ifdef TIMING
 		// @ System.out.println("wrap conv: " + (System.currentTimeMillis() -
@@ -255,19 +348,31 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		String labelText = "";
 		labelText += text[1];
 		ConversationEntry convEntry = new ConversationEntry(labelText, type);
-		if (type == ConversationEntry.ENTRY_FROM && text[2] != null) convEntry.from = text[2];
-		if (text[3] != null) convEntry.arriveTime = text[3];
-		convEntry.messageType = text[4];
+		if (type == ConversationEntry.ENTRY_TO) convEntry.from = otherNick != null ? otherNick
+				: "";
+		convEntry.arriveTime = text[2];
+		convEntry.messageType = text[3];
 		return convEntry;
 	}
 
 	public void itemAction(UIItem c) {
-		if (c == this.rosterCombo) {
+		if (c == this.mucParticipants) {
+			String selString = this.mucParticipants.getSelectedString();
+			if (rm.getString(ResourceIDs.STR_ADD_USER).equals(selString)) {
+				openInvitation();
+			} else {
+				// hack to leave the correct screen opened
+				mucParticipants.setScreen(this);
+			}
+			return;
+		} else if (c == this.rosterCombo) {
 			int[] selIndeces = this.rosterCombo.getSelectedIndeces();
 			for (int i = 0; i < selIndeces.length; i++) {
 				int ithInt = selIndeces[i];
 				Presence p = (Presence) this.mucCandidates.elementAt(ithInt);
-				this.sendInvite(p.getAttribute(Message.ATT_FROM));
+				String invitedJid = p.getAttribute(Message.ATT_FROM);
+				this.sendInvite(invitedJid);
+				this.notifyUser(invitedJid);
 			}
 			this.setSelectedIndex(this.indexOf(this.chatPanel));
 			boolean flags[] = new boolean[this.mucCandidates.size()];
@@ -281,10 +386,52 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			mucCandidates.removeAllElements();
 			if (orderedContacts != null) orderedContacts.removeAllElements();
 
+			RosterScreen rs = RosterScreen.getInstance();
+			rs._updateContact(this.user, Contact.CH_MESSAGE_NEW);
+
+			// replace the rostercombo with the participants combo
+			this.chatPanel.insertItemAt(mucParticipants, this.chatPanel
+					.removeItem(rosterCombo));
+
+			// hack to leave the correct screen opened
+			mucParticipants.setScreen(this);
+
+			rs.askRepaint();
 			this.askRepaint();
 			return;
 		}
 		super.itemAction(c);
+	}
+
+	private void openInvitation() {
+		// the invite has been requested
+		UICanvas.getInstance().close(mucParticipants.comboScreen);
+		this.chatPanel.insertItemAt(rosterCombo, this.chatPanel
+				.removeItem(mucParticipants));
+		this.chatPanel.setSelectedItem(rosterCombo);
+		//this.keyPressed(UICanvas.getInstance().getKeyCode(Canvas.FIRE));
+		populateRosterCombo();
+		rosterCombo.openMenu();
+		this.chatPanel.insertItemAt(mucParticipants, this.chatPanel
+				.removeItem(rosterCombo));
+		this.chatPanel.setSelectedItem(mucParticipants);
+		// hack to leave the correct screen opened
+		mucParticipants.setScreen(rosterCombo.comboScreen);
+	}
+
+	private void notifyUser(String invitedJid) {
+		Message msg = null;
+		msg = new Message(this.user.jid, Message.HEADLINE);
+		String myJid = this.user.jid + "/" + ((MUC) this.user).nick;
+		msg.setAttribute(Message.ATT_FROM, myJid);
+		Contact c = XMPPClient.getInstance().getRoster().getContactByJid(
+				invitedJid);
+		String msgText = rm.getString(ResourceIDs.STR_INVITATION_SENT) + " "
+				+ c.getPrintableName();
+
+		msg.setBody(msgText);
+		//presenceMUC.lastResource = null;
+		this.user.addMessageToHistory(myJid, msg);
 	}
 
 	String getLabelHeader(ConversationEntry entry) {
@@ -293,7 +440,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		int arriveTimeLength = entry.arriveTime.length();
 		if (arriveTimeLength > 0 || fromLength > 0) {
 			retString = "[";
-			if (fromLength > 0) retString += Contact.resource(entry.from);
+			if (fromLength > 0) retString += entry.from;
 			if (fromLength > 0 && arriveTimeLength > 0) retString += " ";
 			if (arriveTimeLength > 0) retString += entry.arriveTime;
 			retString += "] ";

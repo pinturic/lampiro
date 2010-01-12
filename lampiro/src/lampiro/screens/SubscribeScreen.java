@@ -6,9 +6,6 @@ package lampiro.screens;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -17,7 +14,6 @@ import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UILayout;
-import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
@@ -46,14 +42,14 @@ public class SubscribeScreen extends UIScreen {
 
 	private UIPanel subscribePanel;
 
-	static ResourceManager rm = ResourceManager.getManager("common", "en");
+	static ResourceManager rm = ResourceManager.getManager();
 
-	public UIButton accept = new UIButton(rm.getString(ResourceIDs.STR_ACCEPT));
+	public UIButton accept = new UIButton(rm.getString(ResourceIDs.STR_SAVE));
 
 	private UIButton acceptAlways = new UIButton(rm
 			.getString(ResourceIDs.STR_ACCEPT_ALWAYS));
 
-	private UIButton close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
+	private UIButton close = new UIButton(rm.getString(ResourceIDs.STR_CANCEL));
 
 	private UILabel sub_text = new UILabel("");
 
@@ -98,9 +94,9 @@ public class SubscribeScreen extends UIScreen {
 		acceptLayout.insert(accept, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
 		acceptLayout.insert(close, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
 
-		close.setImg(UICanvas.getUIImage("/icons/contact_delete.png"));
+		//close.setImg(UICanvas.getUIImage("/icons/contact_delete.png"));
 		//acceptLayout.setSelectedItem(acceptAll);
-		accept.setImg(UICanvas.getUIImage("/icons/contact_add_all.png"));
+		//accept.setImg(UICanvas.getUIImage("/icons/contact_add_all.png"));
 		accept.setFont(UIConfig.small_font);
 		acceptAlways.setImg(UICanvas
 				.getUIImage("/icons/contact_add_always.png"));
@@ -122,33 +118,34 @@ public class SubscribeScreen extends UIScreen {
 	 * XXX this should be synchronized I think
 	 */
 	public boolean addSubscription(Contact c, int action) {
-		synchronized (this.subscriptions) {
-			// first check if the contact is already online
-			Enumeration en = this.subscriptions.keys();
-			while (en.hasMoreElements()) {
-				UILabel selLabel = (UILabel) en.nextElement();
-				Object[] objects = (Object[]) this.subscriptions.get(selLabel);
-				Contact ithC = (Contact) objects[0];
-				if (Contact.userhost(ithC.jid).compareTo(c.jid) == 0) return false;
-			}
-			// then insert it
-			String upAction = "";
-			if (action == SubscribeScreen.ADD) {
-				upAction = rm.getString(ResourceIDs.STR_ADD_CONTACT);
-			}
-			if (action == SubscribeScreen.DELETE) {
-				upAction = rm.getString(ResourceIDs.STR_DELETE_CONTACT);
-			}
-			UICheckbox ithSubscription = new UICheckbox(upAction + " "
-					+ c.getPrintableName() + "?");
-			ithSubscription.setChecked(true);
-			ithSubscription.setWrappable(true, UICanvas.getInstance()
-					.getWidth() - 20);
-			subscriptions.put(ithSubscription, new Object[] { c,
-					new Integer(action) });
-			this.subscribePanel.insertItemAt(ithSubscription,
-					this.subscribePanel.getItems().size() - 2);
+		// first check if the contact is already online
+		Enumeration en = this.subscriptions.keys();
+		while (en.hasMoreElements()) {
+			UILabel selLabel = (UILabel) en.nextElement();
+			Object[] objects = (Object[]) this.subscriptions.get(selLabel);
+			Contact ithC = (Contact) objects[0];
+			if (Contact.userhost(ithC.jid).compareTo(c.jid) == 0) return false;
 		}
+		// then insert it
+		String upAction = "";
+		if (action == SubscribeScreen.ADD) {
+			upAction = rm.getString(ResourceIDs.STR_ADD_CONTACT);
+		}
+		if (action == SubscribeScreen.DELETE) {
+			upAction = rm.getString(ResourceIDs.STR_DELETE_CONTACT);
+		}
+		UICheckbox ithSubscription = new UICheckbox(upAction + " "
+				+ c.getPrintableName() + " (" + c.jid + ") ?");
+		ithSubscription.setCheckedImg(UICanvas.getUIImage("/icons/accept.png"));
+		ithSubscription.setUncheckedImg(UICanvas
+				.getUIImage("/icons/reject.png"));
+		ithSubscription.setChecked(true);
+		ithSubscription.setWrappable(true,
+				UICanvas.getInstance().getWidth() - 20);
+		subscriptions.put(ithSubscription, new Object[] { c,
+				new Integer(action) });
+		this.subscribePanel.insertItemAt(ithSubscription, this.subscribePanel
+				.getItems().size() - 2);
 		return true;
 	}
 
@@ -158,37 +155,7 @@ public class SubscribeScreen extends UIScreen {
 			SubscribeScreen.releaseScreen(this);
 			UICanvas.getInstance().close(this);
 		} else if (cmd == accept) {
-			// XXX this could have serious synch problems
-			synchronized (this.subscriptions) {
-				Enumeration en = this.subscriptions.keys();
-				Roster roster = XMPPClient.getInstance().getRoster();
-				while (en.hasMoreElements()) {
-					UICheckbox selLabel = (UICheckbox) en.nextElement();
-					Object objects[] = (Object[]) this.subscriptions
-							.get(selLabel);
-					Contact c = (Contact) objects[0];
-					int action = ((Integer) objects[1]).intValue();
-
-					if (selLabel.isChecked()) {
-						if (action == SubscribeScreen.ADD) roster
-								.subscribeContact(c, true);
-						else if (action == SubscribeScreen.DELETE) roster
-								.unsubscribeContact(c);
-						this.subscriptions.remove(selLabel);
-					} else {
-						// negate presence subscription
-						Presence pmsg = new Presence();
-						pmsg.setAttribute(Stanza.ATT_TO, c.jid);
-						pmsg.setAttribute(Stanza.ATT_TYPE,
-								Presence.T_UNSUBSCRIBED);
-						XMPPClient.getInstance().sendPacket(pmsg);
-
-						this.subscribePanel.removeItem((UIItem) selLabel
-								.getContainer());
-						this.subscriptions.remove(selLabel);
-					}
-				}
-			}
+			handlePushes();
 			this.itemAction(this.close);
 		} else if (cmd == acceptAlways) {
 			this.itemAction(accept);
@@ -221,6 +188,41 @@ public class SubscribeScreen extends UIScreen {
 			agb = BProcessor.toBinary(agEl);
 			cfg.setProperty(Config.ACCEPTED_GATEWAYS, Utils.getStringUTF8(agb));
 			cfg.saveToStorage();
+		}
+	}
+
+	/**
+	 * 
+	 */
+	void handlePushes() {
+		Enumeration en = this.subscriptions.keys();
+		Roster roster = XMPPClient.getInstance().getRoster();
+		while (en.hasMoreElements()) {
+			UICheckbox selLabel = (UICheckbox) en.nextElement();
+			Object objects[] = (Object[]) this.subscriptions.get(selLabel);
+			Contact c = (Contact) objects[0];
+			int action = ((Integer) objects[1]).intValue();
+
+			if (selLabel.isChecked()) {
+				RosterScreen rs = RosterScreen.getInstance();
+				if (action == SubscribeScreen.ADD) {
+					rs.subscribeContact(c, true);
+				} else if (action == SubscribeScreen.DELETE) {
+					roster.unsubscribeContact(c);
+					rs._removeContact(c);
+				}
+				this.subscriptions.remove(selLabel);
+			} else {
+				// negate presence subscription
+				Presence pmsg = new Presence();
+				pmsg.setAttribute(Stanza.ATT_TO, c.jid);
+				pmsg.setAttribute(Stanza.ATT_TYPE, Presence.T_UNSUBSCRIBED);
+				XMPPClient.getInstance().sendPacket(pmsg);
+
+				this.subscribePanel
+						.removeItem((UIItem) selLabel.getContainer());
+				this.subscriptions.remove(selLabel);
+			}
 		}
 	}
 

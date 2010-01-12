@@ -1,11 +1,11 @@
 Manifest-Version: 1.0
 Ant-Version: Apache Ant 1.7.1
-Created-By: 14.0-b08 (Sun Microsystems Inc.)
+Created-By: 14.0-b16 (Sun Microsystems Inc.)
 Built-By: luca
 MIDlet-1: Lampiro,/icons/lampiro_icon.png,lampiro.LampiroMidlet
 MIDlet-Name: Lampiro
 MIDlet-Vendor: Bluendo
-MIDlet-Version: 9.6.0
+MIDlet-Version: 10.1
 MIDlet-Icon: /icons/lampiro_icon.png
 Lampiro-BOSH-Host: bosh.bluendo.com
 Lampiro-BOSH-Path: /httpb

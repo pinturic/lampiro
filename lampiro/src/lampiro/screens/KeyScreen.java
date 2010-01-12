@@ -29,8 +29,7 @@ public class KeyScreen extends UIScreen {
 	private static final byte STATE_RIGHT_OK = 4;
 	private static final byte STATE_WAIT_DONE = 5;
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel txt = null;
 	private UILabel err = null;
@@ -70,7 +69,8 @@ public class KeyScreen extends UIScreen {
 		confMenu = UIUtils.easyMenu(
 				rm.getString(ResourceIDs.STR_KEY_CONFIGURE), 2, -1, (UICanvas
 						.getInstance().getWidth() * 2) / 3, confLabel, "", "");
-		((UIItem) confMenu.getItemList().elementAt(0)).setFg_color(this.oldFg);
+		confMenu.setAutoClose(false);
+		((UIItem) confMenu.getItems().elementAt(0)).setFg_color(this.oldFg);
 		// a hack to avoid the selection and hence a blu label!!!
 		confLabel.setSelected(false);
 		int screenHeight = UICanvas.getInstance().getClipHeight();
@@ -175,7 +175,6 @@ public class KeyScreen extends UIScreen {
 				Config.getInstance().saveToStorage();
 				UICanvas.setMenuKeys(lkey, rkey);
 				UIConfig.menu_title = this.oldFg;
-				UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
 				UICanvas.getInstance().close(KeyScreen.this);
 				break;
 		}

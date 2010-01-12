@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AccountRegistration.java 1377 2009-04-21 14:17:38Z luca $
+ * $Id: AccountRegistration.java 1625 2009-07-31 09:45:41Z luca $
 */
 
 package it.yup.xmlstream;
@@ -31,7 +31,7 @@ public class AccountRegistration extends Initializer implements PacketListener {
 	public void start(BasicXmlStream xmlStream) {
 		this.stream = xmlStream;
 		Iq iq_register = new Iq(null, Iq.T_SET);
-        Element query = iq_register.addElement(IQ_REGISTER, "query");
+        Element query = iq_register.addElement(IQ_REGISTER, Iq.QUERY);
         query.addElement(IQ_REGISTER, "username").addText(Contact.user(stream.jid));
         query.addElement(IQ_REGISTER, "password").addText(stream.password);
         EventQuery registerResult = new EventQuery("iq", 
@@ -47,7 +47,7 @@ public class AccountRegistration extends Initializer implements PacketListener {
 			stream.nextInitializer();
 		} else {
 			String errmsg = "Error creating account";
-			Element err = e.getChildByName(null, "error");
+			Element err = e.getChildByName(null, Iq.T_ERROR);
 			if(err != null) {
 				Element[] children = err.getChildren();
 				for(int i = 0; i < children.length; i++) {

@@ -33,8 +33,6 @@ import it.yup.xmpp.Config;
  */
 public class AlbumScreen extends UIScreen {
 
-	private static Config cfg = Config.getInstance();
-
 	private static String ALBUM = "album";
 
 	private static RMSIndex album = new RMSIndex(ALBUM);;
@@ -43,12 +41,17 @@ public class AlbumScreen extends UIScreen {
 
 	public static int getCount(int type) {
 		synchronized (album) {
-			String sType = (type == Config.imgType ? "img" : "snd");
+			String sType = (type == Config.IMG_TYPE ? "img" : "snd");
 			Element child = albumEl.getChildByName(null, sType);
 			if (child != null) return Integer.parseInt(child.getText());
 			return 0;
 		}
 	}
+
+	private UILabel cmd_capture_img = new UILabel(rm
+			.getString(ResourceIDs.STR_CAPTURE_IMAGE));
+	private UILabel cmd_capture_aud = new UILabel(rm
+			.getString(ResourceIDs.STR_CAPTURE_AUDIO));
 
 	private UIMenu actionMenu = new UIMenu("");
 
@@ -62,7 +65,7 @@ public class AlbumScreen extends UIScreen {
 
 	private UIPanel albumPanel;
 
-	static ResourceManager rm = ResourceManager.getManager("common", "en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel cmd_exit;
 
@@ -113,7 +116,11 @@ public class AlbumScreen extends UIScreen {
 	}
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
-		if (cmd == cmd_exit) {
+		if (cmd == cmd_capture_img) {
+			RosterScreen.getInstance().captureMedia(null, Config.IMG_TYPE);
+		} else if (cmd == cmd_capture_aud) {
+			RosterScreen.getInstance().captureMedia(null, Config.AUDIO_TYPE);
+		} else if (cmd == cmd_exit) {
 			UICanvas.getInstance().close(this);
 			_instance = null;
 		} else if (cmd == deleteLabel) {
@@ -149,7 +156,7 @@ public class AlbumScreen extends UIScreen {
 			this.buttonLayout.setSelectedItem(nextCmd);
 		} else if (c == deleteLabel) {
 			UIHLayout selLayout = (UIHLayout) this.albumPanel.getSelectedItem();
-			String code = ((UILabel) selLayout.getItem(2)).getText();
+			String code = (String) selLayout.getStatus();
 			AlbumScreen.deleteAlbum(code);
 			// remove item and separator
 			int index = albumPanel.getItems().indexOf(selLayout);
@@ -167,7 +174,7 @@ public class AlbumScreen extends UIScreen {
 
 		} else if (c == detailLabel || c == sendLabel || c instanceof UIHLayout) {
 			UIHLayout selLayout = (UIHLayout) this.albumPanel.getSelectedItem();
-			String code = ((UILabel) selLayout.getItem(2)).getText();
+			String code = (String) selLayout.getStatus();
 			album.open();
 			Element[] children = albumEl.getChildrenByName(null, "file");
 			for (int i = 0; i < children.length; i++) {
@@ -183,25 +190,25 @@ public class AlbumScreen extends UIScreen {
 					String fileDesc = descEl.getText();
 					byte[] fileData = album.load(fileId.getBytes());
 					int mmType = Integer.parseInt(typeEl.getText());
-					SendMMScreen mms = new SendMMScreen(fileData, fileName,
-							null, fileDesc, mmType, fullJid);
 
-					/* 
-					 * reorganize here the bar with send / save related buttons
-					 */
-					//					mms.cmd_layout.insert(new UILabel(""), 0, 33,
-					//							UILayout.CONSTRAINT_PERCENTUAL);
-					//					mms.cmd_layout.insert(mms.cmd_send, 1, 33,
-					//							UILayout.CONSTRAINT_PERCENTUAL);
-					//					mms.cmd_layout.insert(new UILabel(""), 2, 33,
-					//							UILayout.CONSTRAINT_PERCENTUAL);
-					//					
-					int oldIndex = mms.mainPanel.removeItem(mms.cmd_layout);
-					mms.cmd_layout = UIUtils.easyCenterLayout(mms.cmd_send, 90);
-					mms.mainPanel.insertItemAt(mms.cmd_layout, oldIndex);
-					mms.mainPanel.removeItem(mms.cmd_layout_send_save);
+					UIScreen newScreen;
+					if (RosterScreen.isOnline()) {
+						SendMMScreen mms = new SendMMScreen(fileData, fileName,
+								null, fileDesc, mmType, fullJid);
+						int oldIndex = mms.mainPanel.removeItem(mms.cmd_layout);
+						mms.cmd_layout = UIUtils.easyCenterLayout(mms.cmd_send,
+								90);
+						mms.mainPanel.insertItemAt(mms.cmd_layout, oldIndex);
+						mms.mainPanel.removeItem(mms.cmd_layout_send_save);
+						newScreen = mms;
+					} else {
+						ShowMMScreen mms = new ShowMMScreen(fileData, fileName,
+								fileDesc);
+						mms.mainPanel.removeItem(mms.cmd_layout);
+						newScreen = mms;
+					}
 
-					UICanvas.getInstance().open(mms, true);
+					UICanvas.getInstance().open(newScreen, true);
 					break;
 				}
 			}
@@ -230,10 +237,11 @@ public class AlbumScreen extends UIScreen {
 	 * 
 	 */
 	private AlbumScreen() {
-		cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
-				.toUpperCase());
+		cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE));
 		setMenu(new UIMenu(""));
 		UIMenu menu = getMenu();
+		if (RosterScreen.getInstance().cameraOn) menu.append(cmd_capture_img);
+		if (RosterScreen.getInstance().micOn) menu.append(cmd_capture_aud);
 		menu.append(cmd_exit);
 		this.setTitle(rm.getString(ResourceIDs.STR_MM_ALBUM));
 
@@ -250,7 +258,7 @@ public class AlbumScreen extends UIScreen {
 
 		actionMenu.removeAll();
 		actionMenu.append(this.detailLabel);
-		actionMenu.append(this.sendLabel);
+		if (RosterScreen.isOnline()) actionMenu.append(this.sendLabel);
 		actionMenu.append(this.deleteLabel);
 
 		buttonLayout = new UIHLayout(3);
@@ -288,7 +296,7 @@ public class AlbumScreen extends UIScreen {
 			Element ithChild = children[i];
 			Element idEl = ithChild.getChildByName(null, "id");
 			String fileId = idEl.getText();
-			UIHLayout ithLayout = new UIHLayout(3);
+			UIHLayout ithLayout = new UIHLayout(2);
 			ithLayout.setSubmenu(actionMenu);
 			ithLayout.setFocusable(true);
 
@@ -305,13 +313,13 @@ public class AlbumScreen extends UIScreen {
 			// this happens when a file cannot be loaded 
 			// XXX: delete the file in album ?
 			if (fileData == null) continue;
-			if (mmType == Config.imgType) {
+			if (mmType == Config.IMG_TYPE) {
 				Image convImage = null;
 				convImage = Image.createImage(fileData, 0, fileData.length);
 				imgWidth = convImage.getWidth();
 				imgHeight = convImage.getHeight();
 				resImg = UIUtils.imageResize(convImage, UICanvas.getInstance()
-						.getWidth() / 2, -1);
+						.getWidth() / 2, -1, false);
 			} else {
 				resImg = UICanvas.getUIImage("/icons/mic.png");
 			}
@@ -320,7 +328,7 @@ public class AlbumScreen extends UIScreen {
 					UICanvas.getInstance().getWidth() / 2,
 					UILayout.CONSTRAINT_PIXELS);
 			String fileString = fileName + " " + fileData.length / 1000 + "Kb";
-			if (mmType == Config.imgType) {
+			if (mmType == Config.IMG_TYPE) {
 				fileString += " ";
 				fileString += (imgWidth + "x" + imgHeight);
 			}
@@ -330,8 +338,7 @@ public class AlbumScreen extends UIScreen {
 					UILayout.CONSTRAINT_PERCENTUAL);
 			filenameLabel.setWrappable(true, UICanvas.getInstance().getWidth()
 					- resImg.getWidth() - 20);
-			ithLayout.insert(new UILabel(fileId), 2, 0,
-					UILayout.CONSTRAINT_PERCENTUAL);
+			ithLayout.setStatus(fileId);
 
 			itemsToRemove.addElement(ithLayout);
 			this.albumPanel.addItem(ithLayout);
@@ -339,6 +346,17 @@ public class AlbumScreen extends UIScreen {
 			sep.setFg_color(0x777777);
 			this.albumPanel.addItem(sep);
 			itemsToRemove.addElement(sep);
+		}
+
+		if (children.length == 0) {
+			UILabel emptyLabel = new UILabel(rm
+					.getString(ResourceIDs.STR_EMPTY_ALBUM));
+			//emptyLabel.setFocusable(true);
+			UIScreen currentScreen = UICanvas.getInstance().getCurrentScreen();
+			if (currentScreen != null) emptyLabel.setWrappable(true,
+					currentScreen.getWidth() - 10);
+			this.albumPanel.addItem(emptyLabel);
+			itemsToRemove.addElement(emptyLabel);
 		}
 
 		if (children.length > maxLoadFile) {
@@ -395,7 +413,7 @@ public class AlbumScreen extends UIScreen {
 			fileEL.addElementAndContent(null, "desc", fileDescription);
 			fileEL.addElementAndContent(null, "type", mmType + "");
 
-			String sType = (mmType == Config.imgType ? "img" : "snd");
+			String sType = (mmType == Config.IMG_TYPE ? "img" : "snd");
 			Element child = albumEl.getChildByName(null, sType);
 			if (child != null) {
 				int count = Integer.parseInt(child.getText()) + 1;

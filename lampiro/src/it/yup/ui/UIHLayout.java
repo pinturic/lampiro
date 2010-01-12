@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIHLayout.java 1471 2009-05-13 21:35:41Z luca $
+ * $Id: UIHLayout.java 1639 2009-08-05 21:29:12Z luca $
 */
 
 /**
@@ -47,71 +47,25 @@ public class UIHLayout extends UILayout {
 		item.setDirty(true);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see it.yup.ui.UIItem#paint(javax.microedition.lcdui.Graphics, int, int)
-	 */
-	protected void paint(Graphics g, int w, int h) {
-		this.height = h;
-		int originalGx = g.getTranslateX();
-		int originalGy = g.getTranslateY();
-		if (this.dirty == true) {
-			g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-			g.fillRect(0, 0, w, h);
-		}
+	protected int getLayoutDimension(int i) {
+		return layoutItems[i].getLayoutWidth();
+	}
 
-		int pixelSum = 0;
-		int percentageSum = 0;
-		for (int i = 0; i < layoutItems.length; i++) {
-			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) pixelSum += layoutItems[i]
-					.getLayoutWidth();
-			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) percentageSum += layoutItems[i]
-					.getLayoutWidth();
-		}
-		int remainingPixels = 0;
-		if (percentageSum > 0) {
-			remainingPixels = ((w - pixelSum) * 100) / percentageSum;
-		}
-		int pixelIndex = 0;
-		int i = 0;
-		for (i = 0; i < layoutItems.length - 1; i++) {
-			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) {
-				if (layoutItems[i].isDirty()) layoutItems[i].paint0(g,
-						layoutItems[i].getLayoutWidth(), h);
-				pixelIndex += layoutItems[i].getLayoutWidth();
-				g.translate(layoutItems[i].getLayoutWidth(), 0);
-			}
-			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) {
-				int ithLayoutWidth = (layoutItems[i].getLayoutWidth() * remainingPixels) / 100;
-				if (layoutItems[i].isDirty()) layoutItems[i].paint0(g,
-						ithLayoutWidth, h);
-				pixelIndex += ithLayoutWidth;
-				g.translate(ithLayoutWidth, 0);
-			}
-		}
+	protected int getMyDimension(Graphics g, int w) {
+		return w;
+	}
 
-		// the last column is "painted alone" to fill all the remaining
-		// pixels
-		if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) {
-			if (layoutItems[i].isDirty()) layoutItems[i].paint0(g, w
-					- pixelIndex, h);
-			pixelIndex += layoutItems[i].getLayoutWidth();
-			g.translate(layoutItems[i].getLayoutWidth(), 0);
-		}
-		if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) {
-			int ithLayoutWidth = w - pixelIndex;
-			if (layoutItems[i].isDirty()) layoutItems[i].paint0(g,
-					ithLayoutWidth, h);
-			pixelIndex += ithLayoutWidth;
-			g.translate(ithLayoutWidth, 0);
-		}
+	protected void paintLayoutItem(int i, Graphics g, int w, int h,
+			int forcedDim) {
+		layoutItems[i].paint0(g, forcedDim, h);
+	}
 
-		g.translate(originalGx - g.getTranslateX(), +originalGy
-				- g.getTranslateY());
-		if (this.selected && isGroup()) {
-			this.drawSegmentedBorder(g, w, h);
-		}
+	protected void paintLastItem(int i, Graphics g, int w, int h, int pixelIndex) {
+		paintLayoutItem(i, g, w, h, w - pixelIndex);
+	}
+
+	protected void translateG(Graphics g, int i, int forcedDim) {
+		g.translate(forcedDim, 0);
 	}
 
 	public int getHeight(Graphics g) {

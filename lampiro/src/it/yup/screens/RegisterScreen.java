@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1564 2009-06-09 14:17:08Z luca $
+ * $Id: RegisterScreen.java 1891 2009-11-03 17:43:52Z luca $
 */
 
 package it.yup.screens;
@@ -38,8 +38,7 @@ import javax.microedition.lcdui.TextField;
 public class RegisterScreen extends Form implements CommandListener,
 		StreamEventListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private static RegisterScreen _instance;
 
@@ -123,7 +122,7 @@ public class RegisterScreen extends Form implements CommandListener,
 			String tempUser = cfg.getProperty(Config.USER, "") + "@"
 					+ cfg.getProperty(Config.SERVER, "");
 			if (tempUser.compareTo("@") == 0) {
-				tempUser = "@" + Config.BLUENDO_SERVER;
+				tempUser = "@" + Config.DEFAULT_SERVER;
 				this.grp_new_account.setSelectedFlags(new boolean[] { true });
 			} else
 				grp_server.setSelectedIndex(1, true);
@@ -220,6 +219,7 @@ public class RegisterScreen extends Form implements CommandListener,
 				try {
 					// Get the XMPP client
 					XMPPClient xmpp = XMPPClient.getInstance();
+					xmpp.setMUCGroup(rm.getString(ResourceIDs.STR_GROUP_CHAT));
 					boolean newCredentials = Config.FALSE.equals(cfg
 							.getProperty(Config.CLIENT_INITIALIZED));
 					xmpp.createStream(register, newCredentials);
@@ -228,7 +228,7 @@ public class RegisterScreen extends Form implements CommandListener,
 							null, null);
 					reg = BasicXmlStream.addEventListener(qAuth,
 							RegisterScreen.this);
-					xmpp.openStream();
+					xmpp.openStream(true);
 
 				} catch (Exception e) {
 					Logger.log(e.getMessage());
@@ -258,12 +258,8 @@ public class RegisterScreen extends Form implements CommandListener,
 				description = (String) source;
 			}
 
-			client.showAlert(AlertType.ERROR, register ? rm
-					.getString(ResourceIDs.STR_REGFAIL_TITLE) : rm
-					.getString(ResourceIDs.STR_LOGFAIL_TITLE), (register ? (rm
-					.getString(ResourceIDs.STR_REGFAIL_DESC) + " ") : (rm
-					.getString(ResourceIDs.STR_LOGFAIL_DESC) + " "))
-					+ description, this);
+			client.showAlert(AlertType.ERROR, Config.ALERT_CONNECTION,
+					Config.ALERT_CONNECTION, description);
 			placeItems();
 
 		} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {

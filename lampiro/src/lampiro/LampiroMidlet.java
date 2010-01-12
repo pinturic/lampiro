@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: LampiroMidlet.java 1539 2009-05-25 21:05:01Z luca $
+ * $Id: LampiroMidlet.java 1858 2009-10-16 22:42:29Z luca $
 */
 
 package lampiro;
@@ -20,6 +20,8 @@ package lampiro;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIConfig;
 import it.yup.ui.UIUtils;
+import it.yup.util.ResourceIDs;
+import it.yup.util.ResourceManager;
 import lampiro.screens.SplashScreen;
 import javax.microedition.lcdui.Font;
 import javax.microedition.midlet.MIDlet;
@@ -35,6 +37,8 @@ import javax.microedition.midlet.MIDlet;
 import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.packets.Presence;
+
 import javax.microedition.lcdui.Display;
 
 /**
@@ -78,10 +82,8 @@ public class LampiroMidlet extends MIDlet {
 		UICanvas.setDisplay(Display.getDisplay(this));
 		UICanvas canvas = UICanvas.getInstance();
 		UICanvas.display(null);
-// #ifndef GLIDER
-				String colorString = Config.getInstance()
-					.getProperty(Config.COLOR, "0");
-		// #endif 
+		String colorString = Config.getInstance()
+				.getProperty(Config.COLOR, "0");
 		int colorInt = colorString.toCharArray()[0] - '0';
 		LampiroMidlet.changeColor(colorInt);
 		String fontString = Config.getInstance().getProperty(Config.FONT_SIZE,
@@ -126,15 +128,20 @@ public class LampiroMidlet extends MIDlet {
 	 * available.
 	 */
 	protected void pauseApp() {
-		if (xmpp.getMyContact() != null) {
-			last_availability = xmpp.getMyContact().getAvailability();
-			last_status = xmpp.getMyContact().getPresence().getStatus();
-			xmpp.setPresence(Contact.AV_DND,
-					"Phone hold on, please don't send messages");
-			try {
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
+		Contact myContact = xmpp.getMyContact();
+		if (myContact != null) {
+			ResourceManager rm = ResourceManager.getManager();
+			String pauseStr = rm.getString(ResourceIDs.STR_PAUSE_APP);
+			last_availability = myContact.getAvailability();
+			Presence pres = myContact.getPresence(null);
+			if (pres != null) {
+				last_status = pres.getStatus();
+				xmpp.setPresence(Contact.AV_AWAY, pauseStr);
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 	}

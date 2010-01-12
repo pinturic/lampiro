@@ -29,6 +29,8 @@ public class Element {
 
 	private static int _internal_id_counter; //unique id
 
+	public static String XML_NS = "http://www.w3.org/XML/1998/namespace";
+
 	/**
 	 * Build a full element. Warning children and attributes must not have empty space at end 
 	 * @param uri
@@ -97,7 +99,7 @@ public class Element {
 	public void ensureCapacity(int size, byte type) {
 		if (type == 'a' && this.attributes.length < size) {
 			String[][] old_v = this.attributes;
-			this.attributes = new String[size][2];
+			this.attributes = new String[size][3];
 			System.arraycopy(old_v, 0, this.attributes, 0, nattributes);
 		} else if (type == 'c' && this.children.length < size) {
 			Object[] old_v = this.children;
@@ -126,6 +128,10 @@ public class Element {
 	 * @param value
 	 */
 	public void setAttribute(String name, String value) {
+		setAttribute(null, name, value);
+	}
+
+	public void setAttribute(String namespace, String name, String value) {
 		// first look if we must change the value of an existing attribute
 		for (int i = 0; i < nattributes; i++) {
 			String triplet[] = attributes[i];
@@ -140,7 +146,7 @@ public class Element {
 			this.attributes = new String[attributes.length + Element.array_inc][3];
 			System.arraycopy(old_attrs, 0, attributes, 0, nattributes);
 		}
-		attributes[nattributes++] = new String[] { null, name, value };
+		attributes[nattributes++] = new String[] { namespace, name, value };
 	}
 
 	public void setAttributes(String[] names, String[] values) {
@@ -184,51 +190,32 @@ public class Element {
 		}
 		Element e = new Element(uri, name);
 		// enlarge capacity if the array is full
-		if (nchildren >= children.length) {
-			Object old_v[] = children;
-			this.children = new Object[old_v.length + 10];
-			System.arraycopy(old_v, 0, children, 0, nchildren);
-		}
-
-		children[nchildren++] = e;
+		addObject(e);
 		return e;
 	}
 
 	// TODO rename addElement **after merge**
 	public Element addElementAndContent(String uri, String name, String content) {
-		if (uri == null) {
-			uri = this.uri;
-		}
-		Element e = new Element(uri, name);
+		Element e = addElement(uri, name);
 		e.addText(content);
-		// enlarge capacity if the array is full
-		if (nchildren >= children.length) {
-			Object old_v[] = children;
-			this.children = new Object[old_v.length + 10];
-			System.arraycopy(old_v, 0, children, 0, nchildren);
-		}
-
-		children[nchildren++] = e;
 		return e;
 	}
 
 	public void addElement(Element e) {
-		if (nchildren >= children.length) {
-			Object old_v[] = children;
-			this.children = new Object[old_v.length + Element.array_inc];
-			System.arraycopy(old_v, 0, children, 0, nchildren);
-		}
-
-		children[nchildren++] = e;
+		addObject(e);
 	}
 
 	public void addText(String s) {
+		addObject(s);
+	}
+
+	private void addObject(Object o) {
 		if (nchildren >= children.length) {
 			Object old_v[] = children;
 			this.children = new Object[old_v.length + Element.array_inc];
 			System.arraycopy(old_v, 0, children, 0, nchildren);
 		}
-		children[nchildren++] = s;
+		children[nchildren++] = o;
 	}
 
 	/**
@@ -240,7 +227,8 @@ public class Element {
 	public Element removeChild(String namespace, String name) {
 		Object c, e = null;
 		int j = 0;
-		for (int i = 0; i < nchildren; i++) {
+		int orNchildren = nchildren;
+		for (int i = 0; i < orNchildren; i++) {
 			c = children[i];
 			if (c.getClass() != String.class
 					&& (namespace == null || namespace
@@ -328,6 +316,34 @@ public class Element {
 		return v;
 	}
 
+	public Element[] getChildrenByNameAttrs(String uri, String name,
+			String[] attrs, String[] values) {
+		Element v[];
+		Vector tempVect = new Vector();
+		// count the matching children
+		for (int i = 0; i < nchildren; i++) {
+			Object e = children[i];
+			if ((e.getClass() != String.class)
+					&& (((Element) e).name.equals(name))
+					&& (uri == null || ((Element) e).uri.equals(uri))) {
+				boolean matched = true;
+				for (int j = 0; j < attrs.length; j++) {
+					String jthAttr = attrs[j];
+					String ithVal = ((Element) e).getAttribute(jthAttr);
+					if (ithVal == null || ithVal.equals(values[j]) == false) {
+						matched = false;
+						break;
+					}
+				}
+				if (matched) tempVect.addElement(e);
+			}
+		}
+		// build the result vector and copy the matching elements
+		v = new Element[tempVect.size()];
+		tempVect.copyInto(v);
+		return v;
+	}
+
 	/**
 	 * Return all the non-text children 
 	 */
@@ -373,11 +389,14 @@ public class Element {
 	public void resetText() {
 		// count the matching children
 		int j = 0;
-		for (int i = 0; i < nchildren; i++) {
+		int oldNChildren = nchildren;
+		for (int i = 0; i < oldNChildren; i++) {
 			Object e = children[i];
 			if (e.getClass() != String.class) children[j] = children[i];
-			else
+			else {
 				j--;
+				nchildren--;
+			}
 			j++;
 		}
 	}
@@ -452,10 +471,15 @@ public class Element {
 			String triplet[] = el.attributes[i];
 			String tripletString = " ";
 			if (triplet[0] != null && triplet[0].length() > 0) {
-				tripletString = " ns" + nsUsed.size() + ":";
-				nsUsed.addElement(triplet[0]);
+				if (triplet[0].equals(XML_NS)) {
+					tripletString = " xml:";
+				} else {
+					tripletString = " ns" + nsUsed.size() + ":";
+					nsUsed.addElement(triplet[0]);
+				}
 			}
-			tripletString += triplet[1] + "='" + writeEscaped(triplet[2],'\'') + "'";
+			tripletString += triplet[1] + "='" + writeEscaped(triplet[2], '\'')
+					+ "'";
 			os.write(Utils.getBytesUtf8(tripletString));
 		}
 		String nsDef = "";
@@ -483,6 +507,18 @@ public class Element {
 		} else {
 			os.write(Utils.getBytesUtf8("/>"));
 		}
+	}
+
+	public Element getPath(String[] nss, String[] names) {
+		Element ithChild = this;
+		for (int i = 0; i < nss.length; i++) {
+			String ithNs = nss[i];
+			String ithName = names[i];
+			ithChild = ithChild.getChildByName(ithNs, ithName);
+			if (ithChild == null) return null;
+		}
+
+		return ithChild;
 	}
 
 	//    public void serialize(DataOutputStream os) {
@@ -550,7 +586,7 @@ public class Element {
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Element.java 1377 2009-04-21 14:17:38Z luca $
+ * $Id: Element.java 1769 2009-09-16 07:27:11Z luca $
 */
 //
 //package it.yup.xml;

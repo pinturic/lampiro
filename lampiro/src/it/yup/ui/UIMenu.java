@@ -1,16 +1,13 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIMenu.java 1542 2009-05-26 12:30:51Z luca $
+ * $Id: UIMenu.java 1905 2009-11-11 14:56:07Z luca $
 */
 
 /**
  * 
  */
 package it.yup.ui;
-
-// #debug
-//@import it.yup.util.Logger;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -28,7 +25,7 @@ import javax.microedition.lcdui.Image;
 public class UIMenu extends UIItem implements UIIContainer {
 
 	/** The list of items included here. */
-	Vector itemList;
+	Vector items;
 	/** il sottomenu selezionato e aperto */
 	private UIMenu openSubMenu;
 
@@ -86,7 +83,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	protected int lastVisibleIndex = 0;
 
 	public String cancelMenuString = UIConfig.cancelMenuString;
-			
+
 	public String selectMenuString = UIConfig.selectMenuString;
 
 	int borderSize = 0;
@@ -100,22 +97,22 @@ public class UIMenu extends UIItem implements UIIContainer {
 			menuImage = Image.createImage("/icons/menuarrow.png");
 		} catch (IOException e) {
 			// #mdebug
-//@						System.out.println("In allocating menuImage" + e.getMessage());
+//@			System.out.println("In allocating menuImage" + e.getMessage());
 			// #enddebug
 		}
 	}
 
 	protected int traverseFocusable(int startingIndex, boolean directionDown) {
 		if (directionDown) {
-			while (startingIndex < this.itemList.size() - 1
-					&& ((UIItem) this.itemList.elementAt(startingIndex))
+			while (startingIndex < this.items.size() - 1
+					&& ((UIItem) this.items.elementAt(startingIndex))
 							.isFocusable() == false) {
 				startingIndex++;
 			}
 			return startingIndex;
 		} else {
 			while (startingIndex >= 1
-					&& ((UIItem) this.itemList.elementAt(startingIndex))
+					&& ((UIItem) this.items.elementAt(startingIndex))
 							.isFocusable() == false) {
 				startingIndex--;
 			}
@@ -132,7 +129,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	public UIMenu(String _name) {
 
-		itemList = new Vector();
+		items = new Vector();
 		this.focusable = true;
 		this.name = _name;
 		if (_name != null && _name.length() > 0
@@ -159,7 +156,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 * @return The item index or -1 if this item is not in list.
 	 */
 	public int indexOf(UIItem item) {
-		return itemList.indexOf(item);
+		return items.indexOf(item);
 	}
 
 	/**
@@ -175,11 +172,11 @@ public class UIMenu extends UIItem implements UIIContainer {
 		ui.setDirty(true);
 		ui.setBg_color(UIConfig.menu_color);
 
-		itemList.addElement(ui);
+		items.addElement(ui);
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
 		ui.setScreen(this.screen);
 		ui.setContainer(this);
-		return itemList.size() - 1;
+		return items.size() - 1;
 	}
 
 	/**
@@ -191,8 +188,8 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 *            l'item da inserire
 	 */
 	public void insert(int pos, UIItem ui) {
-		if (pos < 0 || pos >= itemList.size()) { throw new ArrayIndexOutOfBoundsException(
-				"Invalid menu pos: " + pos + ", " + itemList.size()); }
+		if (pos < 0 || pos >= items.size()) { throw new ArrayIndexOutOfBoundsException(
+				"Invalid menu pos: " + pos + ", " + items.size()); }
 		ui.setFocusable(true);
 		ui.setDirty(true);
 		ui.setBg_color(UIConfig.menu_color);
@@ -200,7 +197,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
 		ui.setScreen(this.screen);
 		ui.setContainer(this);
-		itemList.insertElementAt(ui, pos);
+		items.insertElementAt(ui, pos);
 	}
 
 	/**
@@ -212,10 +209,11 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	public UIItem remove(int pos) {
 		UIItem ui = null;
-		if (pos < itemList.size() && pos >= 0) {
+		if (pos < items.size() && pos >= 0) {
 			try {
-				ui = (UIItem) itemList.elementAt(pos);
-				itemList.removeElementAt(pos);
+				ui = (UIItem) items.elementAt(pos);
+				items.removeElementAt(pos);
+				this.setDirty(true);
 			} catch (Exception e) {
 				System.out.println("In removing menu item" + e.getMessage());
 				e.printStackTrace();
@@ -237,7 +235,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 *            l'item da rimuovere.
 	 */
 	public boolean remove(UIItem ui) {
-		int idx = itemList.indexOf(ui);
+		int idx = items.indexOf(ui);
 		if (idx != -1) {
 			remove(idx);
 			if (this.screen != null) {
@@ -252,15 +250,15 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 * rimuove tutti gli items
 	 */
 	public void removeAll() {
-		if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) ((UIItem) this.itemList
+		if (selectedIndex >= 0 && selectedIndex < this.items.size()) ((UIItem) this.items
 				.elementAt(this.selectedIndex)).setSelected(false);
 		if (this.screen != null) {
-			Enumeration enItem = itemList.elements();
+			Enumeration enItem = items.elements();
 			while (enItem.hasMoreElements()) {
 				this.screen.removePaintedItem((UIItem) enItem.nextElement());
 			}
 		}
-		itemList.removeAllElements();
+		items.removeAllElements();
 		selectedIndex = -1;
 	}
 
@@ -275,21 +273,26 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 *            l'item da sostituire
 	 */
 	public UIItem replace(int pos, UIItem ui) {
-		if (pos >= this.itemList.size()) throw new ArrayIndexOutOfBoundsException(
-				"Invalid itemList pos: " + pos + ", " + itemList.size());
+		if (pos >= this.items.size()) throw new ArrayIndexOutOfBoundsException(
+				"Invalid itemList pos: " + pos + ", " + items.size());
 
-		UIItem posth = (UIItem) this.itemList.elementAt(pos);
-		itemList.setElementAt(ui, pos);
-		ui.setScreen(screen);
-		ui.setContainer(this);
+		int oldSelectedIndex = this.getSelectedIndex();
+		UIItem posth = remove(pos);
+		insert(pos, ui);
+		this.setSelectedIndex(oldSelectedIndex);
 		return posth;
+	}
+
+	public void replace(UIItem oldItem, UIItem newItem) {
+		int pos = this.indexOf(oldItem);
+		if (pos >= 0) replace(pos, newItem);
 	}
 
 	/**
 	 * Removes all items
 	 */
 	public void clear() {
-		itemList.setSize(0);
+		items.setSize(0);
 	}
 
 	/**
@@ -305,11 +308,13 @@ public class UIMenu extends UIItem implements UIIContainer {
 	protected void paint(Graphics g, int w, int h) {
 		this.width = w;
 		if (this instanceof UIScreen) this.height = 0;
-		else
+		else {
 			this.height = 1;
+		}
 		int neededHeight = 0;
 		int oy = g.getTranslateY();
-		for (Enumeration en = itemList.elements(); en.hasMoreElements();) {
+		g.translate(0, 1);
+		for (Enumeration en = items.elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
 			int uithHeight = ithItem.getHeight(g);
 			// if uithHeight <0 use a default height to compute scrollbar
@@ -360,7 +365,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 		}
 		if (needScrollbar == false && oldNeedScrollbar) {
 			for (int i = firstVisibleIndex; i < this.lastVisibleIndex; i++) {
-				UIItem uith = (UIItem) this.itemList.elementAt(i);
+				UIItem uith = (UIItem) this.items.elementAt(i);
 				uith.setDirty(true);
 			}
 		}
@@ -378,8 +383,8 @@ public class UIMenu extends UIItem implements UIIContainer {
 		while (paintNeeded == true) {
 			paintNeeded = false;
 
-			g.translate(1 - g.getTranslateX() + initialX, 1 - g.getTranslateY()
-					+ initialY);
+			g.translate(1 - g.getTranslateX() + initialX,
+					1 - g.getTranslateY() + initialY);
 			g.translate(borderSize, borderSize);
 			int scrollbarHeight = (h * h) / neededHeight;
 			// to avoid a too big scrollbar;
@@ -388,18 +393,18 @@ public class UIMenu extends UIItem implements UIIContainer {
 			}
 			int scrollbarPosition = 0;
 			for (int i = 0; i < this.firstVisibleIndex; i++) {
-				UIItem uith = (UIItem) this.itemList.elementAt(i);
+				UIItem uith = (UIItem) this.items.elementAt(i);
 				scrollbarPosition += uith.getHeight(g);
 			}
 			scrollbarPosition *= h;
 			scrollbarPosition /= neededHeight;
 
 			int lastHeight = borderSize;
-			// if a controil is dirty all the subsequent must be set as dirty since the height
+			// if a control is dirty all the subsequent must be set as dirty since the height
 			// can be changed
 			boolean lastDirty = false;
-			for (int i = this.firstVisibleIndex; i < this.itemList.size(); i++) {
-				UIItem uith = (UIItem) this.itemList.elementAt(i);
+			for (int i = this.firstVisibleIndex; i < this.items.size(); i++) {
+				UIItem uith = (UIItem) this.items.elementAt(i);
 
 				if (lastDirty == true) {
 					uith.setDirty(true);
@@ -417,11 +422,11 @@ public class UIMenu extends UIItem implements UIIContainer {
 					// I must invalidate all the UIMenus different from myself
 					// that are over uith
 					if (this.screen != null && this.screen != this) {
-						this.screen
-								.invalidatePopups(this, g.getTranslateX(), g
-										.getTranslateY(), g.getTranslateX()
-										+ reservedWidth, g.getTranslateY()
-										+ uithHeight);
+						int[] coors = new int[] { g.getTranslateX(),
+								g.getTranslateY(),
+								g.getTranslateX() + reservedWidth,
+								g.getTranslateY() + uithHeight };
+						this.screen.invalidatePopups(this, coors);
 					}
 
 					uith.paint0(g, reservedWidth, uithHeight);
@@ -444,7 +449,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				this.lastVisibleIndex = i;
 
 				// only the visible UIItem
-				if (lastHeight > h-borderSize ) {
+				if (lastHeight > h - borderSize) {
 					/* last item is only "partially visible" */
 					this.lastVisibleIndex--;
 					lastHeight -= itemHeight;
@@ -452,7 +457,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 					break;
 				}
 
-				if (lastVisibleIndex == this.itemList.size() - 1) {
+				if (lastVisibleIndex == this.items.size() - 1) {
 					g.setColor(getBg_color() >= 0 ? getBg_color()
 							: UIConfig.menu_color);
 					int yGapHeight = this.height - lastHeight - 1;
@@ -477,7 +482,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				g.setColor(UIConfig.scrollbar_bg);
 				g.fillRect(0, 0, UIConfig.scrollbarWidth, height - 1);
 				g.setColor(UIConfig.scrollbar_fg);
-				if (this.lastVisibleIndex != this.itemList.size() - 1) {
+				if (this.lastVisibleIndex != this.items.size() - 1) {
 					g.translate(0, scrollbarPosition);
 				} else {
 					g.translate(0, h - scrollbarHeight);
@@ -489,34 +494,33 @@ public class UIMenu extends UIItem implements UIIContainer {
 					- g.getTranslateY());
 			// the border is painted later if I am a screen
 			if (this instanceof UIScreen == false) {
-//				g.setColor(UIConfig.menu_border);
-//				g.drawRect(1, 1, width - 2, height - 2);
-//				int col_lighter;
-//				int col_darker;
-//				if (UIConfig.menu_3d == true) {
-//					col_lighter = getBg_color() >= 0 ? getBg_color()
-//							: UIConfig.menu_color;
-//					col_darker = UIUtils.colorize(col_lighter, -50);
-//					col_lighter = UIUtils.colorize(col_lighter, 50);
-//				} else {
-//					col_lighter = UIConfig.menu_border;
-//					col_darker = UIConfig.menu_border;
-//				}
-//				g.setColor(col_lighter);
-//				g.drawLine(2, 2, width - 2, 2);
-//				g.drawLine(2, 2, 2, height - 2);
-//				g.setColor(col_darker);
-//				g.drawLine(width - 2, 2, width - 2, height - 2);
-//				g.drawLine(2, height - 2, width - 2, height - 2);
-				
-				
+				//				g.setColor(UIConfig.menu_border);
+				//				g.drawRect(1, 1, width - 2, height - 2);
+				//				int col_lighter;
+				//				int col_darker;
+				//				if (UIConfig.menu_3d == true) {
+				//					col_lighter = getBg_color() >= 0 ? getBg_color()
+				//							: UIConfig.menu_color;
+				//					col_darker = UIUtils.colorize(col_lighter, -50);
+				//					col_lighter = UIUtils.colorize(col_lighter, 50);
+				//				} else {
+				//					col_lighter = UIConfig.menu_border;
+				//					col_darker = UIConfig.menu_border;
+				//				}
+				//				g.setColor(col_lighter);
+				//				g.drawLine(2, 2, width - 2, 2);
+				//				g.drawLine(2, 2, 2, height - 2);
+				//				g.setColor(col_darker);
+				//				g.drawLine(width - 2, 2, width - 2, height - 2);
+				//				g.drawLine(2, height - 2, width - 2, height - 2);
+
 				int currentbbColor = UIConfig.menu_border;
-				int innerUp =  0;
-				int innerDown =  0;
+				int innerUp = 0;
+				int innerDown = 0;
 				int border[][] = null;
 				if (UIConfig.menu_3d == true) {
-					innerUp =  UIUtils.colorize(currentbbColor, 50);
-					innerDown =  UIUtils.colorize(currentbbColor, -50);
+					innerUp = UIUtils.colorize(currentbbColor, 50);
+					innerDown = UIUtils.colorize(currentbbColor, -50);
 					border = new int[][] {
 							new int[] { currentbbColor, currentbbColor, -1 },
 							new int[] { currentbbColor, innerUp, -1 },
@@ -524,20 +528,23 @@ public class UIMenu extends UIItem implements UIIContainer {
 				} else {
 					innerUp = UIConfig.menu_border;
 					innerDown = UIConfig.menu_border;
-					int innerColor = UIUtils.medColor(UIConfig.menu_color, currentbbColor);
-					int diagColor = UIUtils.medColor(UIConfig.bg_color, currentbbColor);
+					int innerColor = UIUtils.medColor(UIConfig.menu_color,
+							currentbbColor);
+					int diagColor = UIUtils.medColor(UIConfig.bg_color,
+							currentbbColor);
 					border = new int[][] { new int[] { -1, diagColor, -1 },
 							new int[] { diagColor, innerDown, -1 },
 							new int[] { -1, -1, innerColor }, };
 				}
 				int colors[] = new int[] { currentbbColor, innerUp, innerDown,
 						currentbbColor };
-				drawBorder(g, new int[] { 1, 1, width-1, height-1}, colors, border);
+				drawBorder(g, new int[] { 1, 1, width - 1, height - 1 },
+						colors, border);
 				if (UIConfig.menu_3d == true) {
 					g.setColor(innerDown);
-					this.drawPixel(g, width-2, 2);
-					this.drawPixel(g, 2, height-2);
-					this.drawPixel(g, width-2, height-2);
+					UIUtils.drawPixel(g, width - 2, 2);
+					UIUtils.drawPixel(g, 2, height - 2);
+					UIUtils.drawPixel(g, width - 2, height - 2);
 				}
 			}
 
@@ -551,15 +558,15 @@ public class UIMenu extends UIItem implements UIIContainer {
 				paintNeeded = true;
 				int gapHeight = 0;
 				for (int i = this.lastVisibleIndex + 1; i <= selectedIndex; i++)
-					gapHeight += ((UIItem) this.itemList.elementAt(i))
+					gapHeight += ((UIItem) this.items.elementAt(i))
 							.getHeight(g);
 				gapHeight -= h;
 				for (int i = this.firstVisibleIndex; i <= lastVisibleIndex; i++)
-					gapHeight += ((UIItem) this.itemList.elementAt(i))
+					gapHeight += ((UIItem) this.items.elementAt(i))
 							.getHeight(g);
 
 				do {
-					UIItem ithElem = ((UIItem) this.itemList
+					UIItem ithElem = ((UIItem) this.items
 							.elementAt(firstVisibleIndex));
 					gapHeight -= ithElem.getHeight(g);
 					this.firstVisibleIndex++;
@@ -573,8 +580,8 @@ public class UIMenu extends UIItem implements UIIContainer {
 				paintNeeded = true;
 				firstVisibleIndex = selectedIndex;
 				/* set items dirty */
-				for (int i = firstVisibleIndex; i < this.itemList.size(); i++) {
-					((UIItem) this.itemList.elementAt(i)).setDirty(true);
+				for (int i = firstVisibleIndex; i < this.items.size(); i++) {
+					((UIItem) this.items.elementAt(i)).setDirty(true);
 				}
 				this.setDirty(true);
 			}
@@ -599,16 +606,16 @@ public class UIMenu extends UIItem implements UIIContainer {
 		if (key != UICanvas.MENU_RIGHT
 				&& ga != Canvas.FIRE
 				&& this.selectedIndex >= 0
-				&& selectedIndex < this.itemList.size()
-				&& ((UIItem) this.itemList.elementAt(selectedIndex))
+				&& selectedIndex < this.items.size()
+				&& ((UIItem) this.items.elementAt(selectedIndex))
 						.keyPressed(key) == true) { return null; }
 		UIItem selItem = null;
 		switch (ga) {
 			case Canvas.UP:
-				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) ((UIItem) this.itemList
+				if (selectedIndex >= 0 && selectedIndex < this.items.size()) ((UIItem) this.items
 						.elementAt(selectedIndex)).setSelected(false);
 				if (selectedIndex == 0) {
-					selectedIndex = this.itemList.size() - 1;
+					selectedIndex = this.items.size() - 1;
 				} else if (selectedIndex == -1) selectedIndex = 0;
 				else {
 					if (selectedIndex > 0
@@ -619,8 +626,8 @@ public class UIMenu extends UIItem implements UIIContainer {
 						selectedIndex--;
 					}
 				}
-				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
-					selItem = ((UIItem) this.itemList.elementAt(selectedIndex));
+				if (selectedIndex >= 0 && selectedIndex < this.items.size()) {
+					selItem = ((UIItem) this.items.elementAt(selectedIndex));
 					selItem.setSelected(true);
 					if (selItem.isFocusable() == false) return keyPressed(key,
 							ga);
@@ -630,17 +637,17 @@ public class UIMenu extends UIItem implements UIIContainer {
 				break;
 
 			case Canvas.DOWN:
-				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) ((UIItem) this.itemList
+				if (selectedIndex >= 0 && selectedIndex < this.items.size()) ((UIItem) this.items
 						.elementAt(selectedIndex)).setSelected(false);
-				if (selectedIndex == this.itemList.size() - 1) {
+				if (selectedIndex == this.items.size() - 1) {
 					firstVisibleIndex = 0;
 					selectedIndex = 0;
 					this.setDirty(true);
 				} else if (selectedIndex == -1) selectedIndex = 0;
 				else
 					selectedIndex++;
-				if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
-					selItem = ((UIItem) this.itemList.elementAt(selectedIndex));
+				if (selectedIndex >= 0 && selectedIndex < this.items.size()) {
+					selItem = ((UIItem) this.items.elementAt(selectedIndex));
 					selItem.setSelected(true);
 					if (selItem.isFocusable() == false) return keyPressed(key,
 							ga);
@@ -654,9 +661,9 @@ public class UIMenu extends UIItem implements UIIContainer {
 		}
 
 		if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)
-				&& selectedIndex >= 0 && this.itemList.size() > 0) {
-			UIItem selectedItem = ((UIItem) this.itemList
-					.elementAt(selectedIndex)).getSelectedItem();
+				&& selectedIndex >= 0 && this.items.size() > 0) {
+			UIItem selectedItem = ((UIItem) this.items.elementAt(selectedIndex))
+					.getSelectedItem();
 			if (selectedItem.keyPressed(key) == true) { return null; }
 			if (selectedItem.getSubmenu() != null) {
 				this.openSubMenu = selectedItem.getSubmenu();
@@ -690,14 +697,14 @@ public class UIMenu extends UIItem implements UIIContainer {
 	public void setOpenedState(boolean openedState) {
 		this.openedState = openedState;
 		if (openedState == false) {
-			if (selectedIndex >= 0 && this.itemList.size() > 0
-					&& selectedIndex < this.itemList.size()) {
-				UIItem uimi = (UIItem) this.itemList.elementAt(selectedIndex);
+			if (selectedIndex >= 0 && this.items.size() > 0
+					&& selectedIndex < this.items.size()) {
+				UIItem uimi = (UIItem) this.items.elementAt(selectedIndex);
 				uimi.setSelected(false);
 			}
 			this.selectedIndex = -1;
 			if (this.screen != null) {
-				Enumeration en = this.itemList.elements();
+				Enumeration en = this.items.elements();
 				while (en.hasMoreElements()) {
 					this.screen.removePaintedItem((UIItem) en.nextElement());
 				}
@@ -753,7 +760,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	public int getHeight(Graphics g) {
 		this.height = 1;
-		for (Enumeration en = itemList.elements(); en.hasMoreElements();) {
+		for (Enumeration en = items.elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
 			this.height += ithItem.getHeight(g);
 		}
@@ -768,7 +775,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 	public void setScreen(UIScreen _us) {
 		screen = _us;
-		for (Enumeration en = itemList.elements(); en.hasMoreElements();) {
+		for (Enumeration en = items.elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
 			ithItem.setScreen(screen);
 		}
@@ -779,7 +786,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 	public void setDirty(boolean dirty) {
 		this.dirty = dirty;
-		for (Enumeration en = itemList.elements(); en.hasMoreElements();) {
+		for (Enumeration en = items.elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
 			ithItem.setDirty(dirty);
 		}
@@ -801,7 +808,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	public final boolean isDirty() {
 		// this.height = -1;
 		// this.width = -1;
-		for (Enumeration en = itemList.elements(); en.hasMoreElements();) {
+		for (Enumeration en = items.elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
 			if (ithItem.isDirty()) return true;
 		}
@@ -815,13 +822,12 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	public void setSelectedIndex(int selectedIndex) {
 		if (selectedIndex == this.selectedIndex) return;
-		if (this.selectedIndex >= 0
-				&& this.selectedIndex < this.itemList.size()) {
-			((UIItem) this.itemList.elementAt(this.selectedIndex))
+		if (this.selectedIndex >= 0 && this.selectedIndex < this.items.size()) {
+			((UIItem) this.items.elementAt(this.selectedIndex))
 					.setSelected(false);
 		}
-		if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) {
-			((UIItem) this.itemList.elementAt(selectedIndex)).setSelected(true);
+		if (selectedIndex >= 0 && selectedIndex < this.items.size()) {
+			((UIItem) this.items.elementAt(selectedIndex)).setSelected(true);
 		}
 		this.selectedIndex = selectedIndex;
 	}
@@ -834,7 +840,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	}
 
 	public UIItem getSelectedItem() {
-		if (selectedIndex >= 0 && selectedIndex < this.itemList.size()) return (UIItem) this.itemList
+		if (selectedIndex >= 0 && selectedIndex < this.items.size()) return (UIItem) this.items
 				.elementAt(selectedIndex);
 		return this;
 	}
@@ -844,14 +850,14 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 *            the itemList to set
 	 */
 	public void setItemList(Vector itemList) {
-		this.itemList = itemList;
+		this.items = itemList;
 	}
 
 	/**
 	 * @return the itemList
 	 */
-	public Vector getItemList() {
-		return itemList;
+	public Vector getItems() {
+		return items;
 	}
 
 	public void setSelectedItem(UIItem item) {
@@ -863,16 +869,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	}
 
 	public boolean contains(UIItem item) {
-		if (this.itemList.contains(item)) return true;
-		Enumeration en = this.itemList.elements();
-		while (en.hasMoreElements()) {
-			UIItem ithItem = (UIItem) en.nextElement();
-			if (ithItem instanceof UIIContainer) {
-				UIIContainer iic = (UIIContainer) ithItem;
-				if (iic.contains(item)) return true;
-			}
-		}
-		return false;
+		return UIUtils.contains(items, item);
 	}
 
 	public void setAutoClose(boolean autoClose) {

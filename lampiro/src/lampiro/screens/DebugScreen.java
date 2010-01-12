@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DebugScreen.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: DebugScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 package lampiro.screens;
@@ -21,8 +21,7 @@ import javax.microedition.lcdui.Font;
 public class DebugScreen extends UIScreen {
 
 	private UIPanel mainPanel = new UIPanel();
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UIButton cmd_close = new UIButton(rm
 			.getString(ResourceIDs.STR_CLOSE));

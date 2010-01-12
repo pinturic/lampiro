@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Presence.java 1431 2009-05-06 15:24:26Z luca $
+ * $Id: Presence.java 1729 2009-09-07 13:03:56Z luca $
 */
 
 package it.yup.xmpp.packets;
@@ -26,7 +26,7 @@ public class Presence extends Stanza {
 	public static final String SHOW_DND = "dnd";
 	public static final String SHOW_AWAY = "away";
 	public static final String SHOW_XA = "xa";
-	public static final String SHOW_ONLINE= "online";
+	public static final String SHOW_ONLINE = "online";
 
 	/* possible presence types */
 	public static final String T_SUBSCRIBE = "subscribe";
@@ -35,7 +35,7 @@ public class Presence extends Stanza {
 	public static final String T_UNSUBSCRIBED = "unsubscribed";
 	public static final String T_PROBE = "probe";
 	public static final String T_UNAVAILABLE = "unavailable";
-	
+
 	public static final int PC = 0;
 	public static final int PHONE = 1;
 	public static final int BOT = 2;
@@ -73,7 +73,7 @@ public class Presence extends Stanza {
 	}
 
 	public void setShow(String show) {
-	removeChild(null, SHOW);
+		removeChild(null, SHOW);
 		this.addElementAndContent(NS_JABBER_CLIENT, SHOW, show);
 	}
 
@@ -88,7 +88,7 @@ public class Presence extends Stanza {
 
 	public void setPriority(int priority) {
 		removeChild(null, PRIORITY);
-		this.addElementAndContent(NS_JABBER_CLIENT, PRIORITY, ""+priority);
+		this.addElementAndContent(NS_JABBER_CLIENT, PRIORITY, "" + priority);
 	}
 
 	public int getPriority() {
@@ -105,12 +105,13 @@ public class Presence extends Stanza {
 		if (el != null) {
 			return el.getText();
 		} else {
-			return Config.getInstance().getProperty(Config.YUP_RESOURCE, "Lampiro");
+			Config cfg = Config.getInstance();
+			return cfg.getProperty(Config.YUP_RESOURCE, Config.CLIENT_NAME);
 		}
 	}
 
 	public void setStatus(String status) {
-	
+
 		removeChild(null, STATUS);
 		this.addElementAndContent(NS_JABBER_CLIENT, STATUS, "" + status);
 	}

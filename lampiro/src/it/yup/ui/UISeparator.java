@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UISeparator.java 1577 2009-06-15 14:38:27Z luca $
+ * $Id: UISeparator.java 1730 2009-09-07 20:12:21Z luca $
 */
 
 /**
@@ -38,5 +38,9 @@ public class UISeparator extends UIItem {
 		g.setColor(getFg_color() >= 0 ? getFg_color() : UIConfig.fg_color);
 		// the separator always uses its imposed height!!! and not the one asked from paint(...) 
 		g.fillRect(0, 0, w, this.height);
+	}
+	
+	public void setHeight(int height){
+		this.height=height;
 	}
 }

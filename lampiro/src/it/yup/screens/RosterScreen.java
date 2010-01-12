@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1377 2009-04-21 14:17:38Z luca $
+ * $Id: RosterScreen.java 1909 2009-11-25 12:38:37Z luca $
 */
 
 package it.yup.screens;
@@ -46,6 +46,7 @@ import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.XMPPClient.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
+import it.yup.xmpp.packets.Presence;
 
 public class RosterScreen extends Canvas implements CommandListener,
 		XmppListener {
@@ -63,8 +64,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 	/** reference to the possible alert screen */
 	private Alert alert;
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private Command cmd_send = new Command(rm
 			.getString(ResourceIDs.STR_SEND_MESSAGE), Command.EXIT, 1);
@@ -148,11 +148,6 @@ public class RosterScreen extends Canvas implements CommandListener,
 	/** singleton */
 	private static RosterScreen _instance;
 
-	private char[][] itu_keys = { { ' ', '0' }, { '1' },
-			{ 'a', 'b', 'c', '�', '2' }, { 'd', 'e', 'f', '�', '�', '3' },
-			{ 'g', 'h', 'i', '�', '4' }, { 'j', 'k', 'l', '5' },
-			{ 'm', 'n', 'o', '�', '6' }, { 'p', 'q', 'r', 's', '7' },
-			{ 't', 'u', 'v', '�', '8' }, { 'w', 'x', 'y', 'z', '9' } };
 	private String sel_pattern = "";
 	private long sel_last_ts = 0;
 	private int sel_last_key = -1;
@@ -226,7 +221,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 		}
 
 		try {
-			img_arrow = Image.createImage("/icons/rightarrow.png");
+			img_arrow = Image.createImage("/icons/menuarrow.png");
 		} catch (IOException e) {
 			img_arrow = Image.createImage(16, 16);
 		}
@@ -577,15 +572,15 @@ public class RosterScreen extends Canvas implements CommandListener,
 					sel_key_offset = 0;
 					sel_last_key = key_num;
 					sel_pattern = sel_pattern
-							+ itu_keys[key_num][sel_key_offset];
+							+ Utils.itu_keys[key_num][sel_key_offset];
 					filter_contacts(true);
 				} else {
 					// shifted key
 					sel_key_offset += 1;
-					if (sel_key_offset >= itu_keys[key_num].length) sel_key_offset = 0;
+					if (sel_key_offset >= Utils.itu_keys[key_num].length) sel_key_offset = 0;
 					sel_pattern = sel_pattern.substring(0,
 							sel_pattern.length() - 1)
-							+ itu_keys[key_num][sel_key_offset];
+							+ Utils.itu_keys[key_num][sel_key_offset];
 					filter_contacts(false);
 				}
 				sel_last_ts = t;
@@ -814,7 +809,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 		}
 
 		public void handleResult(Element e) {
-			XMPPClient.getInstance().handleClientCommands(e, true);
+			XMPPClient.getInstance().handleClientCommands(e, true,this);
 		}
 	}
 
@@ -920,7 +915,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 		d.setCurrent(scf);
 	}
 
-	public void handleCommand(Contact c, String chosenResource) {
+	public void handleCommand(Contact c, String chosenResource, Object optionalArguments) {
 		CommandListScreen cmdscr = new CommandListScreen(c, chosenResource);
 		LampiroMidlet.disp.setCurrent(cmdscr);
 	}
@@ -929,6 +924,12 @@ public class RosterScreen extends Canvas implements CommandListener,
 		removeAllContacts();
 		RegisterScreen rgs = RegisterScreen.getInstance();
 		LampiroMidlet.disp.setCurrent(rgs);
+	}
+	
+	public void showAlert(AlertType type, int titleCode, int textCode,
+			String additionalText) {
+		// TODO Auto-generated method stub
+		
 	}
 
 	public void showAlert(AlertType type, String title, String text,
@@ -961,11 +962,11 @@ public class RosterScreen extends Canvas implements CommandListener,
 		LampiroMidlet.disp.setCurrent(alert, (Displayable) next_screen);
 	}
 
-	public void handleTask(Task task, boolean display) {
+	public void handleTask(Task task) {
 		// Display a task only if no other task is currently displayed
 		Displayable cur = LampiroMidlet.disp.getCurrent();
 		Class klass = cur.getClass();
-		if (display && !DataFormScreen.class.equals(klass)
+		if (task.getEnableDisplay() && !DataFormScreen.class.equals(klass)
 				&& !DataResultScreen.class.equals(klass)) {
 			// #ifndef UI
 			//@						task.display(LampiroMidlet.disp, cur);
@@ -974,7 +975,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 	}
 
 	public Object handleDataForm(DataForm df, byte type, DataFormListener dfl,
-			int cmds) {
+			int cmds,Object optionalArguments) {
 		Displayable scr = null;
 		if (type == Task.CMD_INPUT) {
 			scr = new DataFormScreen(df, dfl);
@@ -999,5 +1000,10 @@ public class RosterScreen extends Canvas implements CommandListener,
 		
 	}
 
+
+	public void handlePresenceError(Presence presence) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

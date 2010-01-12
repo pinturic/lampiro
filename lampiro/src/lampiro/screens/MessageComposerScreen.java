@@ -1,12 +1,13 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MessageComposerScreen.java 1564 2009-06-09 14:17:08Z luca $
+ * $Id: MessageComposerScreen.java 1770 2009-09-16 20:40:01Z luca $
 */
 
 package lampiro.screens;
 
 import it.yup.ui.UIButton;
+import it.yup.ui.UICanvas;
 import it.yup.ui.UICombobox;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
@@ -25,7 +26,7 @@ import javax.microedition.lcdui.TextField;
 
 public class MessageComposerScreen extends UIScreen {
 
-	protected static ResourceManager rm = ResourceManager.getManager("common", "en");
+	protected static ResourceManager rm = ResourceManager.getManager();
 	private Contact user = null;
     private int mtype;
 	protected UICombobox cg_type = new UICombobox("Type", false);
@@ -77,25 +78,35 @@ public class MessageComposerScreen extends UIScreen {
 		if(cmd == cmd_send) {
 			Message msg;
 			String to= preferredResource != null ? preferredResource : user.jid;
-			if(cg_type.getSelectedIndex() == 0) {
-				msg = new Message(to, null);
-				String subject = tf_subject.getText();
-				if(subject != null && !"".equals(subject)) {
-					msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT).addText(subject);
-				}
-			} else {
-				msg = new Message(to, "chat");
-			}
+			msg = compileMessage(to);
 			
 			String body = tf_body.getText();
 			if(body == null) body = "";
 			msg.setBody(body);
             XMPPClient.getInstance().sendPacket(msg);
             user.addMessageToHistory(preferredResource,msg);
-            RosterScreen.closeAndOpenRoster(this);
+            UICanvas.getInstance().close(this);
 		} else if(cmd == cmd_cancel) {
-			RosterScreen.closeAndOpenRoster(this);
+			UICanvas.getInstance().close(this);
 		}
+	}
+
+	/**
+	 * @param to the desired jid
+	 * @return
+	 */
+	Message compileMessage(String to) {
+		Message msg;
+		if(cg_type.getSelectedIndex() == 0) {
+			msg = new Message(to, null);
+			String subject = tf_subject.getText();
+			if(subject != null && !"".equals(subject)) {
+				msg.addElement(Stanza.NS_JABBER_CLIENT, Message.SUBJECT).addText(subject);
+			}
+		} else {
+			msg = new Message(to, "chat");
+		}
+		return msg;
 	}
 
     /*

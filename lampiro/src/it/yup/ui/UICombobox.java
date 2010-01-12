@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICombobox.java 1601 2009-06-19 14:09:03Z luca $
+ * $Id: UICombobox.java 1909 2009-11-25 12:38:37Z luca $
 */
 
 /**
@@ -9,8 +9,7 @@
  */
 package it.yup.ui;
 
-import it.yup.util.ResourceIDs;
-import it.yup.util.ResourceManager;
+import it.yup.util.Utils;
 
 import java.util.Enumeration;
 import java.util.Vector;
@@ -24,6 +23,10 @@ import javax.microedition.lcdui.Graphics;
  * 
  */
 public class UICombobox extends UILabel {
+
+	public static String cancelString= "CANCEL";
+	
+	public static String selectString= "SELECT";
 
 	/**
 	 * @author luca
@@ -53,13 +56,9 @@ public class UICombobox extends UILabel {
 
 		private UIPanel mainPanel = new UIPanel(true, true);
 
-		private ResourceManager rm = ResourceManager.getManager("common", "en");
+		private UILabel selectLabel = new UILabel(UICombobox.selectString);
 
-		private UILabel selectLabel = new UILabel(rm.getString(
-				ResourceIDs.STR_SELECT).toUpperCase());
-
-		private UILabel cancelLabel = new UILabel(rm.getString(
-				ResourceIDs.STR_CANCEL).toUpperCase());
+		private UILabel cancelLabel = new UILabel(UICombobox.cancelString);
 
 		/**
 		 * 
@@ -128,14 +127,14 @@ public class UICombobox extends UILabel {
 									this.originalItems);
 						}
 						sel_pattern = sel_pattern
-								+ UIUtils.itu_keys[key_num][sel_key_offset];
+								+ Utils.itu_keys[key_num][sel_key_offset];
 					} else {
 						// shifted key
 						sel_key_offset += 1;
-						if (sel_key_offset >= UIUtils.itu_keys[key_num].length) sel_key_offset = 0;
+						if (sel_key_offset >= Utils.itu_keys[key_num].length) sel_key_offset = 0;
 						sel_pattern = sel_pattern.substring(0, sel_pattern
 								.length() - 1)
-								+ UIUtils.itu_keys[key_num][sel_key_offset];
+								+ Utils.itu_keys[key_num][sel_key_offset];
 					}
 					sel_last_ts = t;
 					updateFilter();
@@ -156,9 +155,8 @@ public class UICombobox extends UILabel {
 				if ((key >= 'A' && key <= 'Z') || (key >= 'a' && key <= 'z')
 						|| (key >= '0' && key <= '9')) {
 					if (sel_pattern.length() == 0) {
-						this.originalItems = new UILabel[this.getItemList()
-								.size()];
-						this.getItemList().copyInto(this.originalItems);
+						this.originalItems = new UILabel[this.getItems().size()];
+						this.getItems().copyInto(this.originalItems);
 					}
 					updateFilter();
 					return true;
@@ -194,7 +192,7 @@ public class UICombobox extends UILabel {
 						super.keyPressed(key);
 					} else {
 						if (UICombobox.this.multiChoice == false) {
-							Enumeration en = UIComboScreen.this.getItemList()
+							Enumeration en = UIComboScreen.this.getItems()
 									.elements();
 							while (en.hasMoreElements()) {
 								UILabel uil = (UILabel) en.nextElement();
@@ -212,23 +210,23 @@ public class UICombobox extends UILabel {
 						UICombobox.this.screen.itemAction(UICombobox.this);
 					}
 					UICombobox.this.setDirty(true);
-					UICombobox.this.askRepaint();
+					UIComboScreen.this.askRepaint();
 				}
 
 				return true;
 			} else {
 				boolean retVal = super.keyPressed(key);
-				if (UICombobox.this.multiChoice == false) {
-					for (int i = 0; i < itemList.size(); i++) {
-						UILabel uil = (UILabel) this.mainPanel.getItems()
-								.elementAt(i);
-						if (i != UIComboScreen.this.selectedIndex) {
-							uil.setWrappable(false, width);
-						} else {
-							uil.setWrappable(true, this.getWidth() - 10);
-						}
-					}
+				//				if (UICombobox.this.multiChoice == false) {
+				for (int i = 0; i < this.mainPanel.getItems().size(); i++) {
+					UILabel uil = (UILabel) this.mainPanel.getItems()
+							.elementAt(i);
+					uil.setWrappable(false, width);
 				}
+				Object selItem = this.mainPanel.getSelectedItem();
+				if (selItem instanceof UILabel) ((UILabel) selItem)
+						.setWrappable(true,
+								UICanvas.getInstance().getWidth() - 20);
+				//				}
 				this.askRepaint();
 				return retVal;
 			}
@@ -296,7 +294,7 @@ public class UICombobox extends UILabel {
 		//this.title.setBg_color(UIConfig.input_color);
 		this.title.setFg_color(UIConfig.fg_color);
 		this.title.setSelectedColor(UIConfig.bg_color);
-
+		this.title.setWrappable(true, UICanvas.getInstance().getWidth()-20);
 	}
 
 	public void setSelected(boolean _selected) {
@@ -316,14 +314,14 @@ public class UICombobox extends UILabel {
 	 * @see it.yup.ui.UIItem#paint(javax.microedition.lcdui.Graphics, int, int)
 	 */
 	protected void paint(Graphics g, int w, int h) {
+		Vector comboItems = this.comboScreen.mainPanel.getItems();
 		if (this.multiChoice == false) {
-			if (this.comboScreen.mainPanel.getItems().size() > 0) this.text = ((UILabel) this.comboScreen.mainPanel
-					.getItems().elementAt(this.selectedIndex)).getText();
+			if (comboItems.size() > 0 && this.selectedIndex >= 0) this.text = ((UILabel) comboItems
+					.elementAt(this.selectedIndex)).getText();
 		} else {
 			this.text = "";
-			if (this.comboScreen.mainPanel.getItems().size() > 0) {
-				Enumeration en = this.comboScreen.mainPanel.getItems()
-						.elements();
+			if (comboItems.size() > 0) {
+				Enumeration en = comboItems.elements();
 				while (en.hasMoreElements()) {
 					Object ithItem = en.nextElement();
 					if (ithItem instanceof UICheckbox) {
@@ -351,18 +349,19 @@ public class UICombobox extends UILabel {
 		super.paint(g, w - 6, superHeight);
 	}
 
-	public void append(String comboItem) {
+	public UILabel append(String comboItem) {
 
-		UIItem uimi = null;
+		UILabel uimi = null;
 		if (this.multiChoice == false) {
 			uimi = new UILabel(comboItem);
-			((UILabel) uimi).setWrappable(true,
-					this.comboScreen.getWidth() - 20);
+			((UILabel) uimi).setWrappable(true, UICanvas.getInstance()
+					.getWidth() - 20);
 		} else {
 			uimi = new UICheckbox(comboItem);
 		}
 		comboScreen.mainPanel.addItem(uimi);
 		uimi.setFocusable(true);
+		return uimi;
 	}
 
 	public void append(UILabel comboItem) {
@@ -374,8 +373,8 @@ public class UICombobox extends UILabel {
 	public void removeAt(int index) {
 		this.comboScreen.mainPanel.removeItemAt(index);
 	}
-	
-	public void removeAll(){
+
+	public void removeAll() {
 		this.comboScreen.mainPanel.removeAllItems();
 	}
 
@@ -392,6 +391,10 @@ public class UICombobox extends UILabel {
 	 * @return
 	 */
 	public void openMenu() {
+		if (comboScreen.mainPanel.getSelectedIndex() < 0
+				&& comboScreen.mainPanel.getItems().size() > 0) {
+			this.setSelectedIndex(0);
+		}
 		UICanvas.getInstance().open(comboScreen, true);
 	}
 
@@ -430,6 +433,13 @@ public class UICombobox extends UILabel {
 		return resString;
 	}
 
+	public String getSelectedString() {
+		int selIndex = this.getSelectedIndex();
+		String selString = ((UILabel) this.comboScreen.mainPanel.getItems()
+				.elementAt(selIndex)).getText();
+		return selString;
+	}
+
 	/**
 	 * Sets the slected index in the list
 	 * 
@@ -438,6 +448,13 @@ public class UICombobox extends UILabel {
 	 */
 	public void setSelectedIndex(int si) {
 		selectedIndex = si;
+		UIItem selItem = comboScreen.mainPanel.getSelectedItem();
+		if (selItem instanceof UILabel) ((UILabel) selItem).setWrappable(false,
+				-1);
+		comboScreen.mainPanel.setSelectedIndex(si);
+		selItem = comboScreen.mainPanel.getSelectedItem();
+		if (selItem instanceof UILabel) ((UILabel) selItem).setWrappable(true,
+				UICanvas.getInstance().getWidth() - 20);
 		dirty = true;
 	}
 
@@ -477,7 +494,7 @@ public class UICombobox extends UILabel {
 
 	public void setDirty(boolean dirty) {
 		super.setDirty(dirty);
-		if (comboScreen != null) this.comboScreen.setDirty(dirty);
+		//if (comboScreen != null) this.comboScreen.setDirty(dirty);
 	}
 
 	/**

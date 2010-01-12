@@ -1,20 +1,21 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AddContactScreen.java 1586 2009-06-17 12:26:55Z luca $
+ * $Id: AddContactScreen.java 1905 2009-11-11 14:56:07Z luca $
 */
 
 package lampiro.screens;
 
+import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICombobox;
 import it.yup.ui.UIConfig;
+import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
-import it.yup.ui.UIMenu;
+import it.yup.ui.UILayout;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
-import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
@@ -42,8 +43,66 @@ import javax.microedition.lcdui.TextField;
  */
 public class AddContactScreen extends UIScreen {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
+
+	private class ContactListener extends IQResultListener {
+
+		public static final int DESC_TYPE = 0;
+		public static final int REGISTER_TYPE = 1;
+
+		public final int LISTENER_TYPE;
+
+		public ContactListener(int type) {
+			this.LISTENER_TYPE = type;
+		}
+
+		public void handleError(Element e) {
+		}
+
+		public void handleResult(Element e) {
+			switch (LISTENER_TYPE) {
+				case DESC_TYPE:
+					updateDesc(e);
+					break;
+
+				case REGISTER_TYPE:
+					addContact(e);
+					break;
+			}
+		}
+
+		private void addContact(Element e) {
+			Element query = e.getChildByName(XMPPClient.JABBER_IQ_GATEWAY,
+					Iq.QUERY);
+			// some perverted gateway answers the wrong way !!!
+			Element q = query.getChildByName(XMPPClient.JABBER_IQ_GATEWAY,
+					"prompt");
+			if (q == null) {
+				q = query.getChildByName(XMPPClient.JABBER_IQ_GATEWAY, "jid");
+			}
+			String jid = q.getText();
+			String name = t_name.getText();
+			String group = "";//t_group.getText();
+			AddContactScreen.this.registerContact(jid, name, group);
+		}
+
+		private void updateDesc(Element e) {
+			Element query = e.getChildByName(XMPPClient.JABBER_IQ_GATEWAY,
+					Iq.QUERY);
+			Element desc = query.getChildByName(XMPPClient.JABBER_IQ_GATEWAY,
+					"desc");
+			try {
+				UICanvas.lock();
+				t_help.setText(desc.getText());
+				AddContactScreen.this.askRepaint();
+			} catch (Exception ex) {
+				// TODO: handle exception
+			} finally {
+				UICanvas.unlock();
+			}
+		}
+	}
+
 	/*
 	 * the found gateways
 	 */
@@ -56,12 +115,14 @@ public class AddContactScreen extends UIScreen {
 	private UITextField t_error;
 	private UICombobox t_type;
 
-	private UILabel cmd_save = new UILabel(rm.getString(ResourceIDs.STR_SAVE)
-			.toUpperCase());
-	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
-			.toUpperCase());
+	private UIButton cmd_save = new UIButton(rm.getString(ResourceIDs.STR_SAVE));
+	private UIButton cmd_exit = new UIButton(rm
+			.getString(ResourceIDs.STR_CANCEL));
 
 	private XMPPClient xmppClient = XMPPClient.getInstance();
+
+	/** false when changin the nick **/
+	private boolean adding = true;
 
 	public AddContactScreen() {
 		this.setFreezed(true);
@@ -98,7 +159,6 @@ public class AddContactScreen extends UIScreen {
 		append(t_jid);
 		append(t_name);
 		//append(t_group);
-		
 
 		/*
 		 * XXX: useless? // I add a list of groups only if there are groups
@@ -107,10 +167,13 @@ public class AddContactScreen extends UIScreen {
 		 * ch_grps.append(g.name, null); } if(ch_grps.size() > 0) {
 		 * append(ch_grps); }
 		 */
-		setMenu(UIUtils.easyMenu("", -1, -1, -1, cmd_save));
-		getMenu().append(cmd_exit);
+
+		UIHLayout buttonLayout = new UIHLayout(2);
+		buttonLayout.setGroup(false);
+		buttonLayout.insert(cmd_exit, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		buttonLayout.insert(cmd_save, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		append(buttonLayout);
 		this.setFreezed(false);
-		this.askRepaint();
 		getGateways();
 	}
 
@@ -151,19 +214,8 @@ public class AddContactScreen extends UIScreen {
 	public void itemAction(UIItem cmd) {
 		if (cmd == t_type) {
 			if (t_type.getSelectedIndex() > 0) {
-				IQResultListener gjh = new IQResultListener() {
-					public void handleError(Element e) {
-					}
-
-					public void handleResult(Element e) {
-						Element query = e.getChildByName(
-								XMPPClient.JABBER_IQ_GATEWAY, Iq.QUERY);
-						Element desc = query.getChildByName(
-								XMPPClient.JABBER_IQ_GATEWAY, "desc");
-						t_help.setText(desc.getText());
-						AddContactScreen.this.askRepaint();
-					}
-				};
+				IQResultListener gjh = new ContactListener(
+						ContactListener.DESC_TYPE);
 				String to = (String) this.gateways.elementAt(this.t_type
 						.getSelectedIndex() - 1);
 				Iq iq = new Iq(to, Iq.T_GET);
@@ -173,38 +225,15 @@ public class AddContactScreen extends UIScreen {
 				t_help.setText(rm.getString(ResourceIDs.STR_ADDRESS));
 				this.askRepaint();
 			}
-		}
-	}
-
-	public void menuAction(UIMenu menu, UIItem cmd) {
-		if (cmd == cmd_save) {
+		} else if (cmd == cmd_save) {
 			if (this.t_type.getSelectedIndex() == 0) {
 				String jid = t_jid.getText();
 				String name = t_name.getText();
 				String group = "";//t_group.getText();
 				registerContact(jid, name, group);
 			} else {
-				IQResultListener gjh = new IQResultListener() {
-					public void handleError(Element e) {
-					}
-
-					public void handleResult(Element e) {
-						Element query = e.getChildByName(
-								XMPPClient.JABBER_IQ_GATEWAY, Iq.QUERY);
-						// some perverted gateway answers the wrong way !!!
-						Element q = query.getChildByName(
-								XMPPClient.JABBER_IQ_GATEWAY, "prompt");
-						if (q == null) {
-							q = query.getChildByName(
-									XMPPClient.JABBER_IQ_GATEWAY, "jid");
-						}
-						String jid = q.getText();
-						String name = t_name.getText();
-						String group = "";//t_group.getText();
-						AddContactScreen.this.registerContact(jid, name, group);
-
-					}
-				};
+				IQResultListener gjh = new ContactListener(
+						ContactListener.REGISTER_TYPE);
 				String to = (String) this.gateways.elementAt(this.t_type
 						.getSelectedIndex() - 1);
 				Iq iq = new Iq(to, Iq.T_SET);
@@ -218,7 +247,7 @@ public class AddContactScreen extends UIScreen {
 			UICanvas.getInstance().show(RosterScreen.getInstance());
 			UICanvas.getInstance().close(this);
 		} else if (cmd == cmd_exit) {
-			RosterScreen.closeAndOpenRoster(this);
+			UICanvas.getInstance().close(this);
 		}
 	}
 
@@ -234,13 +263,42 @@ public class AddContactScreen extends UIScreen {
 			append(t_error);
 			return;
 		}
-
-		String groups[] = null;
-		if (group != null && group.length() > 0) {
-			groups = new String[] { group };
+		if (adding) {
+			String groups[] = null;
+			if (group != null && group.length() > 0) {
+				groups = new String[] { group };
+			}
+			c = new Contact(jid, name, null, groups);
+			RosterScreen.getInstance().subscribeContact(c, false);
+		} else {
+			if (name != null && name.length() > 0) {
+				c = xmppClient.getRoster().getContactByJid(jid);
+				Iq iq = new Iq(null, Iq.T_SET);
+				Element query = iq
+						.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
+				Element item = query.addElement(null, XMPPClient.ITEM);
+				item.setAttribute("jid", jid);
+				item.setAttribute("name", name);
+				for (int i = 0; i < c.getGroups().length; i++) {
+					String gString = c.getGroups()[i];
+					item.addElement(null, "group").addText(gString);
+				}
+				xmppClient.sendIQ(iq, null);
+			}
 		}
-		c = new Contact(jid, name, null, groups);
+	}
 
-		xmppClient.getRoster().subscribeContact(c, false);
+	public void changeNickSetup(String from) {
+		adding = false;
+		this.setTitle(rm.getString(ResourceIDs.STR_CHANGE_NICK));
+		this.t_help.setText(rm.getString(ResourceIDs.STR_JABBER_ID));
+		this.remove(this.t_type);
+		Contact c = xmppClient.getRoster().getContactByJid(from);
+		UITextField newt_jid = new UITextField("", c.jid, 64,
+				TextField.EMAILADDR | TextField.UNEDITABLE);
+		this.replace(t_jid, newt_jid);
+		this.t_jid = newt_jid;
+		if (c.name != null) this.t_name.setText(c.name);
+		this.askRepaint();
 	}
 }

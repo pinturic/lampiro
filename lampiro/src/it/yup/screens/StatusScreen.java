@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: StatusScreen.java 1028 2008-12-09 15:44:50Z luca $
+ * $Id: StatusScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 package it.yup.screens;
@@ -33,8 +33,7 @@ import javax.microedition.lcdui.TextField;
  */
 public class StatusScreen extends Form implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	// the possible status 
 	private ChoiceGroup ch_status;
@@ -50,7 +49,7 @@ public class StatusScreen extends Form implements CommandListener {
 		XMPPClient client = XMPPClient.getInstance();
 		ch_status = new ChoiceGroup(
 				rm.getString(ResourceIDs.STR_CHOOSE_STATUS), Choice.EXCLUSIVE);
-		Presence p = client.getMyContact().getPresence();
+		Presence p = client.getMyContact().getPresence(null);
 
 		String mapping[] = Contact.availability_mapping;
 		for (int i = 0; i < mapping.length; i++) {

@@ -1,13 +1,16 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 1578 2009-06-16 11:07:59Z luca $
+ * $Id: DataFormScreen.java 1905 2009-11-11 14:56:07Z luca $
 */
 
 /**
  * 
  */
 package lampiro.screens;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
@@ -26,15 +29,30 @@ import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.util.Utils;
+import it.yup.xml.Element;
+import it.yup.xmpp.Config;
 import it.yup.xmpp.DataFormListener;
+import it.yup.xmpp.IQResultListener;
+import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.packets.DataForm;
-
-import javax.microedition.lcdui.Canvas;
+import it.yup.xmpp.packets.Iq;
+import it.yup.xmpp.packets.DataForm.Field;
+import javax.microedition.io.Connector;
+import javax.microedition.io.ContentConnection;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
+import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
-
+import org.bouncycastle.util.encoders.Base64;
 import lampiro.screens.RosterScreen.WaitScreen;
+
+// #mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+// #enddebug
+
 
 /**
  * <p>
@@ -89,8 +107,7 @@ import lampiro.screens.RosterScreen.WaitScreen;
  */
 public class DataFormScreen extends UIScreen implements WaitScreen {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	/** The handled data form */
 	private DataForm df;
@@ -101,14 +118,12 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	/** the available actions */
 	private int actions;
 
-	private UILabel cmd_submit = new UIButton(rm
-			.getString(ResourceIDs.STR_SUBMIT));
-	private UILabel cmd_cancel = new UIButton(rm
-			.getString(ResourceIDs.STR_CANCEL));
+	private UIButton cmd_submit;
+	private UIButton cmd_cancel;
 	private UILabel menu_cancel = new UILabel(rm.getString(
 			ResourceIDs.STR_CLOSE).toUpperCase());
-	private UILabel cmd_prev = new UIButton(rm.getString(ResourceIDs.STR_PREV));
-	private UILabel cmd_next = new UIButton(rm.getString(ResourceIDs.STR_NEXT));
+	private UIButton cmd_prev;
+	private UIButton cmd_next;
 	private UILabel cmd_delay = new UILabel(rm
 			.getString(ResourceIDs.STR_FILLLATER));
 
@@ -126,8 +141,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	/** the item array created to represent the form */
 	private UIItem[] items;
 
-	UIGauge progress_gauge = new UIGauge(rm.getString(ResourceIDs.STR_WAIT),
-			false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING);
+	UIGauge progress_gauge = null;
 
 	/*
 	 * To construct the "Expand" support
@@ -136,9 +150,49 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	UILabel zoomLabel = new UILabel("EXPAND");
 
 	private UIHLayout mainLayout = new UIHLayout(3);
-	private UIPanel mainPanel = new UIPanel(true, false);
+	UIPanel mainPanel = new UIPanel(true, false);
 
-	public DataFormScreen(DataForm df, DataFormListener dfl) {
+	public class CidListener extends IQResultListener {
+
+		private int mediaType;
+		private UILabel label;
+		private Field fld;
+
+		public CidListener(Field fld, int mediaType, UILabel label) {
+			this.mediaType = mediaType;
+			this.label = label;
+			this.fld = fld;
+		}
+
+		public void handleError(Element e) {
+			// #mdebug
+//@			Logger.log("In retrieving cid");
+			// #enddebug
+		}
+
+		public void handleResult(Element e) {
+			Element data = e.getChildByName(null, XMPPClient.DATA);
+			String text = data.getText();
+			byte[] decodedData = Base64.decode(text);
+
+			UICanvas.lock();
+			try {
+				showMedia(fld, decodedData, mediaType, this.label);
+			} catch (Exception ex) {
+				// #mdebug
+//@				Logger.log("In retrieving media2");
+//@				System.out.println(ex.getMessage());
+//@				ex.printStackTrace();
+				// #enddebug
+			} finally {
+				UICanvas.unlock();
+			}
+
+		}
+
+	}
+
+	public DataFormScreen(DataForm df, DataFormListener dfl, int cmds) {
 		setTitle(rm.getString(ResourceIDs.STR_FILL_FORM));
 
 		UISeparator separator = new UISeparator(0);
@@ -173,7 +227,10 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		zoomSubmenu = UIUtils.easyMenu("", 10, 10, this.getWidth() - 30,
 				zoomLabel);
 		zoomLabel.setAnchorPoint(Graphics.HCENTER);
-		createControls();
+		if (cmds > 0) {
+			this.setActions(cmds);
+		}
+		this.createControls();
 	}
 
 	/**
@@ -182,11 +239,10 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	 * 
 	 * @param cmds
 	 */
-	public void setActions(int _ac) {
+	private void setActions(int _ac) {
 		/* submit and cancel are always shown */
-		actions = _ac | DataFormListener.CMD_SUBMIT
+		actions = _ac /*| DataFormListener.CMD_SUBMIT*/
 				| DataFormListener.CMD_CANCEL;
-		createControls();
 	}
 
 	/**
@@ -268,13 +324,24 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				UITextField tf = new UITextField(title, fld.dValue, 1024, flags);
 				mainPanel.addItem(tf);
 				if (fld.type == DataForm.FLT_TXTMULTI
-						|| fld.type == DataForm.FLT_FIXED) {
+						|| fld.type == DataForm.FLT_FIXED
+						|| fld.type == DataForm.FLT_TXTSINGLE) {
 					if (fld.type == DataForm.FLT_TXTMULTI) {
 						tf.setMinLines(4);
 					}
 					tf.setWrappable(true);
 				}
 				items[i] = tf;
+
+				// get the images for media types
+				if (fld.media != null) {
+					UILabel objLabel = new UILabel(UICanvas
+							.getUIImage("/icons/warning.png"));
+					objLabel.setAnchorPoint(Graphics.HCENTER);
+					mainPanel.addItem(objLabel);
+					this.retrieveMedia(fld, objLabel);
+				}
+
 				continue;
 			}
 		}
@@ -286,7 +353,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				}
 			}
 			si_instructions.setText(df.instructions);
-			if (instruction_menu.getItemList().contains(si_instructions) == false) instruction_menu
+			if (instruction_menu.getItems().contains(si_instructions) == false) instruction_menu
 					.append(si_instructions);
 			si_instructions
 					.setWrappable(true, instruction_menu.getWidth() - 10);
@@ -302,68 +369,152 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 
 		/* Buttons: should be placed in-line */
 		/* show actions. order is CANCEL, [PREV], [NEXT], SUBMIT */
+		cmd_submit = new UIButton(rm.getString(ResourceIDs.STR_SUBMIT));
+		cmd_cancel = new UIButton(rm.getString(ResourceIDs.STR_CANCEL));
+		cmd_prev = new UIButton(rm.getString(ResourceIDs.STR_PREV));
+		cmd_next = new UIButton(rm.getString(ResourceIDs.STR_NEXT));
 
-		UILabel dummyLabel = new UILabel("");
-		UIItem insertItem = null;
 		UIHLayout uhl1 = new UIHLayout(2);
-		UIHLayout uhl2 = new UIHLayout(2);
+		UIHLayout uhl2 = UIUtils.easyCenterLayout(cmd_cancel, 150);
 		boolean addUhl1 = false;
-		boolean addUhl2 = false;
-
 		uhl1.setGroup(false);
-		uhl2.setGroup(false);
 
-		if ((actions & DataFormListener.CMD_CANCEL) != 0) {
-			insertItem = cmd_cancel;
-			addUhl2 = true;
-			if (df.instructions != null) {
-				insertItem.setSubmenu(show_instruction);
-			}
-		} else {
-			insertItem = dummyLabel;
+		addUhl1 |= insertCommand(DataFormListener.CMD_NEXT, cmd_next, uhl1, 1);
+		if (addUhl1 == false) {
+			addUhl1 |= insertCommand(DataFormListener.CMD_SUBMIT, cmd_submit,
+					uhl1, 1);
 		}
-		uhl2.insert(insertItem, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
-
-		if ((actions & DataFormListener.CMD_PREV) != 0) {
-			insertItem = cmd_prev;
-			addUhl1 = true;
-			if (df.instructions != null) {
-				insertItem.setSubmenu(show_instruction);
-			}
-		} else {
-			insertItem = dummyLabel;
-		}
-		uhl1.insert(insertItem, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
-
-		if ((actions & DataFormListener.CMD_NEXT) != 0) {
-			insertItem = cmd_next;
-			addUhl1 = true;
-			if (df.instructions != null) {
-				insertItem.setSubmenu(show_instruction);
-			}
-		} else {
-			insertItem = dummyLabel;
-		}
-		uhl1.insert(insertItem, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
-
-		if ((actions & DataFormListener.CMD_SUBMIT) != 0) {
-			insertItem = cmd_submit;
-			addUhl2 = true;
-			if (df.instructions != null) {
-				insertItem.setSubmenu(show_instruction);
-			}
-		} else {
-			insertItem = dummyLabel;
-		}
-		uhl2.insert(insertItem, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		addUhl1 |= insertCommand(DataFormListener.CMD_PREV, cmd_prev, uhl1, 0);
 
 		if (addUhl1) mainPanel.addItem(uhl1);
-		if (addUhl2) mainPanel.addItem(uhl2);
+		mainPanel.addItem(uhl2);
 
-		this.setSelectedIndex(0);
+		// it is nice to have the next item selected by default
+		//		if (uhl1.contains(cmd_next)) uhl1.setSelectedItem(cmd_next);
+		//		else if (uhl1.contains(cmd_submit)) uhl1.setSelectedItem(cmd_submit);
+		//		else if (uhl1.contains(cmd_prev)) uhl1.setSelectedItem(cmd_prev);
+
+		//this.setSelectedIndex(0);
 		this.setFreezed(false);
 		this.askRepaint();
+	}
 
+	private void retrieveMedia(Field fld, UILabel label) {
+		// get the img data
+		int mediaType = Config.IMG_TYPE;
+		String cidUri = null;
+		String httpUri = null;
+
+		for (int i = 0; i < fld.media.urisTypes.length; i++) {
+			Object[] uriType = (Object[]) fld.media.urisTypes[i];
+			String uri = (String) uriType[0];
+			if (uri.indexOf("cid:") == 0) {
+				cidUri = uri;
+				mediaType = ((Integer) uriType[1]).intValue();
+				break;
+			} else if (uri.indexOf("http://") == 0
+					|| uri.indexOf("https://") == 0) {
+				httpUri = uri;
+				mediaType = ((Integer) uriType[1]).intValue();
+			}
+		}
+
+		if (cidUri != null) cidRetrieve(fld, cidUri, mediaType, label);
+		else if (httpUri != null) httpRetrieve(fld, httpUri, mediaType, label);
+	}
+
+	private void cidRetrieve(Field fld, String cidUri, int mediaType,
+			UILabel label) {
+		Iq iq = new Iq(this.dfl.getFrom(), Iq.T_GET);
+		Element data = new Element(XMPPClient.NS_BOB, XMPPClient.DATA);
+		iq.addElement(data);
+		String uri = Utils.replace(cidUri, "cid:", "");
+		data.setAttribute("cid", uri);
+		CidListener cid = new CidListener(fld, mediaType, label);
+		XMPPClient.getInstance().sendIQ(iq, cid);
+	}
+
+	private void httpRetrieve(Field fld, String httpUri, int mediaType,
+			UILabel label) {
+		ContentConnection c = null;
+		DataInputStream dis = null;
+		byte[] data = null;
+		try {
+			c = (ContentConnection) Connector.open(httpUri);
+			int len = (int) c.getLength();
+			dis = c.openDataInputStream();
+			if (len > 0) {
+				data = new byte[len];
+				dis.readFully(data);
+			} else {
+				int ch;
+				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				while ((ch = dis.read()) != -1) {
+					bos.write(ch);
+				}
+				data = bos.toByteArray();
+			}
+		} catch (Exception e) {
+			// #mdebug
+//@			Logger.log("In retrieving media2");
+//@			System.out.println(e.getMessage());
+//@			e.printStackTrace();
+			// #enddebug
+		} finally {
+			try {
+				if (dis != null) dis.close();
+				if (c != null) c.close();
+			} catch (Exception e) {
+				// #mdebug
+//@				Logger.log("In retrieving media2");
+//@				System.out.println(e.getMessage());
+//@				e.printStackTrace();
+				// #enddebug
+			}
+		}
+		if (data != null) showMedia(fld, data, mediaType, label);
+	}
+
+	private void showMedia(Field fld, byte[] data, int mediaType, UILabel label) {
+		Image img = null;
+		if (mediaType == Config.IMG_TYPE) {
+			img = Image.createImage(data, 0, data.length);
+		} else if (mediaType == Config.AUDIO_TYPE) {
+			img = UICanvas.getUIImage("/icons/mic.png");
+		}
+
+		// resize media
+		int mWidth = fld.media.width;
+		int mHeight = fld.media.height;
+		if (mWidth > 0 && mHeight > 0 && mWidth != img.getWidth()
+				&& mHeight != img.getHeight()) {
+			img = UIUtils.imageResize(img, mWidth, mHeight, false);
+		}
+
+		label.setImg(img);
+		this.askRepaint();
+	}
+
+	private boolean insertCommand(int cmd_code, UIButton item, UIHLayout uhl,
+			int position) {
+		UIButton itemToInsert;
+		boolean retVal = false;
+
+		if ((actions & cmd_code) != 0) {
+			itemToInsert = item;
+			retVal = true;
+			if (df.instructions != null) {
+				itemToInsert.setSubmenu(show_instruction);
+			}
+		} else {
+			itemToInsert = item;
+			retVal = false;
+			itemToInsert.setFocusable(false);
+			itemToInsert.setFg_color(0xCCCCCC);
+			itemToInsert.setButtonColor(0xAAAAAA);
+		}
+		uhl.insert(itemToInsert, position, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		return retVal;
 	}
 
 	private void addDesc() {
@@ -379,31 +530,30 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		super.paint(g, w, h);
 
 		// longest textfield handling 
-		UIItem panelItem = mainPanel.getSelectedItem();
-		if (panelItem instanceof UITextField) {
-			Graphics tg = getGraphics();
-			int labelHeight = panelItem.getHeight(tg);
-			int availableHeight = UICanvas.getInstance().getClipHeight()
-					- this.headerLayout.getHeight(tg)
-					- this.footer.getHeight(tg);
-			UIMenu itemSubMenu = panelItem.getSubmenu();
-			if (labelHeight > availableHeight
-					&& (itemSubMenu == null || itemSubMenu != zoomSubmenu)) {
-				panelItem.setSubmenu(zoomSubmenu);
-				// always reset these values when asking a "repaint" within a "paint"
-				UICanvas ci = UICanvas.getInstance();
-				g.translate(-g.getTranslateX(), -g.getTranslateY());
-				g.setClip(0, 0, ci.getWidth(), ci.getHeight() + 1);
-				this.askRepaint();
-			}
-		}
+		//		UIItem panelItem = mainPanel.getSelectedItem();
+		//		if (panelItem instanceof UITextField) {
+		//			Graphics tg = getGraphics();
+		//			int labelHeight = panelItem.getHeight(tg);
+		//			int availableHeight = UICanvas.getInstance().getClipHeight()
+		//					- this.headerLayout.getHeight(tg)
+		//					- this.footer.getHeight(tg);
+		//			UIMenu itemSubMenu = panelItem.getSubmenu();
+		//			if (labelHeight > availableHeight
+		//					&& (itemSubMenu == null || itemSubMenu != zoomSubmenu)) {
+		//				panelItem.setSubmenu(zoomSubmenu);
+		//				// always reset these values when asking a "repaint" within a "paint"
+		//				UICanvas ci = UICanvas.getInstance();
+		//				g.translate(-g.getTranslateX(), -g.getTranslateY());
+		//				g.setClip(0, 0, ci.getWidth(), ci.getHeight() + 1);
+		//				this.askRepaint();
+		//			}
+		//		}
 	}
 
 	/**
 	 * Command handler
 	 */
 	public void menuAction(UIMenu menu, UIItem cmd) {
-
 		int comm = -1;
 		boolean setWaiting = false;
 
@@ -425,22 +575,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 			UITextField selLabel = (UITextField) this.getSelectedItem();
 			selLabel.handleScreen();
 		} else if (cmd == show_desc_label) {
-			int index = this.getSelectedIndex();
-			String desc = ((DataForm.Field) this.df.fields.elementAt(index)).desc;
-			UITextField descField = new UITextField("", desc, desc.length(),
-					TextField.UNEDITABLE);
-			descField.setWrappable(true);
-			UIMenu descriptionMenu = UIUtils.easyMenu(rm
-					.getString(ResourceIDs.STR_DESC), 10, 20,
-					this.getWidth() - 20, descField);
-			//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
-
-			descriptionMenu.cancelMenuString = "";
-			descriptionMenu.selectMenuString = rm.getString(
-					ResourceIDs.STR_CLOSE).toUpperCase();
-			descriptionMenu.setSelectedIndex(1);
-			this.addPopup(descriptionMenu);
-			descField.expand();
+			openDescription(this, df);
 		} else if (cmd == show_instruction_label) {
 			/* show/hide instructions */
 			this.addPopup(this.instruction_menu);
@@ -453,11 +588,16 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		}
 
 		fillForm();
-		// if the dataform will have an answer, e.g. an IQ contained dataform 
+		// if the dataform will have an answer, e.g. an IQ contained dataform
+		// #ifndef BLUENDO_SECURE
 		setWaiting &= dfl.execute(comm);
+		// #endif
+		RosterScreen.getInstance()._handleTask(dfl);
 		// #ifdef UI
 		if (setWaiting == true) {
 			mainPanel.removeAllItems();
+			progress_gauge = new UIGauge(rm.getString(ResourceIDs.STR_WAIT),
+					false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING);
 			mainPanel.addItem(progress_gauge);
 			progress_gauge.start();
 			RosterScreen.getInstance().setWaitingDF(this);
@@ -468,25 +608,32 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		// #endif
 	}
 
+	/**
+	 * 
+	 */
+	public static void openDescription(UIScreen dataScreen, DataForm df) {
+		int index = dataScreen.getSelectedIndex();
+		String desc = ((DataForm.Field) df.fields.elementAt(index)).desc;
+		UITextField descField = new UITextField("", desc, desc.length(),
+				TextField.UNEDITABLE);
+		descField.setWrappable(true);
+		UIMenu descriptionMenu = UIUtils.easyMenu(rm
+				.getString(ResourceIDs.STR_DESC), 10, 20,
+				dataScreen.getWidth() - 20, descField);
+		//descPanel.setMaxHeight(UICanvas.getInstance().getClipHeight() / 2);
+
+		descriptionMenu.cancelMenuString = "";
+		descriptionMenu.selectMenuString = rm.getString(ResourceIDs.STR_CLOSE)
+				.toUpperCase();
+		descriptionMenu.setSelectedIndex(1);
+		dataScreen.addPopup(descriptionMenu);
+		descField.expand();
+	}
+
 	public boolean keyPressed(int kc) {
 		if (super.keyPressed(kc)) return true;
 
-		if (this.popupList.size() == 0
-				&& this.getMenu().isOpenedState() == false) {
-			int ga = UICanvas.getInstance().getGameAction(kc);
-
-			switch (ga) {
-				case Canvas.RIGHT: {
-					RosterScreen.showNextScreen(this);
-					return true;
-				}
-				case Canvas.LEFT: {
-					RosterScreen.showPreviousScreen(this);
-					return true;
-				}
-			}
-		}
-		return false;
+		return RosterScreen.makeRoll(kc, this);
 	}
 
 	/**
@@ -553,7 +700,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	}
 
 	public void stopWaiting() {
-		progress_gauge.cancel();
+		if (progress_gauge != null) progress_gauge.cancel();
 		UICanvas.getInstance().close(this);
 	}
 }

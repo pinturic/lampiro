@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1598 2009-06-19 12:59:47Z luca $
+ * $Id: ResourceIDs.java 1905 2009-11-11 14:56:07Z luca $
 */
 
 /**
@@ -83,6 +83,13 @@ public class ResourceIDs {
 	public static final int STR_DECLINED = 69;
 	public static final int STR_WIZARD_GATEWAYS = 70;
 	public static final int STR_KEY_CONFIGURATION = 71;
+	public static final int STR_CLOSE_APPLICATION = 72;
+	public static final int STR_OLD_MESSAGE = 73;
+	public static final int STR_LOW_PRIORITY = 74;
+	public static final int STR_PAUSE_APP = 75;
+	public static final int STR_NEWS = 76;
+	public static final int STR_SERVICES = 77;
+	public static final int STR_CAPTCHA = 78;
 
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;
@@ -95,6 +102,8 @@ public class ResourceIDs {
 	public static final int STR_FORWARD = 108;
 	public static final int STR_TO = 109;
 	public static final int STR_FORWARDED_TEXT = 110;
+	public static final int STR_PARTICIPANTS = 111;
+	public static final int STR_DISPLAYED_NAME = 112;
 
 	public static final int STR_JABBER_ID = 200;
 	public static final int STR_EMAIL_ADDRESS = 202;
@@ -145,7 +154,26 @@ public class ResourceIDs {
 	public static final int STR_RESET_DATA = 247;
 	public static final int STR_CLOSE_MUC = 248;
 	public static final int STR_ROOM_NAME = 249;
-
+	public static final int STR_ENTER_MUC = 250;
+	public static final int STR_PERSISTENT = 251;
+	public static final int STR_AUTOJOIN_YES = 252;
+	public static final int STR_AUTOJOIN_NO = 253;
+	public static final int STR_CREATE_GROUP_CHAT = 254;
+	public static final int STR_AUTOJOIN_LAMPIRO = 255;
+	public static final int STR_AUTOJOIN_OC = 256;
+	public static final int STR_AUTOJOIN = 257;
+	public static final int STR_INVITATION_SENT = 258;
+	public static final int STR_CHANGE_NICK = 259;
+	
+	public static final int STR_COMMAND_INFO = 260;
+	public static final int STR_DATA = 261;
+	public static final int STR_CONNECTION = 262;
+	public static final int STR_DATA_SUBMITTED = 263;
+	public static final int STR_COMMAND_CANCELING = 264;
+	public static final int STR_COMMAND_CANCELED = 265;
+	public static final int STR_TASK_FINISHED = 266;
+	public static final int STR_TASK_ERROR = 267;
+	
 	public static final int STR_MESSAGE_TO = 300;
 	public static final int STR_FILL_FORM = 500;
 	public static final int STR_SEND_MESSAGE = 700;
@@ -197,7 +225,16 @@ public class ResourceIDs {
 	public static final int STR_SEND_GRP_MSG = 747;
 	public static final int STR_SIZE = 748;
 	public static final int STR_CAPTURE_CAPTION = 749;
-	public static final int STR_SCARY_GMAIL = 750;
+	public static final int STR_RESEND_AUTH = 751;
+	public static final int STR_REREQUEST_AUTH = 752;
+	public static final int STR_EMPTY_ALBUM = 753;
+	public static final int STR_MANAGE_GC = 754;
+	public static final int STR_SCARY_MUC = 755;
+	public static final int STR_NETWORKS = 756;
+	public static final int STR_LOG = 757;
+	public static final int STR_REMOVE_NETWORK = 758;
+	public static final int STR_ACTIVE_SESSIONS = 759;
+	public static final int STR_CHG_GROUP_NAME = 760;
 
 	public static final int STR_SET_STATUS = 800;
 	public static final int STR_CHOOSE_STATUS = 801;
@@ -217,11 +254,15 @@ public class ResourceIDs {
 	public static final int STR_FT_NOT = 909;
 	public static final int STR_FT_RECEIVER = 910;
 	public static final int STR_UPLOAD_TEXT = 911;
+	public static final int STR_REJECT = 912;
 
 	public static final int STR_CMDSCREEN_TITLE = 1001;
 	public static final int STR_EXECUTE = 1002;
 	public static final int STR_TASKHISTORY_TITLE = 1003;
 	public static final int STR_NO_COMMAND = 1004;
+	public static final int STR_AVAILABLE_COMMANDS = 1005;
+	
+	public static final int STR_COMMAND_ERROR = 1101;
 
 	public static final int STR_OPTIONS_SETUP = 1200;
 	public static final int STR_WHEN_NEW_MESSAGES = 1201;
@@ -252,6 +293,25 @@ public class ResourceIDs {
 	public static final int STR_CAMERA_HIGH = 1226;
 	public static final int STR_CAMERA_HUGE = 1227;
 	public static final int STR_CAMERA_ERROR = 1228;
+
+	public static final int STR_UNREAD_NEWS = 1300;
+	public static final int STR_NEWS_SIZE = 1301;
+	public static final int STR_MARK_UNREAD = 1302;
+	public static final int STR_MSG_FORWARDED = 1303;
+	public static final int STR_SHOW_ALL = 1304;
+	public static final int STR_SHOW_UNREAD = 1305;
+	public static final int STR_MARK_ALL = 1306;
+	public static final int STR_REMOVE_FEED = 1307;
+	public static final int STR_TO_LOAD = 1308;
+	public static final int STR_SYNC = 1309;
+	public static final int STR_SYNC_ASKED = 1310;
+	public static final int STR_SYNC_ALL = 1311;
+	public static final int STR_EMPTY_NEWS = 1312;
+	public static final int STR_ONLINE_SYNC_ALL = 1313;
+	public static final int STR_STOP_SYNC_ALL = 1314;
+	public static final int STR_SYNC_STATUS = 1315;
+	
+	
 
 
 	/* uninstantiable */
