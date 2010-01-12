@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BaseChannel.java 1577 2009-06-15 14:38:27Z luca $
+ * $Id: BaseChannel.java 1907 2009-11-12 17:11:10Z luca $
 */
 
 package it.yup.transport;
@@ -9,19 +9,12 @@ package it.yup.transport;
 // #debug
 //@import it.yup.util.Logger;
 
-import java.io.IOException;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Vector;
-
-//#ifdef TLS
-//@import org.bouncycastle.crypto.tls.TlsOuputStream;
-//#endif
-
-// #ifdef COMPRESSION
-//@import com.jcraft.jzlib.ZOutputStream;
-//@
-// #endif
+import it.yup.util.CountInputStream;
+import it.yup.util.CountOutputStream;
 
 public abstract class BaseChannel {
 
@@ -30,6 +23,12 @@ public abstract class BaseChannel {
 
 	/** The inputStream form the server. */
 	protected InputStream inputStream = null;
+
+	/** Equivalent to outputStream before TLS OR COMPRESSION promotion */
+	public static CountOutputStream countOutputStream = null;
+
+	/** Equivalent to inputStream before TLS OR COMPRESSION promotion */
+	public static CountInputStream countInputStream = null;
 
 	/** Indicating the network transport that implements this BaseHTTPConnection. Derived classes muts set this*/
 	public String transportType = null;
@@ -40,14 +39,14 @@ public abstract class BaseChannel {
 	/** The sender thread */
 	protected Sender sender = null;
 
-	/*
-	 * The number of sent bytes over the socket
-	 */
-	public static int bytes_sent = 0;
-	/*
-	 * The number of received bytes over the socket
-	 */
-	public static int bytes_received = 0;
+//	/*
+//	 * The number of sent bytes over the socket
+//	 */
+//	public static int bytes_sent = 0;
+//	/*
+//	 * The number of received bytes over the socket
+//	 */
+//	public static int bytes_received = 0;
 
 	/*
 	 * A flag used to enable or disable compression
@@ -117,40 +116,19 @@ public abstract class BaseChannel {
 					// #ifndef BXMPP					
 					channel.outputStream.write(pkt);
 					channel.outputStream.flush();
-					// #ifdef COMPRESSION
-//@					if (channel.outputStream instanceof ZOutputStream) {
-//@						BaseChannel.bytes_sent = (int) ((ZOutputStream) channel.outputStream)
-//@								.getTotalOut();
-//@					}
-					// #ifndef TLS
-//@					else {
-//@						BaseChannel.bytes_sent += pkt.length;
-//@					}
 					// #endif
-// #ifdef TLS
-					//@					else if (channel.outputStream instanceof TlsOuputStream == false) {
-					//@						BaseChannel.bytes_sent += pkt.length;
-					//@					} else if (channel.outputStream instanceof TlsOuputStream == true) {
-					//@						BaseChannel.bytes_sent = SocketChannel.handler
-					//@								.getBytes_sent();
-					//@					}
-					// #endif
-					// #endif
-// #ifndef COMPRESSION
-										bytes_sent += pkt.length;
-					// #endif
-
-					// #endif
-				} catch (IOException e) {
+				} catch (Exception e) {
 					// #debug
 //@					Logger.log("[SEND] IOException:" + e.getMessage());
-					close();
+					try {
+						close();
+					} catch (Exception e1) {
+						// TODO: handle exception
+					}
 				}
-
 			}
 			// #debug
 //@			Logger.log("Sender: exiting", Logger.DEBUG);
-
 		}
 	}
 
@@ -172,5 +150,12 @@ public abstract class BaseChannel {
 	/** Called for each tick of the server */
 	protected boolean pollAlive() {
 		return true;
+	}
+
+	protected void setupStreams(InputStream iStream, OutputStream oStream) {
+		countInputStream = new CountInputStream(iStream);
+		countOutputStream = new CountOutputStream(oStream);
+		inputStream = countInputStream;
+		outputStream = countOutputStream;
 	}
 }

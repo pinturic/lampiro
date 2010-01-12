@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: GoogleToken.java 1578 2009-06-16 11:07:59Z luca $
+ * $Id: GoogleToken.java 1625 2009-07-31 09:45:41Z luca $
 */
 
 package it.yup.util;
@@ -9,7 +9,9 @@ package it.yup.util;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Enumeration;
+// #mdebug
+//@import java.util.Enumeration;
+// #enddebug
 import java.util.Vector;
 
 import javax.microedition.io.Connector;

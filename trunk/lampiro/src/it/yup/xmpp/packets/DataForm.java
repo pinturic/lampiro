@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataForm.java 1220 2009-02-27 09:41:06Z luca $
+ * $Id: DataForm.java 1890 2009-11-03 09:47:59Z luca $
 */
 
 /**
@@ -13,6 +13,8 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import it.yup.xml.Element;
+import it.yup.xmpp.Config;
+import it.yup.xmpp.XMPPClient;
 
 /**
  *
@@ -81,7 +83,7 @@ public class DataForm {
 				/* form has multiple items, form definition is in "reported" 
 				 * form results are in "item" elements*/
 				parseForm(repo);
-				Element[] children=form.getChildren();
+				Element[] children = form.getChildren();
 				for (int i = 0; i < children.length; i++) {
 					Element e = children[i];
 					if ("item".equals(e.name)) {
@@ -113,7 +115,7 @@ public class DataForm {
 	private void parseItem(Element item) {
 
 		Hashtable res = new Hashtable();
-		Element [] children = item.getChildren();
+		Element[] children = item.getChildren();
 		for (int i = 0; i < children.length; i++) {
 			Element e = children[i];
 			if (!FIELD.equals(e.name)) {
@@ -138,7 +140,7 @@ public class DataForm {
 	 * 		The field definition
 	 */
 	private void parseForm(Element form) {
-		Element [] children = form.getChildren();
+		Element[] children = form.getChildren();
 		for (int i = 0; i < children.length; i++) {
 			Element e = children[i];
 			if (FIELD.equals(e.name)) {
@@ -150,10 +152,11 @@ public class DataForm {
 				fields.addElement(fld);
 			}
 			// XXX: there can be more than one instruction line
-			if(INSTRUCTIONS.equals(e.name)) {
-				instructions = (instructions == null ? e.getText() : instructions + "\n" + e.getText());
+			if (INSTRUCTIONS.equals(e.name)) {
+				instructions = (instructions == null ? e.getText()
+						: instructions + "\n" + e.getText());
 			}
-			if(TITLE.equals(e.name)) {
+			if (TITLE.equals(e.name)) {
 				title = e.getText();
 			}
 		}
@@ -223,7 +226,39 @@ public class DataForm {
 	}
 
 	/**
-	 * Un campo della form
+	 * A media data type
+	 */
+	public class Media {
+		public Object[] urisTypes;
+		public int width = -1;
+		public int height = -1;
+
+		public Media(Element f) {
+			Element[] uriEls = f.getChildrenByName(null, XMPPClient.URI);
+			urisTypes = new Object[uriEls.length];
+			String tempWidth = f.getAttribute("width");
+			String tempHeight = f.getAttribute("height");
+			if (tempWidth != null && tempHeight != null) {
+				this.width = Integer.parseInt(tempWidth);
+				this.height = Integer.parseInt(tempHeight);
+			}
+			for (int i = 0; i < uriEls.length; i++) {
+				Element uriEl = uriEls[i];
+				String type = uriEl.getAttribute(Stanza.ATT_TYPE);
+				String uri = uriEl.getText();
+				int mediaType;
+				if (type.indexOf("audio") == 0) mediaType = Config.AUDIO_TYPE;
+				else if (type.indexOf("video") == 0) mediaType = Config.VIDEO_TYPE;
+				else if (type.indexOf("image") == 0) mediaType = Config.IMG_TYPE;
+				else
+					mediaType = Config.IMG_TYPE;
+				urisTypes[i] = new Object[] { uri, new Integer(mediaType) };
+			}
+		}
+	}
+
+	/**
+	 * A form Field
 	 */
 	public class Field {
 		/** field description */
@@ -240,9 +275,13 @@ public class DataForm {
 		public String label;
 		/** available options */
 		public Vector options;
+		/** The optional media **/
+		public Media media = null;
 
 		public Field(Element f) {
-
+			Element mediaEl = f.getChildByName(XMPPClient.NS_MEDIA_ELEMENT,
+					XMPPClient.MEDIA);
+			if (mediaEl != null) this.media = new Media(mediaEl);
 			options = new Vector();
 			type = FLT_TXTSINGLE;
 
@@ -258,7 +297,7 @@ public class DataForm {
 				}
 			}
 
-			Element [] children = f.getChildren();
+			Element[] children = f.getChildren();
 			for (int i = 0; i < children.length; i++) {
 				Element e = children[i];
 				if (FLD_DESC.equals(e.name)) {
@@ -280,7 +319,6 @@ public class DataForm {
 				if (FLD_OPTION.equals(e.name)) {
 					options.addElement(getOption(e));
 				}
-
 			}
 		}
 

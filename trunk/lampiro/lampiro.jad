@@ -1,10 +1,10 @@
 MIDlet-Jar-URL: lampiro.jar
-MIDlet-Jar-Size: 420403
+MIDlet-Jar-Size: 452565
 MIDlet-Name: Lampiro
 MIDlet-1: Lampiro,/icons/lampiro_icon.png,lampiro.LampiroMidlet
 MicroEdition-Profile: MIDP-2.0
 MicroEdition-Configuration: CLDC-1.1
-MIDlet-Version: 9.6.0
+MIDlet-Version: 10.1
 MIDlet-Icon: /icons/lampiro_icon.png
 Built-By: luca
 MIDlet-Vendor: Bluendo

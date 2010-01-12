@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1597 2009-06-19 11:54:12Z luca $
+ * $Id: XMPPClient.java 1913 2009-12-02 14:21:24Z luca $
 */
 
 package it.yup.xmpp;
@@ -17,9 +17,9 @@ import it.yup.transport.SocketChannel;
 //@
 //#enddebug
 
-import it.yup.util.RMSIndex;
 import it.yup.util.Utils;
 import it.yup.xml.Element;
+import it.yup.xml.SystemConfig;
 import it.yup.xmlstream.AccountRegistration;
 import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
@@ -34,14 +34,14 @@ import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
+import it.yup.util.CountInputStream;
+import it.yup.util.CountOutputStream;
 
-import java.io.IOException;
 import java.util.Enumeration;
+import java.util.Hashtable;
 import java.util.TimerTask;
 import java.util.Vector;
 import org.bouncycastle.util.encoders.Base64;
-
-import com.sun.mmedia.BasicPlayer;
 
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Image;
@@ -67,24 +67,25 @@ public class XMPPClient implements StreamEventListener {
 
 		void askSubscription(Contact u);
 
-		void handleCommand(Contact c, String preferredResource);
+		void handleCommand(Contact c, String preferredResource,
+				Object optionalArguments);
 
 		void connectionLost();
 
-		void showAlert(AlertType type, String title, String text,
-				Object next_screen);
+		void showAlert(AlertType type, int titleCode, int textCode,
+				String additionalText);
 
-		void handleTask(Task task, boolean display);
+		void handleTask(Task task);
 
 		Object handleDataForm(DataForm df, byte type, DataFormListener dfl,
-				int cmds);
-
-		void commandExecuted(Object screenToClose);
+				int cmds, Object optionalArguments);
 
 
 		void showCommand(Object screen);
 
 		void rosterRetrieved();
+
+		void handlePresenceError(Presence presence);
 
 	}
 
@@ -95,8 +96,12 @@ public class XMPPClient implements StreamEventListener {
 	 * http://tools.ietf.org/html/rfc4790#section-9.3
 	 */
 	private String[] features = new String[] { MIDP_PLATFORM, NS_CAPS,
-			NS_COMMANDS, NS_IQ_DISCO_INFO, NS_IBB, NS_MUC, NS_ROSTERX,
-			JABBER_X_DATA, JINGLE, JINGLE_FILE_TRANSFER, JINGLE_IBB_TRANSPORT };
+			NS_COMMANDS, NS_IQ_DISCO_INFO, NS_IBB, NS_MUC, NS_PUBSUB_EVENT,
+			NS_ROSTERX, FILE_TRANSFER, NS_JABBER_VERSION, JABBER_X_DATA,
+			JINGLE, JINGLE_FILE_TRANSFER, JINGLE_IBB_TRANSPORT };
+
+	public static final String J2MEVER = "J2ME/"
+			+ System.getProperty("microedition.platform");
 
 	/** the client instance */
 	private static XMPPClient xmppInstance;
@@ -185,13 +190,27 @@ public class XMPPClient implements StreamEventListener {
 	 */
 	private AccountRegistration accountRegistration;
 
+	/*
+	 * Contains some additional info about the server gateway config
+	 */
+	public Hashtable gatewayConfig = new Hashtable();
+
+	/*
+	 * A flag used to communicate if the client must go online when authenticated
+	 */
+	private boolean goOnline = false;
+
 	/**
 	 * Get the total amount of traffic on the GPRS connection
 	 * 
 	 * @return an array with two elements: in / out traffic
 	 */
 	public static int[] getTraffic() {
-		return new int[] { BaseChannel.bytes_received, BaseChannel.bytes_sent };
+		CountInputStream cis = BaseChannel.countInputStream;
+		int readBytes = cis != null ? cis.getCount() : 0;
+		CountOutputStream cos = BaseChannel.countOutputStream;
+		int sentBytes = cos != null ? cos.getCount() : 0;
+		return new int[] { readBytes, sentBytes };
 	}
 
 	public static String NS_IQ_DISCO_INFO = "http://jabber.org/protocol/disco#info";
@@ -199,17 +218,31 @@ public class XMPPClient implements StreamEventListener {
 	public static String NS_COMMANDS = "http://jabber.org/protocol/commands";
 	public static String NS_CAPS = "http://jabber.org/protocol/caps";
 	public static String NS_BLUENDO_CAPS = "http://bluendo.com/protocol/caps";
+	public static String NS_BLUENDO_CFG = "xmpp:bluendo:cfg";
 	public static String NS_BLUENDO_PUBLISH = "bluendo:http:publish:0";
+	public static String NS_BOOKMARKS = "storage:bookmarks";
 	public static String NS_IBB = "http://jabber.org/protocol/ibb";
 	public static String NS_MUC = "http://jabber.org/protocol/muc";
+	public static String NS_PRIVATE = "jabber:iq:private";
+	public static String NS_JABBER_VERSION = "jabber:iq:version";
+	public static String NS_PUBSUB = "http://jabber.org/protocol/pubsub";
+	public static String NS_PUBSUB_EVENT = "http://jabber.org/protocol/pubsub#event";
 	public static String NS_ROSTERX = "http://jabber.org/protocol/rosterx";
 	public static String NS_MUC_USER = "http://jabber.org/protocol/muc#user";
 	public static String NS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
-	public static String NS_VCARD_UPDATE = "vcard-temp:x:update";
 	public static String NS_NICK = "http://jabber.org/protocol/nick";
+	public static String NS_STORAGE_LAMPIRO = "storage:lampiro";
+	public static String NS_VCARD_UPDATE = "vcard-temp:x:update";
+	public static String NS_UUID = "urn:bluendo:uuid:0";
+	public static String NS_MEDIA_ELEMENT = "urn:xmpp:media-element";
+	public static String NS_BOB = "urn:xmpp:bob";
+
+	public static String XML_NS = "http://www.w3.org/XML/1998/namespace";
+	public static String STORAGE = "storage";
 	public static String MIDP_PLATFORM = "http://bluendo.com/midp#platform";
 	public static String JABBER_X_DATA = "jabber:x:data";
 	public static String JABBER_IQ_GATEWAY = "jabber:iq:gateway";
+	public static String NS_IQ_ROSTER = "jabber:iq:roster";
 	public static String IQ_REGISTER = "jabber:iq:register";
 	public static String JINGLE = "urn:xmpp:jingle:0";
 	public static String JINGLE_FILE_TRANSFER = "urn:xmpp:jingle:apps:file-transfer:1";
@@ -228,22 +261,52 @@ public class XMPPClient implements StreamEventListener {
 	public static String BLUENDO_REGISTER = "bluendo:register:0";
 	public static String NS_DELAY = "urn:xmpp:delay";
 	public static String DELAY = "delay";
+	public static String CONFERENCE = "conference";
+	public static String SECTION = "section";
+	public static String PUBSUB = "pubsub";
+	public static String ITEMS = "items";
+	public static String ITEM = "item";
+	public static String NODE = "node";
+	public static String LAMPIRO_CONFIG = "lampiro_config";
+	public static String EVENT = "event";
+	public static String COMMAND = "command";
+	public static String ACTION = "action";
+	public static String DATA = "data";
+	public static String UUID = "uuid";
+	public static String FEATURE = "feature";
+	public static String URI = "uri";
+	public static String MEDIA = "media";
+	public static String TEXT = "text";
+	public static String CODE = "code";
+
+
 	public static String[][] errorCodes = new String[][] {
 			{ "400", "Bad request" }, { "401", "Not authorized" },
 			{ "403", "Forbidden" }, { "404", "Item not found" },
-			{ "406", "Not acceptable" },
-			{ "407", "Registration required" },
-			{ "500", "Internal server error" },
+			{ "405", "Operation not allowed" }, { "406", "Not acceptable" },
+			{ "408", "Request timeout" }, { "407", "Registration required" },
+			{ "409", "Conflict" }, { "500", "Internal server error" },
 			{ "501", "Feature not implemented" },
-			{ "503", "Service unavailable" }, };
+			{ "502", "Remote server error" }, { "503", "Service unavailable" },
+			{ "504", "Remote server timeout" }, { "510", "Disconnected" },
+
+	};
 
 	public Image getPresenceIcon(Contact c, String preferredResource,
 			int availability) {
 		Presence p = null;
 		if (c != null) {
-			if (preferredResource != null) p = c.getPresence(preferredResource);
+			// first check if it is a MUC
+			if (c instanceof MUC == true) {
+				if (c.resources != null) return this.presence_icons[Contact.MUC_IMG];
+				else
+					return this.presence_icons[Contact.MUC_IMG_OFFLINE];
+			}
+			// next the usual ones
+			else if (preferredResource != null) p = c
+					.getPresence(preferredResource);
 			else
-				p = c.getPresence();
+				p = c.getPresence(null);
 		}
 		if (availability >= 0 && availability < this.presence_icons.length) {
 			if (p == null || p.pType == Presence.PC) {
@@ -254,6 +317,11 @@ public class XMPPClient implements StreamEventListener {
 	}
 
 	private XMPPClient() {
+		//		for (int i = 0; i < features.length; i++) {
+		//			String array_element = features[i];
+		//			System.out.println(array_element);	
+		//		}
+
 		roster = new Roster(this);
 
 		// preload the presence icons
@@ -285,6 +353,9 @@ public class XMPPClient implements StreamEventListener {
 					+ mapping[5] + ".png");
 			presence_phone_icons[5] = Image.createImage("/icons/presence_"
 					+ mapping[5] + "_phone.png");
+			presence_icons[6] = Image.createImage("/icons/muc.png");
+			presence_icons[7] = Image.createImage("/icons/muc-offline.png");
+
 		} catch (Exception e) {
 			// should not happen
 		}
@@ -452,8 +523,10 @@ public class XMPPClient implements StreamEventListener {
 	}
 
 
-	public void openStream() {
-		String resource = cfg.getProperty(Config.YUP_RESOURCE, "Lampiro");
+	public void openStream(boolean goOnline) {
+		this.goOnline = goOnline;
+		String resource = cfg.getProperty(Config.YUP_RESOURCE,
+				Config.CLIENT_NAME);
 		xmlStream.initialize(cfg.getProperty(Config.USER) + "@"
 				+ cfg.getProperty(Config.SERVER) + "/" + resource, cfg
 				.getProperty(Config.PASSWORD));
@@ -484,7 +557,13 @@ public class XMPPClient implements StreamEventListener {
 			// Register the handler for incoming messages
 			EventQuery eq = new EventQuery(Message.MESSAGE, null, null);
 			eq.child = new EventQuery(Message.BODY, null, null);
-			BasicXmlStream.addEventListener(eq, new MessageHandler());
+			BasicXmlStream.addEventListener(eq, new MessageHandler(false));
+
+			// a handler only for error type messages
+			eq = new EventQuery(Message.MESSAGE,
+					new String[] { Message.ATT_TYPE },
+					new String[] { Message.ERROR });
+			BasicXmlStream.addEventListener(eq, new MessageHandler(true));
 
 			// Register the presence handler
 			eq = new EventQuery(Presence.PRESENCE, null, null);
@@ -496,6 +575,35 @@ public class XMPPClient implements StreamEventListener {
 			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
 					new String[] { NS_IQ_DISCO_INFO });
 			BasicXmlStream.addEventListener(eq, new DiscoHandler());
+
+			// Register the UUID handler
+			eq = new EventQuery(Iq.IQ, new String[] { "type" },
+					new String[] { "get" });
+			eq.child = new EventQuery(XMPPClient.UUID,
+					new String[] { "xmlns" }, new String[] { NS_UUID });
+			BasicXmlStream.addEventListener(eq, new UUIDHandler());
+
+			// Register the disco handler
+			eq = new EventQuery(Iq.IQ, new String[] { "type" },
+					new String[] { "get" });
+			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
+					new String[] { NS_JABBER_VERSION });
+			BasicXmlStream.addEventListener(eq, new PacketListener() {
+
+				public void packetReceived(Element e) {
+					Iq reply = Utils.easyReply(e);
+					Element query = reply.addElement(NS_JABBER_VERSION,
+							Iq.QUERY);
+					query
+							.addElementAndContent(null, "name",
+									Config.CLIENT_NAME);
+					query.addElementAndContent(null, "version", cfg
+							.getProperty(Config.VERSION));
+					query.addElementAndContent(null, "os", "J2ME/"
+							+ System.getProperty("microedition.platform"));
+					XMPPClient.this.sendPacket(reply);
+				}
+			});
 
 			// Register the handler for dataforms (both as <iq/> and <message/>)
 			// payloads
@@ -509,19 +617,19 @@ public class XMPPClient implements StreamEventListener {
 					new String[] { DataForm.NAMESPACE });
 			BasicXmlStream.addEventListener(eq, dh);
 
-			/* register handler for ad hoc command announcements */
-			PacketListener ashc_listener = new PacketListener() {
-				public void packetReceived(Element e) {
-					handleClientCommands(e, false);
-				}
-			};
-
-			// XXX here we *must* use client capabilities
-			/* register handler for ad hoc command presence announce */
-			eq = new EventQuery(Presence.PRESENCE, null, null);
-			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/disco#items" });
-			BasicXmlStream.addEventListener(eq, ashc_listener);
+			//			/* register handler for ad hoc command announcements */
+			//			PacketListener ashc_listener = new PacketListener() {
+			//				public void packetReceived(Element e) {
+			//					handleClientCommands(e, false);
+			//				}
+			//			};
+			//
+			//			// XXX here we *must* use client capabilities
+			//			/* register handler for ad hoc command presence announce */
+			//			eq = new EventQuery(Presence.PRESENCE, null, null);
+			//			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
+			//					new String[] { "http://jabber.org/protocol/disco#items" });
+			//			BasicXmlStream.addEventListener(eq, ashc_listener);
 
 			IqManager.getInstance().streamInitialized();
 			roster.streamInitialized();
@@ -539,6 +647,8 @@ public class XMPPClient implements StreamEventListener {
 		me = new Contact(Contact.userhost(my_jid), null, null, null);
 		Presence p = new Presence();
 		p.setAttribute("from", my_jid);
+		p.setAttribute(XMPPClient.XML_NS, "lang", Config.lang);
+		p.toXml();
 		String show = cfg.getProperty(Config.LAST_PRESENCE_SHOW);
 		if (show != null && !"online".equals(show)) {
 			p.setShow(show);
@@ -584,8 +694,8 @@ public class XMPPClient implements StreamEventListener {
 						valid_stream = false;
 						closeStream();
 						if (xmppListener != null) xmppListener.connectionLost();
-						showAlert(AlertType.ERROR, "Connection lost",
-								"Connection with the server lost", null);
+						showAlert(AlertType.ERROR, Config.ALERT_CONNECTION,
+								Config.ALERT_CONNECTION, null);
 						BasicXmlStream.removeEventListener(lostConnReg);
 						/* XXX: should close all screens and open the RegisterScreen */
 					}
@@ -594,13 +704,30 @@ public class XMPPClient implements StreamEventListener {
 		// if this is the first login it is better to ask the roster and go online suddenly
 		// otherwise i only go online and the ask the roster after a while
 		// however first try to load the roster from db
-		String rmsName = "rstr_"
-				+ Contact.userhost(my_jid).replace('@', '_').replace('.', '_');
-		if (rmsName.length() > 31) {
-			rmsName = rmsName.substring(0, 31);
-		}
-		roster.rosterStore = new RMSIndex(rmsName);
+		roster.setupStore(Contact.userhost(my_jid));
+		roster.loadGateways();
 		roster.readFromStorage();
+		roster.retrieveBookmarks();
+
+		checkTrustedServices();
+
+		// if already have a UUID I can go online
+		// otherwise i ask the UUID and then i will go 
+		// online within the chckUUID function
+		String myUid = cfg.getProperty(Config.UUID, "-1");
+		if (myUid.equals("-1")) {
+			checkUUID();
+		} else if (goOnline) {
+			askRoster();
+		}
+
+		if (this.xmppListener != null) xmppListener.authenticated();
+	}
+
+	/**
+	 * 
+	 */
+	public void askRoster() {
 		if (newCredentials || Integer.parseInt(this.roster.rosterVersion) > 0) {
 			roster.retrieveRoster(true, false);
 		} else {
@@ -612,6 +739,7 @@ public class XMPPClient implements StreamEventListener {
 					if (lastPresenceTime + rosterRetrieveTime < System
 							.currentTimeMillis()) {
 						roster.retrieveRoster(false, false);
+						//roster.retrieveBookmarks();
 						this.cancel();
 					}
 				}
@@ -619,15 +747,50 @@ public class XMPPClient implements StreamEventListener {
 			Utils.tasks.schedule(rosterRetrieveTask, rosterRetrieveTime,
 					rosterRetrieveTime);
 		}
-		if (this.xmppListener != null) xmppListener.authenticated();
+	}
+
+	/**
+	 * @param myUid
+	 */
+	private void checkUUID() {
+		// if i don't have a UUID I ask the server for it
+		// check the trusted services
+		String myUid = cfg.getProperty(Config.UUID, "-1");
+		if (myUid.equals("-1")) {
+			Iq UUIDReq = new Iq(Config.LAMPIRO_AGENT + "/lampiro", Iq.T_SET);
+			Element command = UUIDReq.addElement(XMPPClient.NS_COMMANDS,
+					XMPPClient.COMMAND);
+			command.setAttribute("node", "uuid_gen");
+			command.setAttribute(XMPPClient.ACTION, "execute");
+
+			IQResultListener resultListener = new XmppIqListener(
+					XmppIqListener.UUID);
+			this.sendIQ(UUIDReq, resultListener);
+		}
+	}
+
+	/**
+	 * 
+	 */
+	private void checkTrustedServices() {
+		// check the trusted services
+		Iq systemConfigIq = new Iq(Config.LAMPIRO_AGENT, Iq.T_GET);
+		Element pubsub = systemConfigIq.addElement(NS_PUBSUB, PUBSUB);
+		Element items = pubsub.addElement(null, ITEMS);
+		items.setAttribute(NODE, LAMPIRO_CONFIG);
+		XmppIqListener resultListener = new XmppIqListener(
+				XmppIqListener.TRUSTED_SERVICES);
+
+		this.sendIQ(systemConfigIq, resultListener);
 	}
 
 	private String getCapVer() {
 		Vector ss = new Vector();
 		ss.addElement("client/");
 		ss.addElement("phone/");
-		ss.addElement("/")/* XXX should be the lang here */;
-		ss.addElement("Lampiro " + cfg.getProperty(Config.VERSION) + "<");
+		ss.addElement(Config.lang + "/");
+		ss.addElement(Config.CLIENT_NAME + " "
+				+ cfg.getProperty(Config.VERSION) + " " + J2MEVER + "<");
 		for (int i = 0; i < features.length; i++) {
 			ss.addElement(features[i]);
 			ss.addElement("<");
@@ -643,21 +806,27 @@ public class XMPPClient implements StreamEventListener {
 
 	private class MessageHandler implements PacketListener {
 
+		private boolean handleError = false;
+
+		public MessageHandler(boolean handleError) {
+			this.handleError = handleError;
+		}
+
 		public void packetReceived(Element p) {
 
 			// different behaviours depending on type
 
 			String type = p.getAttribute(Message.ATT_TYPE);
 			if (type == null) type = Message.NORMAL;
-			
+			if (handleError == false && type.equals(Message.ERROR)) return;
+
 			// e.g. normal are used to receive invite for MUC;
 			// if the MUC user is created here it result in a normal Contact!!!
 			// be careful for that 
 			Element x = p.getChildByName(XMPPClient.NS_MUC_USER, "x");
-			if (x!= null){
+			if (x != null && type.equals(Message.GROUPCHAT)) {
 				Element invite = x.getChildByName(null, "invite");
-				if (invite !=null)
-					return;
+				if (invite != null) return;
 			}
 
 			Message msg = new Message(p);
@@ -678,6 +847,7 @@ public class XMPPClient implements StreamEventListener {
 				roster.contacts.put(Contact.userhost(u.jid), u);
 			}
 
+			// at this manner only the first msg triggers an update
 			u.addMessageToHistory(jid, msg);
 			if (xmppListener != null) xmppListener.updateContact(u,
 					Contact.CH_MESSAGE_NEW);
@@ -702,23 +872,11 @@ public class XMPPClient implements StreamEventListener {
 				Contact u = roster.getContactByJid(from);
 				String type = e.getAttribute(Stanza.ATT_TYPE);
 				if (u == null) {
-					// first check if its a MUC
-					Element[] xs = p.getChildrenByName(null, "x");
-					for (int i = 0; xs != null && i < xs.length; i++) {
-						if (xs[i].uri != null
-								&& xs[i].uri.indexOf(XMPPClient.NS_MUC) >= 0) {
-							u = new MUC(Contact.userhost(from), Contact
-									.user(from));
-						}
-					}
-
-					if (u == null) {
-						if (type != null
-								&& type.compareTo(Presence.T_UNAVAILABLE) == 0) return;
-						// XXX Guess the subscription
-						u = new Contact(Contact.userhost(from), null,
-								"unknown", null);
-					}
+					if (type != null
+							&& type.compareTo(Presence.T_UNAVAILABLE) == 0) return;
+					// XXX Guess the subscription
+					u = new Contact(Contact.userhost(from), null, "unknown",
+							null);
 
 					u.updatePresence(new Presence(e));
 					roster.contacts.put(u.jid, u);
@@ -730,6 +888,8 @@ public class XMPPClient implements StreamEventListener {
 
 			} else if (Presence.T_SUBSCRIBE.equals(t)) {
 				handleSubscribe(new Presence(e));
+			} else if (Iq.T_ERROR.equals(t) && xmppListener != null) {
+				xmppListener.handlePresenceError(new Presence(e));
 			} else {
 				// XXX At present ignore other cases, but when receiving
 				// UNSUBCRIBED we should update the roster
@@ -754,30 +914,6 @@ public class XMPPClient implements StreamEventListener {
 				pmsg.setAttribute(Stanza.ATT_TYPE, Presence.T_SUBSCRIBED);
 				sendPacket(pmsg);
 			} else {
-				/*
-				 * UIMenu confirmMenu = new UIMenu(rm
-				 * .getString(ResourceIDs.STR_SUBSCRIPTION_CONFIRM)); UILabel
-				 * confirmQuestion = new UILabel(rm
-				 * .getString(ResourceIDs.STR_SUBSCRIPTION_REQUEST_FROM) + " " +
-				 * u.jid + ". " +
-				 * rm.getString(ResourceIDs.STR_SUBSCRIPTION_ACCEPT));
-				 * confirmMenu.append(confirmQuestion);
-				 * confirmQuestion.setFocusable(true);
-				 * confirmMenu.setSelectedIndex(1);
-				 * confirmMenu.setAbsoluteX(10);
-				 * confirmMenu.setWidth(UICanvas.getInstance().getWidth() - 20);
-				 * confirmQuestion.setWrappable(true, confirmQuestion.getWidth() -
-				 * 5); confirmMenu.cancelMenuString =
-				 * rm.getString(ResourceIDs.STR_NO);
-				 * confirmMenu.selectMenuString = rm
-				 * .getString(ResourceIDs.STR_YES); UIScreen currentScreen =
-				 * UICanvas.getInstance() .getCurrentScreen(); Graphics cg =
-				 * currentScreen.getGraphics(); int offset = (cg.getClipHeight() -
-				 * confirmMenu.getHeight(cg)) / 2;
-				 * confirmMenu.setAbsoluteY(offset); this.confirmContact =
-				 * contact; currentScreen.addPopup(confirmMenu);
-				 */
-
 				// add a nick only if a previous name has been added
 				Element nick = p.getChildByName(XMPPClient.NS_NICK, "nick");
 				if (nick != null) {
@@ -809,8 +945,21 @@ public class XMPPClient implements StreamEventListener {
 	private class DataFormHandler implements PacketListener {
 
 		public void packetReceived(Element p) {
-			updateTask(new SimpleDataFormExecutor(p));
+			SimpleDataFormExecutor task = new SimpleDataFormExecutor(p);
+			updateTask(task);
+			if (xmppListener != null) xmppListener.handleTask(task);
 			playSmartTone();
+		}
+	}
+
+	private class UUIDHandler implements PacketListener {
+
+		public void packetReceived(Element p) {
+			Iq reply = Utils.easyReply(p);
+			Element e = reply.addElement(XMPPClient.NS_UUID, XMPPClient.UUID);
+			String myUid = cfg.getProperty(Config.UUID, "-1");
+			e.addText(myUid);
+			sendPacket(reply);
 		}
 	}
 
@@ -826,28 +975,130 @@ public class XMPPClient implements StreamEventListener {
 					+ XMPPClient.this.getCapVer();
 			if (node == null || node.compareTo(capDisco) == 0) {
 				Element identity = qr.addElement(NS_IQ_DISCO_INFO, "identity");
-				identity.setAttribute("category", "client");
-				identity.setAttribute("type", "phone");
-				identity.setAttribute("name", "Lampiro");
+				String lampiroName = Config.CLIENT_NAME + " "
+						+ cfg.getProperty(Config.VERSION) + " "
+						+ XMPPClient.J2MEVER;
+				identity.setAttributes(new String[] { "category", "type",
+						"name" },
+						new String[] { "client", "phone", lampiroName });
+				identity.setAttribute(XMPPClient.XML_NS, "lang", Config.lang);
 				for (int i = 0; i < features.length; i++) {
-					Element feature = qr
-							.addElement(NS_IQ_DISCO_INFO, "feature");
+					Element feature = qr.addElement(NS_IQ_DISCO_INFO,
+							XMPPClient.FEATURE);
 					feature.setAttribute("var", features[i]);
 				}
 
-			} else if (MIDP_PLATFORM.equals(node)) {
-				qr.setAttribute("node", MIDP_PLATFORM);
-				Element x = qr.addElement(JABBER_X_DATA, "x");
-				x.setAttribute("type", Iq.T_RESULT);
-				Element field = x.addElement(JABBER_X_DATA, "field");
-				field.setAttribute("var", "microedition.platform");
-				field.addElement(JABBER_X_DATA, "value").addText(
-						System.getProperty("microedition.platform"));
 			}
+			//			else if (MIDP_PLATFORM.equals(node)) {
+			//				qr.setAttribute("node", MIDP_PLATFORM);
+			//				Element x = qr.addElement(JABBER_X_DATA, "x");
+			//				x.setAttribute("type", Iq.T_RESULT);
+			//				Element field = x.addElement(JABBER_X_DATA, "field");
+			//				field.setAttribute("var", "microedition.platform");
+			//				field.addElement(JABBER_X_DATA, "value").addText(
+			//						System.getProperty("microedition.platform"));
+			//			}
 			if (node != null && node.compareTo(capDisco) == 0) {
 				qr.setAttribute("node", capDisco);
 			}
 			sendPacket(reply);
+		}
+	}
+
+	private class XmppIqListener extends IQResultListener {
+
+		public static final int UUID = 0;
+		public static final int TRUSTED_SERVICES = 1;
+		public int LISTENER_TYPE;
+
+		public XmppIqListener(int LISTENER_TYPE) {
+			this.LISTENER_TYPE = LISTENER_TYPE;
+		}
+
+		public void handleError(Element e) {
+			switch (LISTENER_TYPE) {
+				case UUID:
+					// i go online and ask roster after having the UUID
+					// or receiving an error
+					saveAndAskRoster(null);
+					break;
+
+				default:
+					break;
+			}
+			// #mdebug
+//@			System.out.println(e.toXml());
+			// #enddebug
+		}
+
+		/**
+		 * @param e
+		 */
+		private void setupTrustedServices(Element e) {
+			Element config = e.getChildByName(NS_PUBSUB, PUBSUB);
+			if (config != null) {
+				Element[] items = config.getChildrenByNameAttrs(NS_PUBSUB,
+						ITEMS, new String[] { NODE },
+						new String[] { LAMPIRO_CONFIG });
+				if (items.length > 0) {
+					Element[] gateways = items[0].getChildrenByNameAttrs(null,
+							ITEM, new String[] { "id" },
+							new String[] { "gateways" });
+					if (gateways.length > 0) {
+						gatewayConfig = SystemConfig.parse(gateways[0]);
+						if (gatewayConfig != null) gatewayConfig = (Hashtable) gatewayConfig
+								.get("gateways");
+					}
+				}
+			}
+		}
+
+		/**
+		 * @param myUid
+		 */
+		private void saveAndAskRoster(String myUid) {
+			// with a wrong myUID i use a default one
+			if (myUid == null) myUid = System.currentTimeMillis() + "";
+			cfg.setProperty(Config.UUID, myUid);
+			cfg.saveToStorage();
+			// i go online and ask roster after having the UUID
+			if (goOnline) {
+				askRoster();
+			}
+		}
+
+		public void handleResult(Element e) {
+			switch (LISTENER_TYPE) {
+				case TRUSTED_SERVICES:
+					setupTrustedServices(e);
+					break;
+
+				case UUID:
+					saveUUID(e);
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		/**
+		 * @param e
+		 */
+		private void saveUUID(Element e) {
+			Element x = e.getPath(new String[] { null, null }, new String[] {
+					XMPPClient.COMMAND, "x" });
+			String myUid = null;
+			if (x != null) {
+				Element[] fields = x.getChildrenByNameAttrs(null, "field",
+						new String[] { "var" },
+						new String[] { XMPPClient.UUID });
+				if (fields.length > 0) {
+					myUid = fields[0].getChildByName(null, "value").getText();
+
+				}
+			}
+			saveAndAskRoster(myUid);
 		}
 	}
 
@@ -881,6 +1132,8 @@ public class XMPPClient implements StreamEventListener {
 		if (p == null) return;
 		Presence new_p = new Presence();
 
+		// set my lang
+		new_p.setAttribute(XMPPClient.XML_NS, "lang", Config.lang);
 		new_p.setAttribute("from", p.getAttribute("from"));
 
 		if (availability >= 0) {
@@ -916,28 +1169,26 @@ public class XMPPClient implements StreamEventListener {
 	 *            the received element with commands
 	 * @param show
 	 *            when true show the command list screen
+	 * @param optionalArguments 
 	 */
-	public void handleClientCommands(Element e, boolean show) {
+	public void handleClientCommands(Element e, boolean show,
+			Object optionalArguments) {
 		String from = e.getAttribute(Stanza.ATT_FROM);
 		if (from == null) return;
 		Contact c = roster.getContactByJid(from);
 		if (c == null) return;
-		Element q = e.getChildByName("http://jabber.org/protocol/disco#items",
-				Iq.QUERY);
+		Element q = e.getChildByName(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
 		if (q != null) {
-			Element items[] = q.getChildrenByName(
-					"http://jabber.org/protocol/disco#items", "item");
+			Element items[] = q.getChildrenByName(NS_IQ_DISCO_ITEMS, ITEM);
 			c.cmdlist = new String[items.length][2];
 			for (int i = 0; i < items.length; i++) {
-				c.cmdlist[i][0] = items[i].getAttribute("node");
+				c.cmdlist[i][0] = items[i].getAttribute(NODE);
 				c.cmdlist[i][1] = items[i].getAttribute("name");
 			}
 
-			if (xmppListener != null) xmppListener.updateContact(c,
-					Contact.CH_TASK_NEW);
-
 			if (show && this.xmppListener != null) {
-				this.xmppListener.handleCommand(c, from);
+				xmppListener.updateContact(c, Contact.CH_TASK_NEW);
+				xmppListener.handleCommand(c, from, optionalArguments);
 			}
 		} // XXX we could add an alert if it's empty and we have to show
 	}
@@ -953,10 +1204,16 @@ public class XMPPClient implements StreamEventListener {
 	 * @param next_screen
 	 *            the screen where we have to return to
 	 */
-	public void showAlert(AlertType type, String title, String text,
-			final Object next_screen) {
+	//	public void showAlert(AlertType type, String title, String text,
+	//			final Object next_screen) {
+	//		if (xmppListener != null) {
+	//			xmppListener.showAlert(type, title, text, next_screen);
+	//		}
+	//	}
+	public void showAlert(AlertType type, int titleCode, int textCode,
+			String additionalText) {
 		if (xmppListener != null) {
-			xmppListener.showAlert(type, title, text, next_screen);
+			xmppListener.showAlert(type, titleCode, textCode, additionalText);
 		}
 	}
 
@@ -967,8 +1224,8 @@ public class XMPPClient implements StreamEventListener {
 	 * @param task
 	 */
 	public void updateTask(Task task) {
-
 		Contact user = roster.getContactByJid(task.getFrom());
+		if (user == null) return;
 		user.addTask(task);
 		// #mdebug
 //@		System.out.println("Tsk: " + Integer.toHexString(task.getStatus()));
@@ -1040,18 +1297,14 @@ public class XMPPClient implements StreamEventListener {
 			}
 		}
 
-		// update contact position in the roster
-		if (xmppListener != null) {
-			if (removed) {
-				xmppListener.updateContact(user, Contact.CH_TASK_REMOVED);
-			} else {
-				xmppListener.updateContact(user, Contact.CH_TASK_NEW);
-			}
-		}
+		task.setEnableDisplay(display);
+		task.setEnableNew(!removed);
 
-		if (this.xmppListener != null) {
-			this.xmppListener.handleTask(task, display);
-		}
+		// update contact position in the roster
+		//		if (xmppListener != null) {
+		//			xmppListener.handleTask(task, display,
+		//					removed ? Contact.CH_TASK_REMOVED : Contact.CH_TASK_NEW);
+		//		}
 	};
 
 	// private void subscribe_to_agent() {
@@ -1089,12 +1342,7 @@ public class XMPPClient implements StreamEventListener {
 		return "";
 	}
 
-	// #ifdef SEND_DEBUG1
-	// @ public void sendDebug(String msg) {
-	// @ Message m = new Message("ff@jabber.bluendo.com", "chat");
-	// @ m.setBody(msg);
-	// @ sendPacket(m);
-	// @ }
-	// #endif
-
+	public void setMUCGroup(String str) {
+		MUC.GROUP_CHATS = str;
+	}
 }

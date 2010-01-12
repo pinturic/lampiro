@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Utils.java 1419 2009-05-04 13:45:19Z luca $
+ * $Id: Utils.java 1909 2009-11-25 12:38:37Z luca $
 */
 
 package it.yup.util;
@@ -11,8 +11,6 @@ import it.yup.xmpp.Contact;
 import it.yup.xmpp.packets.Iq;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.util.Timer;
@@ -186,11 +184,42 @@ public class Utils {
 		return tokens;
 	}
 
+	public final static String replace(String text, String searchString,
+			String replacementString) {
+		StringBuffer sBuffer = new StringBuffer();
+		int pos = 0;
+		while ((pos = text.indexOf(searchString)) != -1) {
+			sBuffer.append(text.substring(0, pos) + replacementString);
+			text = text.substring(pos + searchString.length());
+		}
+		sBuffer.append(text);
+		return sBuffer.toString();
+	}
+
 	public static boolean is_jid(String s) {
 		Vector parts = Utils.tokenize(s, '.');
 		return (parts.size() >= 2)
 				&& ((String) parts.elementAt(0)).length() > 0
 				&& ((String) parts.elementAt(1)).length() > 0;
+	}
+
+	public static String jabberify(String id, int maxLength) {
+		id = id.toLowerCase();
+		char[] res = id.toCharArray();
+		char[] invChar = new char[] { 0x20, 0x22, 0x26, 0x27, 0x2F, 0x3A, 0x3C,
+				0x3E, 0x40 };
+
+		for (int i = 0; i < res.length; i++) {
+			for (int j = 0; j < invChar.length; j++)
+				if (res[i] == invChar[j]) {
+					res[i] = '_';
+				}
+		}
+		id = new String(res);
+		if (maxLength >= 0 && id.length() > maxLength) {
+			id = id.substring(0, maxLength);
+		}
+		return id;
 	}
 
 	public static boolean is_email(String s) {
@@ -210,16 +239,16 @@ public class Utils {
 		}
 		return v;
 	};
-	
-//	public static int readExactly (InputStream is, byte [] buf , int start , int length) throws IOException{
-//		int tempLength = 0;
-//		int n = 0;
-//		do {
-//			n = is.read(buf, tempLength,buf.length - tempLength);
-//			tempLength += n;
-//		} while (n >= 0 && tempLength < length);
-//		return tempLength;
-//	}
+
+	//	public static int readExactly (InputStream is, byte [] buf , int start , int length) throws IOException{
+	//		int tempLength = 0;
+	//		int n = 0;
+	//		do {
+	//			n = is.read(buf, tempLength,buf.length - tempLength);
+	//			tempLength += n;
+	//		} while (n >= 0 && tempLength < length);
+	//		return tempLength;
+	//	}
 
 	public static String flags2str(boolean v[], int offset) {
 		int flags = 0;
@@ -351,17 +380,19 @@ public class Utils {
 		replIq.setAttribute(Iq.ATT_ID, fromIq.getAttribute(Iq.ATT_ID));
 		return replIq;
 	}
-	
+
 	public static boolean compareTo(Contact left, Contact right) {
 		return left.getPrintableName().toLowerCase().compareTo(
 				right.getPrintableName().toLowerCase()) < 0;
 	}
-	
-	
-	//	static public void main(String params[]) {
-	//		Vector tokens = Utils.tokenize(" Ciao a  tutti ,   come \nva va  ciao\r\npipo ", new String[] {" ", "  ", "\n", "\r\n"}, true);
-	//		for(int i=0; i<tokens.size(); i++) {
-	//			System.out.println("->" + tokens.elementAt(i) + "<-");
-	//		}
-	//	}
+
+	/**
+	 * The lookup table used to memorize letters for search pattern
+	 */
+	public static char[][] itu_keys = { { ' ', '0' }, { '1' },
+			{ 'a', 'b', 'c', 'à', '2' }, { 'd', 'e', 'f', 'è', 'é', '3' },
+			{ 'g', 'h', 'i', 'ì', '4' }, { 'j', 'k', 'l', '5' },
+			{ 'm', 'n', 'o', 'ò', '6' }, { 'p', 'q', 'r', 's', '7' },
+			{ 't', 'u', 'v', 'ù', '8' }, { 'w', 'x', 'y', 'z', '9' } };
+
 }

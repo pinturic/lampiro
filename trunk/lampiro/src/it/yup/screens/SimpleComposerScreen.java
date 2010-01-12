@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleComposerScreen.java 1312 2009-03-24 12:04:13Z luca $
+ * $Id: SimpleComposerScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 package it.yup.screens;
@@ -21,8 +21,7 @@ import it.yup.xmpp.packets.Message;
 
 public class SimpleComposerScreen extends TextBox implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private Displayable next;
 	private Contact user;

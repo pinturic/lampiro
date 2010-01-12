@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 1377 2009-04-21 14:17:38Z luca $
+ * $Id: ChatScreen.java 1891 2009-11-03 17:43:52Z luca $
 */
 
 package it.yup.screens;
@@ -30,14 +30,14 @@ import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
+import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
 
 public class ChatScreen extends Canvas implements CommandListener,
 		PacketListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private Contact user;
 	private Command cmd_exit;
@@ -101,7 +101,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 		try {
 			img_msg = Image.createImage("/icons/message.png");
 			cfont = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN,
-									Font.SIZE_SMALL);
+					Font.SIZE_SMALL);
 			text_height = cfont.getHeight();
 
 			if (img_msg.getHeight() > text_height) {
@@ -208,9 +208,8 @@ public class ChatScreen extends Canvas implements CommandListener,
 
 		// split the message into tokens, keeping delimiters
 		//Vector tokens = Utils.tokenize(begin + text[1], new String[]{"\n", "\r\n", " ", "\t"}, true);
-		Vector tokens = Utils
-				.tokenize(text[1], new String[] { "\n", "\r\n", " ", "\t" },
-							true);
+		Vector tokens = Utils.tokenize(text[1], new String[] { "\n", "\r\n",
+				" ", "\t" }, true);
 
 		int line_width = 0;
 
@@ -289,12 +288,8 @@ public class ChatScreen extends Canvas implements CommandListener,
 			try {
 				LampiroMidlet._lampiro.platformRequest(url);
 			} catch (ConnectionNotFoundException e) {
-				XMPPClient.getInstance().showAlert(
-													AlertType.ERROR,
-													"URL Error",
-													"Can't open URL:"
-															+ e.getMessage(),
-													this);
+				XMPPClient.getInstance().showAlert(AlertType.ERROR,
+						Config.ALERT_COMMAND_INFO,Config.ALERT_CANCELED_COMMAND,null);
 			}
 		}
 	}
@@ -308,47 +303,47 @@ public class ChatScreen extends Canvas implements CommandListener,
 		int ga = getGameAction(kc);
 
 		switch (ga) {
-		case Canvas.UP: {
-			if ((entry_scroll & SCROLL_UP) == SCROLL_UP) {
-				start_entry--;
-				repaint();
-			}
-			break;
-		}
-		case Canvas.DOWN: {
-			if ((entry_scroll & SCROLL_DOWN) == SCROLL_DOWN) {
-				start_entry++;
-				repaint();
-			}
-			break;
-		}
-		case Canvas.RIGHT: {
-			if ((entry_scroll & SCROLL_RIGHT) == SCROLL_RIGHT) {
-				ConversationEntry e = (ConversationEntry) current_conversation
-						.elementAt(start_entry);
-				if (e.entry_offset < e.lines.size() - 1) {
-					e.entry_offset++;
+			case Canvas.UP: {
+				if ((entry_scroll & SCROLL_UP) == SCROLL_UP) {
+					start_entry--;
 					repaint();
 				}
+				break;
 			}
-			break;
-		}
-		case Canvas.LEFT: {
-			if ((entry_scroll & SCROLL_LEFT) == SCROLL_LEFT) {
-				ConversationEntry e = (ConversationEntry) current_conversation
-						.elementAt(start_entry);
-				if (e.entry_offset > 0) {
-					e.entry_offset--;
+			case Canvas.DOWN: {
+				if ((entry_scroll & SCROLL_DOWN) == SCROLL_DOWN) {
+					start_entry++;
 					repaint();
 				}
+				break;
 			}
-			break;
-		}
-		case Canvas.FIRE: {
-			SimpleComposerScreen cs = new SimpleComposerScreen(this, user);
-			LampiroMidlet.disp.setCurrent(cs);
-			break;
-		}
+			case Canvas.RIGHT: {
+				if ((entry_scroll & SCROLL_RIGHT) == SCROLL_RIGHT) {
+					ConversationEntry e = (ConversationEntry) current_conversation
+							.elementAt(start_entry);
+					if (e.entry_offset < e.lines.size() - 1) {
+						e.entry_offset++;
+						repaint();
+					}
+				}
+				break;
+			}
+			case Canvas.LEFT: {
+				if ((entry_scroll & SCROLL_LEFT) == SCROLL_LEFT) {
+					ConversationEntry e = (ConversationEntry) current_conversation
+							.elementAt(start_entry);
+					if (e.entry_offset > 0) {
+						e.entry_offset--;
+						repaint();
+					}
+				}
+				break;
+			}
+			case Canvas.FIRE: {
+				SimpleComposerScreen cs = new SimpleComposerScreen(this, user);
+				LampiroMidlet.disp.setCurrent(cs);
+				break;
+			}
 		}
 	}
 
@@ -396,7 +391,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 		g.drawLine(0, header_height, w, header_height);
 
 		XMPPClient client = XMPPClient.getInstance();
-		Image img = client.getPresenceIcon(user,null, user.getAvailability());
+		Image img = client.getPresenceIcon(user, null, user.getAvailability());
 		g.drawImage(img, 0, 0, Graphics.TOP | Graphics.LEFT);
 		g.setColor(header_fg);
 		g.setFont(cfont);
@@ -473,7 +468,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 									| Graphics.RIGHT);
 				} else {
 					g.drawString((String) entry.lines.elementAt(j), 1, hpos,
-									Graphics.TOP | Graphics.LEFT);
+							Graphics.TOP | Graphics.LEFT);
 				}
 				hpos += text_height;
 			}
@@ -485,14 +480,14 @@ public class ChatScreen extends Canvas implements CommandListener,
 					entry_scroll |= SCROLL_LEFT;
 					g.setColor(scroll_color);
 					g.fillTriangle(w - 2, header_height + 5 + 20, w - 10,
-									header_height + 12 + 20, w - 2,
-									header_height + 18 + 20);
+							header_height + 12 + 20, w - 2,
+							header_height + 18 + 20);
 				}
 				if (hpos > h) {
 					entry_scroll |= SCROLL_RIGHT;
 					g.setColor(scroll_color);
 					g.fillTriangle(w - 2, h - 9 - 20, w - 10, h - 2 - 20,
-									w - 10, h - 15 - 20);
+							w - 10, h - 15 - 20);
 				}
 			}
 
@@ -511,7 +506,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 			entry_scroll |= SCROLL_UP;
 			g.setColor(scroll_color);
 			g.fillTriangle(w - 13, 12 + header_height, w - 2,
-							12 + header_height, w - 8, header_height + 2);
+					12 + header_height, w - 8, header_height + 2);
 		}
 
 		if (start_entry < current_conversation.size() - 1 && hpos > h) {

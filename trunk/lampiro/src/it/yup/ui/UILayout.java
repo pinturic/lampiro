@@ -1,10 +1,12 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILayout.java 1471 2009-05-13 21:35:41Z luca $
+ * $Id: UILayout.java 1858 2009-10-16 22:42:29Z luca $
 */
 
 package it.yup.ui;
+
+import java.util.Vector;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Graphics;
@@ -43,6 +45,14 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		this.layoutItems = new UIItem[elemNumber];
 		this.focusable = false;
 		group = true;
+	}
+
+	public Vector getItems() {
+		Vector v = new Vector();
+		for (int i = 0; i < layoutItems.length; i++) {
+			v.addElement(layoutItems[i]);
+		}
+		return v;
 	}
 
 	public void setSelected(boolean _selected) {
@@ -130,7 +140,8 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 				this.layoutItems[i].setSelected(false);
 			}
 		}
-		this.layoutItems[this.selectedIndex].setSelected(true);
+		if (selectedIndex >= 0) this.layoutItems[this.selectedIndex]
+				.setSelected(true);
 		this.setDirty(true);
 		this.askRepaint();
 	}
@@ -241,7 +252,8 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		for (int i = 0; i < layoutItems.length; i++) {
 			if (this.layoutItems[i] == item) {
 				if (this.selectedIndex >= 0
-						&& this.selectedIndex < layoutItems.length) {
+						&& this.selectedIndex < layoutItems.length
+						&& this.selectedIndex != i) {
 					this.layoutItems[selectedIndex].setSelected(false);
 				}
 				this.selectedIndex = i;
@@ -272,6 +284,14 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		for (int i = 0; i < layoutItems.length; i++) {
 			UIItem ithLayout = layoutItems[i];
 			ithLayout.setBg_color(bg_color);
+		}
+	}
+
+	public void setFg_color(int fg_color) {
+		this.fg_color = fg_color;
+		for (int i = 0; i < layoutItems.length; i++) {
+			UIItem ithLayout = layoutItems[i];
+			ithLayout.setFg_color(fg_color);
 		}
 	}
 
@@ -329,4 +349,58 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		return false;
 	}
 
+	protected void paint(Graphics g, int w, int h) {
+		int originalGx = g.getTranslateX();
+		int originalGy = g.getTranslateY();
+		if (this.dirty == true) {
+			g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
+			g.fillRect(0, 0, w, h);
+		}
+
+		int pixelSum = 0;
+		int percentageSum = 0;
+		for (int i = 0; i < layoutItems.length; i++) {
+			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) pixelSum += getLayoutDimension(i);
+			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PERCENTUAL) percentageSum += getLayoutDimension(i);
+		}
+		int remainingPixels = 0;
+		if (percentageSum > 0) {
+			remainingPixels = ((this.getMyDimension(g, w) - pixelSum) * 100)
+					/ percentageSum;
+		}
+		int pixelIndex = 0;
+		int i = 0;
+		for (i = 0; i < layoutItems.length - 1; i++) {
+			int ithLayoutDimension = -1;
+			if (layoutItems[i].getType() == UILayout.CONSTRAINT_PIXELS) ithLayoutDimension = getLayoutDimension(i);
+			else
+				ithLayoutDimension = (getLayoutDimension(i) * remainingPixels) / 100;
+
+			if (layoutItems[i].isDirty()) paintLayoutItem(i, g, w, h,
+					ithLayoutDimension);
+			pixelIndex += ithLayoutDimension;
+			translateG(g, i, ithLayoutDimension);
+		}
+		// the last row is "painted alone" to fill all the remaining
+		// pixels
+		if (layoutItems[i].isDirty()) paintLastItem(i, g, w, h, pixelIndex);
+
+		g.translate(originalGx - g.getTranslateX(), +originalGy
+				- g.getTranslateY());
+		if (this.selected && isGroup()) {
+			this.drawSegmentedBorder(g, w, h);
+		}
+	}
+
+	protected abstract void translateG(Graphics g, int i, int forcedDim);
+
+	protected abstract void paintLayoutItem(int i, Graphics g, int w, int h,
+			int forcedDim);
+
+	protected abstract void paintLastItem(int i, Graphics g, int w, int h,
+			int pixelIndex);
+
+	protected abstract int getMyDimension(Graphics g, int w);
+
+	protected abstract int getLayoutDimension(int i);
 }

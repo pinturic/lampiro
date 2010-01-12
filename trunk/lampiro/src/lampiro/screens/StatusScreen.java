@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: StatusScreen.java 1561 2009-06-08 13:52:35Z luca $
+ * $Id: StatusScreen.java 1909 2009-11-25 12:38:37Z luca $
 */
 
 package lampiro.screens;
@@ -36,8 +36,7 @@ public class StatusScreen extends UIScreen {
 	
 	private UIPanel statusPanel = new UIPanel(true,false);
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	// the possible status 
 	private UIRadioButtons ch_status;
@@ -57,15 +56,18 @@ public class StatusScreen extends UIScreen {
 		XMPPClient client = XMPPClient.getInstance();
 		Contact myContact = client.getMyContact();
 		String mapping[] = Contact.availability_mapping;
-		ch_status = new UIRadioButtons(mapping);
+		String [] neededMappings = new String [5];
+		System.arraycopy(mapping, 0, neededMappings, 0, 5);
+		
+		ch_status = new UIRadioButtons(neededMappings);
 		String show = "";
 		String messageStatus = "";
 		String priorityVal = "";
 		closeMenu = new UIMenu("");
 		closeMenu.append(cmd_exit);
 
-		if (myContact != null && myContact.getPresence() != null) {
-			Presence p = myContact.getPresence();
+		if (myContact != null && myContact.getPresence(null) != null) {
+			Presence p = myContact.getPresence(null);
 			show = p.getShow();
 			messageStatus = p.getStatus();
 			priorityVal = String.valueOf(p.getPriority());
@@ -90,7 +92,7 @@ public class StatusScreen extends UIScreen {
 		UIMenu menu = getMenu();
 		ch_status.setSubmenu(closeMenu);
 		this.statusPanel.addItem(ch_status);
-		for (int i = 0; i < mapping.length; i++) {
+		for (int i = 0; i < neededMappings.length; i++) {
 			ch_status.getItem(i).setSubmenu(closeMenu);
 		}
 		tf_status = new UITextField(rm
@@ -123,7 +125,7 @@ public class StatusScreen extends UIScreen {
 			int availability = ch_status.getSelectedIndex();
 
 			if (msg == null || "".equals(msg)) {
-				msg = "Connected using Lampiro: http://lampiro.bluendo.com";
+				msg = "Connected using Lampiro: "+ Config.CLIENT_ADDRESS;
 			}
 
 			Config cfg = Config.getInstance();
@@ -137,12 +139,13 @@ public class StatusScreen extends UIScreen {
 			cfg.saveToStorage();
 
 			Contact myContact = client.getMyContact();
-			if (myContact != null) {
+			// I could even be offline
+			if (myContact != null && myContact.getAllPresences() != null) {
 				client.setPresence(availability, msg, Integer
 						.parseInt(priorityString));
 			}
-
-			RosterScreen.closeAndOpenRoster(this);
+			RosterScreen.getInstance().priorityChecked=false;
+			UICanvas.getInstance().close(this);
 		}
 	}
 }

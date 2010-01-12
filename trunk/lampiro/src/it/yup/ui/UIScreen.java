@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIScreen.java 1601 2009-06-19 14:09:03Z luca $
+ * $Id: UIScreen.java 1913 2009-12-02 14:21:24Z luca $
 */
 
 package it.yup.ui;
@@ -54,8 +54,8 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 * The screen title
 	 */
 	public UILabel titleLabel = new UILabel("");
-	protected Image la = UICanvas.getUIImage("/icons/lag.png");
-	protected Image ra = UICanvas.getUIImage("/icons/rag.png");
+	protected Image la = UICanvas.getInstance().lag;
+	protected Image ra = UICanvas.getInstance().rag;
 	protected UISeparator headerSep = new UISeparator(1);
 	protected UIVLayout headerLayout = null;
 
@@ -67,6 +67,8 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	public UILabel footerLeft = new UILabel("");
 	public UILabel footerRight = new UILabel("");
 
+	private UIScreen returnScreen = null;
+
 	/**
 	 * The graphics in which the screen is painted
 	 * 
@@ -74,6 +76,11 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	private Graphics graphics;
 
 	private Vector paintedItems = new Vector(10);
+
+	/*
+	 * Used for canvas to know if the screen can loose focus in favour of others
+	 */
+	private boolean rollEnabled = true;
 
 	/** Called to notify that the {@link UIScreen} has become visible */
 	public void showNotify() {
@@ -136,12 +143,12 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 * @return The position which the item has been added in.
 	 */
 	public int append(UIItem ui) {
-		getItemList().addElement(ui);
+		getItems().addElement(ui);
 		ui.setScreen(this);
 		ui.setContainer(this);
 		ui.setDirty(true);
 		this.askRepaint();
-		return getItemList().size() - 1;
+		return getItems().size() - 1;
 	}
 
 	/**
@@ -168,10 +175,11 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			popUp.setOpenedState(false);
 			popUp.setSubmenu(null);
 			this.popupList.removeElement(popUp);
-			this.invalidateArea(popUp.getAbsoluteX(), popUp.getAbsoluteY(),
-					popUp.getAbsoluteX() + popUp.getWidth(), popUp
-							.getAbsoluteY()
-							+ popUp.getHeight(this.graphics));
+			int[] coors = new int[] { popUp.getAbsoluteX(),
+					popUp.getAbsoluteY(),
+					popUp.getAbsoluteX() + popUp.getWidth(),
+					popUp.getAbsoluteY() + popUp.getHeight(this.graphics) };
+			this.invalidateArea(coors);
 		}
 		this.askRepaint();
 	}
@@ -181,10 +189,10 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			UIMenu uim = (UIMenu) en.nextElement();
 			uim.setOpenedState(false);
 			uim.setSubmenu(null);
-			this.invalidateArea(uim.getAbsoluteX(), uim.getAbsoluteY(), uim
-					.getAbsoluteX()
-					+ uim.getWidth(), uim.getAbsoluteY()
-					+ uim.getHeight(this.graphics));
+			int[] coors = new int[] { uim.getAbsoluteX(), uim.getAbsoluteY(),
+					uim.getAbsoluteX() + uim.getWidth(),
+					uim.getAbsoluteY() + uim.getHeight(this.graphics) };
+			this.invalidateArea(coors);
 		}
 		this.popupList.removeAllElements();
 		this.askRepaint();
@@ -203,17 +211,16 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 *            The item to add.
 	 */
 	public void insert(int pos, UIItem ui) {
-		if (pos < 0 || pos >= getItemList().size()) { throw new ArrayIndexOutOfBoundsException(
-				"Invalid menu pos: " + getItemList() + ", "
-						+ getItemList().size()); }
+		if (pos < 0 || pos > getItems().size()) { throw new ArrayIndexOutOfBoundsException(
+				"Invalid menu pos: " + getItems() + ", " + getItems().size()); }
 		int oldSelectedIndex = this.getSelectedIndex();
-		getItemList().insertElementAt(ui, pos);
+		getItems().insertElementAt(ui, pos);
 		if (pos <= oldSelectedIndex) this.setSelectedIndex(++oldSelectedIndex);
 		ui.setScreen(this);
 		ui.setContainer(this);
 		ui.setDirty(true);
-		for (int i = pos; i < getItemList().size(); i++) {
-			((UIItem) getItemList().elementAt(i)).setDirty(true);
+		for (int i = pos; i < getItems().size(); i++) {
+			((UIItem) getItems().elementAt(i)).setDirty(true);
 		}
 		this.askRepaint();
 	}
@@ -227,13 +234,13 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 */
 	public UIItem remove(int pos) {
 		UIItem ui = super.remove(pos);
-		for (int i = pos; i < getItemList().size(); i++) {
-			((UIItem) getItemList().elementAt(i)).setDirty(true);
+		for (int i = pos; i < getItems().size(); i++) {
+			((UIItem) getItems().elementAt(i)).setDirty(true);
 		}
 		if (selectedIndex >= pos) selectedIndex--;
-		if (firstVisibleIndex > this.getItemList().size() - 1) firstVisibleIndex = 0;
-		if (lastVisibleIndex > this.getItemList().size() - 1) lastVisibleIndex = this
-				.getItemList().size() - 1;
+		if (firstVisibleIndex > this.getItems().size() - 1) firstVisibleIndex = 0;
+		if (lastVisibleIndex > this.getItems().size() - 1) lastVisibleIndex = this
+				.getItems().size() - 1;
 		this.askRepaint();
 		return ui;
 	}
@@ -275,7 +282,10 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 * @return the removed item
 	 */
 	public UIItem replace(int pos, UIItem ui) {
+		boolean oldFreezed = this.isFreezed();
+		this.setFreezed(true);
 		UIItem posth = super.replace(pos, ui);
+		this.setFreezed(oldFreezed);
 		ui.setScreen(this);
 		ui.setContainer(this);
 		this.askRepaint();
@@ -295,18 +305,17 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 * @return
 	 */
 	public void swap(int firstIndex, int secondIndex) {
-		if (firstIndex >= this.getItemList().size()
-				|| secondIndex >= this.getItemList().size()) throw new ArrayIndexOutOfBoundsException(
+		if (firstIndex >= this.getItems().size()
+				|| secondIndex >= this.getItems().size()) throw new ArrayIndexOutOfBoundsException(
 				"Invalid itemList pos: " + firstIndex + " " + secondIndex
-						+ ", " + getItemList().size());
+						+ ", " + getItems().size());
 
-		Object temp = getItemList().elementAt(firstIndex);
-		getItemList().setElementAt(getItemList().elementAt(secondIndex),
-				firstIndex);
-		getItemList().setElementAt(temp, secondIndex);
-		UIItem dirtyItem = (UIItem) getItemList().elementAt(firstIndex);
+		Object temp = getItems().elementAt(firstIndex);
+		getItems().setElementAt(getItems().elementAt(secondIndex), firstIndex);
+		getItems().setElementAt(temp, secondIndex);
+		UIItem dirtyItem = (UIItem) getItems().elementAt(firstIndex);
 		dirtyItem.setDirty(true);
-		UIItem dirtyItem2 = (UIItem) getItemList().elementAt(secondIndex);
+		UIItem dirtyItem2 = (UIItem) getItems().elementAt(secondIndex);
 		dirtyItem2.setDirty(true);
 		this.askRepaint();
 	}
@@ -356,30 +365,6 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 * @return <code>true</code> if the screen will keep the selection
 	 */
 	public boolean keyPressed(int key) {
-
-		/* the part below has been introduced to handle correctly the 
-		 * synchronization between the "UI" thread and the others that access the UI
-		 * 
-		 * Notes:
-		 * 1) paintCount is synchronized and used here and in askRepaint: if 
-		 *              paintCount is greather than zero the askRepaint does not repaint 
-		 * 2) if key is one of the "action" key (fire or menu keys) this thread do not lock
-		 *              because they will call askRepaint later
-		 *              
-		 * 
-		 */
-		//              boolean needLocking = true;
-		//              if (key == UICanvas.MENU_RIGHT || key == UICanvas.MENU_LEFT
-		//                              || canvas.getGameAction(key) == Canvas.FIRE) {
-		//                      needLocking = false;
-		//              }
-		//              synchronized (this) {
-		//                      if (painting == false)
-		//                              painting = true;
-		//                      else
-		//                              paintBooked = true;
-		//              }
-		//              if (needLocking) UICanvas.lock();
 		boolean selectionKept = false;
 		try {
 			if (this.popupList.size() > 0) {
@@ -399,67 +384,66 @@ public class UIScreen extends UIMenu implements UIIContainer {
 				if (key == UICanvas.MENU_RIGHT) {
 					/* open menu */
 					if (menu != null) {
-						int menuSize = menu.getItemList().size();
+						int menuSize = menu.getItems().size();
 						UIMenu contMenu = null;
 						UIItem selItem = null;
 						if (selectedIndex >= 0
-								&& selectedIndex < this.itemList.size()) {
-							selItem = ((UIItem) this.getItemList().elementAt(
+								&& selectedIndex < this.items.size()) {
+							selItem = ((UIItem) this.getItems().elementAt(
 									selectedIndex)).getSelectedItem();
 						}
 						if (selItem != null) contMenu = selItem.getSubmenu();
 						else if (selectedIndex >= 0
-								&& selectedIndex < this.itemList.size()) {
-							contMenu = ((UIItem) this.getItemList().elementAt(
+								&& selectedIndex < this.items.size()) {
+							contMenu = ((UIItem) this.getItems().elementAt(
 									selectedIndex)).getSubmenu();
 						}
 						if (menuSize == 2 && contMenu == null) {
-							this.menuAction(menu, (UIItem) menu.getItemList()
+							this.menuAction(menu, (UIItem) menu.getItems()
 									.elementAt(0));
 						} else if (menuSize > 1) {
 							menu.setOpenedState(true);
 							this.askRepaint();
 						} else if (menuSize == 1) {
-							this.menuAction(menu, (UIItem) menu.getItemList()
+							this.menuAction(menu, (UIItem) menu.getItems()
 									.elementAt(0));
 						}
 					}
 					selectionKept = true;
 				} else if (key == UICanvas.MENU_LEFT) {
-					if (selectedIndex >= 0
-							&& selectedIndex < this.itemList.size()) {
+					if (selectedIndex >= 0 && selectedIndex < this.items.size()) {
 						// A "contextual menu" has been asked
-						UIItem selItem = ((UIItem) this.getItemList()
-								.elementAt(selectedIndex)).getSelectedItem();
+						UIItem selItem = ((UIItem) this.getItems().elementAt(
+								selectedIndex)).getSelectedItem();
 						// An UIitem like UICombobox can have no selectedItem but a subMenu
 						UIMenu contMenu = null;
 						if (selItem != null) contMenu = selItem.getSubmenu();
 						else
-							contMenu = ((UIItem) this.getItemList().elementAt(
+							contMenu = ((UIItem) this.getItems().elementAt(
 									selectedIndex)).getSubmenu();
 						if (this.selectedIndex >= 0 && contMenu != null) {
 							// if menu has 0 width centers it on the screen
 							if (contMenu.getWidth() == 0) contMenu.width = UICanvas
 									.getInstance().getWidth()
 									- contMenu.getAbsoluteX() * 2;
-							if (contMenu.getItemList().size() > 1) this
+							if (contMenu.getItems().size() > 1) this
 									.addPopup(contMenu);
-							else if (contMenu.getItemList().size() == 1) menuAction(
-									contMenu, (UIItem) contMenu.getItemList()
+							else if (contMenu.getItems().size() == 1) menuAction(
+									contMenu, (UIItem) contMenu.getItems()
 											.elementAt(0));
-						} else {
+						} else if (menu!=null){
 							// second items of normal menu has been asked
-							int menuSize = menu.getItemList().size();
+							int menuSize = menu.getItems().size();
 							if (menuSize == 2) {
-								this.menuAction(menu, (UIItem) menu
-										.getItemList().elementAt(1));
+								this.menuAction(menu, (UIItem) menu.getItems()
+										.elementAt(1));
 							}
 						}
-					} else {
+					} else if (menu!=null){
 						// second items of normal menu has been asked
-						int menuSize = menu.getItemList().size();
+						int menuSize = menu.getItems().size();
 						if (menuSize == 2) {
-							this.menuAction(menu, (UIItem) menu.getItemList()
+							this.menuAction(menu, (UIItem) menu.getItems()
 									.elementAt(1));
 						}
 					}
@@ -467,7 +451,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 
 				// first let the item receive the keyPressure
 				if (this.selectedIndex >= 0) selectionKept = ((UIItem) this
-						.getItemList().elementAt(this.selectedIndex))
+						.getItems().elementAt(this.selectedIndex))
 						.keyPressed(key);
 
 				int ka = canvas.getGameAction(key);
@@ -488,25 +472,24 @@ public class UIScreen extends UIMenu implements UIIContainer {
 							newSelectedIndex = traverseFocusable(
 									newSelectedIndex, false);
 							if (newSelectedIndex >= 0
-									&& newSelectedIndex < this.getItemList()
+									&& newSelectedIndex < this.getItems()
 											.size()) {
-								UIItem selectedItem = ((UIItem) this
-										.getItemList().elementAt(
-												newSelectedIndex));
+								UIItem selectedItem = ((UIItem) this.getItems()
+										.elementAt(newSelectedIndex));
 								if (selectedItem.isFocusable()) {
 									if (selectedIndex >= 0) {
-										((UIItem) this.getItemList().elementAt(
+										((UIItem) this.getItems().elementAt(
 												selectedIndex))
 												.setSelected(false);
 									}
 									selectedIndex = newSelectedIndex;
-									((UIItem) this.getItemList().elementAt(
+									((UIItem) this.getItems().elementAt(
 											selectedIndex)).setSelected(true);
 								} else {
 									this.firstVisibleIndex = 0;
 									for (int i = 0; i <= this.lastVisibleIndex; i++) {
-										((UIItem) this.getItemList().elementAt(
-												i)).setDirty(true);
+										((UIItem) this.getItems().elementAt(i))
+												.setDirty(true);
 									}
 								}
 							}
@@ -514,7 +497,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 							this.askRepaint();
 							break;
 						case Canvas.DOWN:
-							if (selectedIndex == this.getItemList().size() - 1) {
+							if (selectedIndex == this.getItems().size() - 1) {
 								/* last item selected, can't go down further */
 								break;
 							}
@@ -526,38 +509,38 @@ public class UIScreen extends UIMenu implements UIIContainer {
 							newSelectedIndex = traverseFocusable(
 									newSelectedIndex, true);
 							if (newSelectedIndex >= 0
-									&& newSelectedIndex < this.getItemList()
+									&& newSelectedIndex < this.getItems()
 											.size()) {
-								if (((UIItem) this.getItemList().elementAt(
+								if (((UIItem) this.getItems().elementAt(
 										newSelectedIndex)).isFocusable()) {
 									if (selectedIndex >= 0) {
-										((UIItem) this.getItemList().elementAt(
+										((UIItem) this.getItems().elementAt(
 												selectedIndex))
 												.setSelected(false);
 									}
 									selectedIndex = newSelectedIndex;
-									((UIItem) this.getItemList().elementAt(
+									((UIItem) this.getItems().elementAt(
 											selectedIndex)).setSelected(true);
-								} else if (lastVisibleIndex < this
-										.getItemList().size() - 1) {
+								} else if (lastVisibleIndex < this.getItems()
+										.size() - 1) {
 									int gapHeight = 0;
 									for (int i = this.lastVisibleIndex + 1; i < this
-											.getItemList().size(); i++)
-										gapHeight += ((UIItem) this
-												.getItemList().elementAt(i))
+											.getItems().size(); i++)
+										gapHeight += ((UIItem) this.getItems()
+												.elementAt(i))
 												.getHeight(this.graphics);
 									do {
 										UIItem ithElem = ((UIItem) this
-												.getItemList().elementAt(
+												.getItems().elementAt(
 														firstVisibleIndex));
 										gapHeight -= ithElem
 												.getHeight(this.graphics);
 										this.firstVisibleIndex++;
 									} while (gapHeight > 0);
 									for (int i = firstVisibleIndex; i < this
-											.getItemList().size(); i++) {
-										((UIItem) this.getItemList().elementAt(
-												i)).setDirty(true);
+											.getItems().size(); i++) {
+										((UIItem) this.getItems().elementAt(i))
+												.setDirty(true);
 									}
 								}
 							}
@@ -570,16 +553,16 @@ public class UIScreen extends UIMenu implements UIIContainer {
 
 				// then raise the "fire" event
 				if (ka == Canvas.FIRE && this.selectedIndex >= 0) {
-					UIItem selectedItem = ((UIItem) this.getItemList()
-							.elementAt(selectedIndex)).getSelectedItem();
+					UIItem selectedItem = ((UIItem) this.getItems().elementAt(
+							selectedIndex)).getSelectedItem();
 					if (selectedItem != null) this.itemAction(selectedItem);
 					selectionKept = true;
 				}
 
-				// #mdebug
-//@				System.out.println("moved: " + firstVisibleIndex + "/"
-//@						+ lastVisibleIndex + "/" + selectedIndex);
-				// #enddebug
+				// #ifdef UI_DEBUG
+				//@				System.out.println("moved: " + firstVisibleIndex + "/"
+				//@						+ lastVisibleIndex + "/" + selectedIndex);
+				// #endif 
 			}
 		} catch (Exception e) {
 			// #mdebug
@@ -587,13 +570,6 @@ public class UIScreen extends UIMenu implements UIIContainer {
 //@			e.printStackTrace();
 			// #enddebug
 		}
-
-		//              if (needLocking) UICanvas.unlock();
-		//              synchronized (this) {
-		//                      painting = false;
-		//              }
-		//this.askRepaint();
-
 		return selectionKept;
 	}
 
@@ -613,7 +589,8 @@ public class UIScreen extends UIMenu implements UIIContainer {
 				int y1 = openMenu.getAbsoluteY();
 				int x2 = x1 + openMenu.getWidth();
 				int y2 = y1 + openMenu.getHeight(this.graphics);
-				this.invalidateArea(x1, y1, x2, y2);
+				int[] coors = new int[] { x1, y1, x2, y2 };
+				this.invalidateArea(coors);
 			}
 			if (openMenu.getParentMenu() != null) {
 				openMenu.getParentMenu().setSubmenu(null);
@@ -637,9 +614,9 @@ public class UIScreen extends UIMenu implements UIIContainer {
 					int menuY = openMenu.getAbsoluteY();
 					int cumulativeHeight = this.headerLayout
 							.getHeight(this.graphics);
-					for (int i = this.firstVisibleIndex; i < this.getItemList()
+					for (int i = this.firstVisibleIndex; i < this.getItems()
 							.size(); i++) {
-						UIItem ith = (UIItem) this.getItemList().elementAt(i);
+						UIItem ith = (UIItem) this.getItems().elementAt(i);
 						cumulativeHeight += ith.getHeight(this.graphics);
 						if (cumulativeHeight >= menuY) {
 							ith.setDirty(true);
@@ -673,47 +650,46 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		}
 	}
 
-	private boolean paintBooked = false;
 	private boolean painting = false;
+	private boolean bookRepaint = false;
+
+	// #mdebug 
+//@	private static int paintCount = 0;
+//@
+	// #enddebug
 
 	/**
 	 * Used by items and menus to ask the containing screen a repaint.
 	 */
-	protected boolean askRepaint() {
-		boolean paintEnable = false;
-
-		synchronized (this) {
+	public boolean askRepaint() {
+		if (painting == false) {
 			// #mdebug 
-//@			System.out.println("painting: " + painting);
+//@			paintCount++;
+//@			if (paintCount >= 2) {
+//@				System.out.println("Multiple paint: lock problem");
+//@			}
 			// #enddebug
-			if (painting == false) {
-				paintEnable = true;
-				painting = true;
-			} else
-				paintBooked = true;
-		}
-
-		if (paintEnable) {
 			try {
+				painting = true;
 				this.canvas.askRepaint(this);
+				painting = false;
+				// #mdebug 
+//@				paintCount--;
+				// #enddebug
 			} catch (Exception e) {
+				painting = false;
+				bookRepaint = false;
 				// #mdebug 
 //@				System.out.println("in screen painting");
 //@				e.printStackTrace();
 				// #enddebug
 			}
-			// someone else in the meanwhile
-			boolean paintForce = false;
-			synchronized (this) {
-				painting = false;
-				if (paintBooked) {
-					paintBooked = false;
-					paintForce = true;
-				}
+			if (bookRepaint) {
+				bookRepaint = false;
+				return this.askRepaint();
 			}
-			if (paintForce) {
-				this.askRepaint();
-			}
+		} else {
+			bookRepaint = true;
 		}
 		return true;
 	}
@@ -762,11 +738,11 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		g.setClip(0, headerHeight, canvasWidth, canvasHeight - headerHeight);
 		g.translate(0, headerHeight);
 
-		// #mdebug 
-//@		System.out.println("paint0: " + canvasWidth + "/"
-//@				+ (canvasHeight - headerHeight) + "/" + g.getClipHeight() + "/"
-//@				+ g.getTranslateY());
-		// #enddebug
+		// #ifdef UI_DEBUG 
+		//@		System.out.println("paint0: " + canvasWidth + "/"
+		//@				+ (canvasHeight - headerHeight) + "/" + g.getClipHeight() + "/"
+		//@				+ g.getTranslateY());
+		// #endif
 
 		// a trick used to avoid painting of screen when a popup is opened
 		/* draw menu if opened */
@@ -782,13 +758,13 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			this.removePaintedItem(this);
 
 			// clean the gap
-			if (this.lastVisibleIndex == this.getItemList().size() - 1) {
+			if (this.lastVisibleIndex == this.getItems().size() - 1) {
 				g.setColor(getBg_color() >= 0 ? getBg_color()
 						: UIConfig.bg_color);
 				int yGapHeight = canvasHeight - headerHeight;
 				int usedHeight = 0;
 				for (int i = firstVisibleIndex; i <= lastVisibleIndex; i++) {
-					UIItem ui = (UIItem) getItemList().elementAt(i);
+					UIItem ui = (UIItem) getItems().elementAt(i);
 					usedHeight += ui.getHeight(g);
 				}
 				g.translate(-g.getTranslateX(), headerHeight + usedHeight
@@ -902,16 +878,16 @@ public class UIScreen extends UIMenu implements UIIContainer {
 				left = menu.cancelMenuString;
 			}
 		} else if (selectedIndex >= 0) {
-			UIItem selItem = ((UIItem) this.getItemList().elementAt(
-					selectedIndex)).getSelectedItem();
+			UIItem selItem = ((UIItem) this.getItems().elementAt(selectedIndex))
+					.getSelectedItem();
 			UIMenu contMenu = null;
 			if (selItem != null) contMenu = selItem.getSubmenu();
 			else
-				contMenu = ((UIItem) this.getItemList()
-						.elementAt(selectedIndex)).getSubmenu();
+				contMenu = ((UIItem) this.getItems().elementAt(selectedIndex))
+						.getSubmenu();
 			if (contMenu != null) {
-				if (contMenu.getItemList().size() == 1) {
-					UIItem firstItem = (UIItem) contMenu.getItemList()
+				if (contMenu.getItems().size() == 1) {
+					UIItem firstItem = (UIItem) contMenu.getItems()
 							.elementAt(0);
 					if (firstItem instanceof UILabel) left = ((UILabel) firstItem)
 							.getText();
@@ -922,18 +898,13 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			}
 		}
 
-		if (left.compareTo(this.footerLeft.getText()) != 0) {
-			this.footerLeft.setText(left);
-			changed = true;
-		}
-
 		String right = "";
 		if (menu != null && !menu.isOpenedState() && !hasPopup) {
-			if (menu.getItemList().size() == 1) right = ((UILabel) menu
-					.getItemList().elementAt(0)).getText();
-			else if (menu.getItemList().size() == 2 && left.length() == 0) {
-				right = ((UILabel) menu.getItemList().elementAt(0)).getText();
-				left = ((UILabel) menu.getItemList().elementAt(1)).getText();
+			if (menu.getItems().size() == 1) right = ((UILabel) menu.getItems()
+					.elementAt(0)).getText();
+			else if (menu.getItems().size() == 2 && left.length() == 0) {
+				right = ((UILabel) menu.getItems().elementAt(0)).getText();
+				left = ((UILabel) menu.getItems().elementAt(1)).getText();
 			} else
 				right = UIConfig.menuString;
 		} else if ((menu != null && menu.isOpenedState()) || hasPopup) {
@@ -945,6 +916,8 @@ public class UIScreen extends UIMenu implements UIIContainer {
 				right = menu.selectMenuString;
 			}
 		}
+		right = right.toUpperCase();
+		left = left.toUpperCase();
 		if (right.compareTo(this.footerRight.getText()) != 0) {
 			this.footerRight.setText(right);
 			changed = true;
@@ -960,11 +933,11 @@ public class UIScreen extends UIMenu implements UIIContainer {
 			g.drawLine(canvasWidth / 2, 0, canvasWidth / 2, footerHeight);
 		}
 
-		// #mdebug 
-//@		System.out.println("screenPaint done: " + g.getClipWidth() + "/"
-//@				+ g.getClipHeight() + "/" + g.getTranslateX() + "/"
-//@				+ g.getTranslateY());
-		// #enddebug
+		// #ifdef UI_DEBUG 
+		//@		System.out.println("screenPaint done: " + g.getClipWidth() + "/"
+		//@				+ g.getClipHeight() + "/" + g.getTranslateX() + "/"
+		//@				+ g.getTranslateY());
+		// #endif
 		g.setFont(cfont);
 		return changed;
 	}
@@ -1001,7 +974,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 
 		// reset the Items
 		this.firstVisibleIndex = 0;
-		for (Enumeration en = getItemList().elements(); en.hasMoreElements();) {
+		for (Enumeration en = getItems().elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
 			cumulativeHeight += ithItem.getHeight(this.graphics);
 			ithItem.setDirty(true);
@@ -1081,49 +1054,47 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 * @param Freezes
 	 *            or Unfreezes this {@link UIScreen}.
 	 */
-	synchronized public void setFreezed(boolean freezed) {
+	public void setFreezed(boolean freezed) {
 		this.freezed = freezed;
 	}
 
 	/**
 	 * All the menuItems and popups that intersects this area are set as dirty
 	 */
-	public void invalidateArea(int x1, int y1, int x2, int y2) {
+	public void invalidateArea(int[] coors) {
 		// first check if it intersects any item in itemList
 		int cumulativeHeight = this.headerLayout.getHeight(this.graphics);
-		for (int i = this.firstVisibleIndex; i < this.getItemList().size(); i++) {
-			UIItem ith = (UIItem) this.getItemList().elementAt(i);
-			int xa = 0, xb = this.width;
-			int ya = cumulativeHeight;
-			int yb = cumulativeHeight + ith.getHeight(this.graphics);
-			if (intersect(new int[] { x1, y1, x2, y2 }, new int[] { xa, ya, xb,
-					yb })) {
-				ith.setDirty(true);
-			}
+		for (int i = this.firstVisibleIndex; i < this.getItems().size(); i++) {
+			UIItem ith = (UIItem) this.getItems().elementAt(i);
+			int yb = invalidateItem(ith, coors, cumulativeHeight);
 			cumulativeHeight = yb;
 		}
 		// then the popup
 		for (Enumeration en = popupList.elements(); en.hasMoreElements();) {
 			UIMenu ithMenu = (UIMenu) en.nextElement();
-			int xa = ithMenu.getAbsoluteX(), xb = xa + ithMenu.getWidth();
-			int ya = ithMenu.getAbsoluteY();
-			int yb = ya + ithMenu.getHeight(this.graphics);
-			if (intersect(new int[] { x1, y1, x2, y2 }, new int[] { xa, ya, xb,
-					yb })) {
-				ithMenu.setDirty(true);
-			}
+			invalidateMenu(ithMenu, coors);
 		}
 		// and then the menu if opened
 		if (this.menu != null && this.menu.isOpenedState()) {
-			int xa = this.menu.getAbsoluteX(), xb = xa + this.menu.getWidth();
-			int ya = this.menu.getAbsoluteY();
-			int yb = ya + this.menu.getHeight(this.graphics);
-			if (intersect(new int[] { x1, y1, x2, y2 }, new int[] { xa, ya, xb,
-					yb })) {
-				this.menu.setDirty(true);
-			}
+			invalidateMenu(this.menu, coors);
 		}
 
+	}
+
+	/**
+	 * @param ith
+	 * @param coors
+	 * @param cumulativeHeight
+	 * @return
+	 */
+	private int invalidateItem(UIItem ith, int[] coors, int cumulativeHeight) {
+		int xa = 0, xb = this.width;
+		int ya = cumulativeHeight;
+		int yb = cumulativeHeight + ith.getHeight(this.graphics);
+		if (intersect(coors, new int[] { xa, ya, xb, yb })) {
+			ith.setDirty(true);
+		}
+		return yb;
 	}
 
 	private boolean intersect(int[] recta, int[] rectb) {
@@ -1139,8 +1110,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		return true;
 	}
 
-	public void invalidatePopups(UIMenu drawnMenu, int x1, int y1, int x2,
-			int y2) {
+	public void invalidatePopups(UIMenu drawnMenu, int[] coors) {
 
 		// reset the clips in order to invalidate correctely 
 		// all the objects in the screen
@@ -1154,43 +1124,38 @@ public class UIScreen extends UIMenu implements UIIContainer {
 		g.setClip(0, 0, w, h);
 
 		int cumulativeHeight = this.headerLayout.getHeight(g);
-		for (int i = this.firstVisibleIndex; i < itemList.size(); i++) {
-			UIItem ith = (UIItem) this.getItemList().elementAt(i);
-			int xa = 0, xb = this.width;
-			int ya = cumulativeHeight;
-			int yb = cumulativeHeight + ith.getHeight(this.graphics);
-			if (intersect(new int[] { x1, y1, x2, y2 }, new int[] { xa, ya, xb,
-					yb })) {
-				ith.setDirty(true);
-			}
+		for (int i = this.firstVisibleIndex; i < items.size(); i++) {
+			UIItem ith = (UIItem) this.getItems().elementAt(i);
+			int yb = invalidateItem(ith, coors, cumulativeHeight);
 			cumulativeHeight = yb;
 		}
 
 		if (this.menu != null && this.menu != drawnMenu
 				&& this.menu.isOpenedState()) {
-			int xa = this.menu.getAbsoluteX(), xb = xa + this.menu.getWidth();
-			int ya = this.menu.getAbsoluteY();
-			int yb = ya + this.menu.getHeight(this.graphics);
-			if (intersect(new int[] { x1, y1, x2, y2 }, new int[] { xa, ya, xb,
-					yb })) {
-				this.menu.setDirty(true);
-			}
+			invalidateMenu(this.menu, coors);
 		}
 		// then the popup
 		for (Enumeration en = popupList.elements(); en.hasMoreElements();) {
 			UIMenu ithMenu = (UIMenu) en.nextElement();
 			if (ithMenu == drawnMenu) continue;
-			int xa = ithMenu.getAbsoluteX(), xb = xa + ithMenu.getWidth();
-			int ya = ithMenu.getAbsoluteY();
-			int yb = ya + ithMenu.getHeight(this.graphics);
-			if (intersect(new int[] { x1, y1, x2, y2 }, new int[] { xa, ya, xb,
-					yb })) {
-				ithMenu.setDirty(true);
-			}
+			invalidateMenu(ithMenu, coors);
 		}
 
 		g.setClip(originalClipX, originalClipY, originalClipWidth,
 				originalClipHeight);
+	}
+
+	/**
+	 * @param coors
+	 */
+	private void invalidateMenu(UIMenu menuToInvalidate, int[] coors) {
+		int xa = menuToInvalidate.getAbsoluteX(), xb = xa
+				+ menuToInvalidate.getWidth();
+		int ya = menuToInvalidate.getAbsoluteY();
+		int yb = ya + menuToInvalidate.getHeight(this.graphics);
+		if (intersect(coors, new int[] { xa, ya, xb, yb })) {
+			menuToInvalidate.setDirty(true);
+		}
 	}
 
 	public void setDirty(boolean dirty) {
@@ -1231,7 +1196,6 @@ public class UIScreen extends UIMenu implements UIIContainer {
 				this.askRepaint();
 			}
 		}
-
 	}
 
 	/*
@@ -1261,5 +1225,21 @@ public class UIScreen extends UIMenu implements UIIContainer {
 
 	public Vector getPopupList() {
 		return popupList;
+	}
+
+	public boolean isRollEnabled() {
+		return rollEnabled;
+	}
+
+	public void setRollEnabled(boolean rollEnabled) {
+		this.rollEnabled = rollEnabled;
+	}
+
+	public void setReturnScreen(UIScreen returnScreen) {
+		this.returnScreen = returnScreen;
+	}
+
+	public UIScreen getReturnScreen() {
+		return returnScreen;
 	}
 }

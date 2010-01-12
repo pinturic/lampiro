@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1598 2009-06-19 12:59:47Z luca $
+ * $Id: RegisterScreen.java 1942 2010-01-11 15:40:21Z luca $
  */
 
 package lampiro.screens;
@@ -21,23 +21,30 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
-import it.yup.util.Logger;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.StreamEventListener;
 
 // #ifdef BLUENDO_REG
-
-import it.yup.xmpp.BluendoXMLRPC;
-
+//@
+//@import it.yup.xmpp.BluendoXMLRPC;
+//@import it.yup.xml.Element;
+//@import it.yup.xmpp.packets.Iq;
+//@
 // #endif
 
+//#mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+//#enddebug
+
 import it.yup.xmpp.Config;
+import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
 
 import java.io.IOException;
@@ -53,7 +60,17 @@ import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
 import javax.microedition.rms.RecordStore;
 
+// #ifdef BLUENDO_REG
+//@
+//@import org.bouncycastle.util.encoders.Base64;
+//@
+// #endif
+
+// #ifndef GLIDER
+
 import lampiro.LampiroMidlet;
+
+// #endif
 
 public class RegisterScreen extends UIScreen implements StreamEventListener {
 
@@ -61,8 +78,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	private UIHLayout logoLayout;
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	/* 
 	 * The login info label
@@ -75,34 +91,38 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	private UILabel key_configuration = new UILabel(rm
 			.getString(ResourceIDs.STR_KEY_CONFIGURATION));
-
 	private UIHLayout confLayout = new UIHLayout(2);
 
-	private UITextField tf_jid_name = new UITextField("", null, 128,
-			TextField.ANY | TextField.NON_PREDICTIVE);
+	UITextField tf_jid_name = new UITextField("", null, 128, TextField.ANY
+			| TextField.NON_PREDICTIVE, UITextField.FORMAT_LOWER_CASE);
 
 	private UITextField tf_pwd = new UITextField(rm
 			.getString(ResourceIDs.STR_PASSWORD), null, 32, TextField.ANY
 			| TextField.PASSWORD);
 
+	private UIButton but_cancel = new UIButton(rm
+			.getString(ResourceIDs.STR_STOP_LOGIN));
+
+	// #ifndef GLIDER
+	private UITextField tf_email = new UITextField(rm
+			.getString(ResourceIDs.STR_EMAIL_ADDRESS), null, 128,
+			TextField.EMAILADDR);
+	private UICheckbox grp_new_account = new UICheckbox(rm
+			.getString(ResourceIDs.STR_NEW_USER));
+	private UIMenu wrongPwd;
 	private UITextField tf_pwd_confirm = new UITextField(rm
 			.getString(ResourceIDs.STR_CONFIRM)
 			+ " " + rm.getString(ResourceIDs.STR_PASSWORD).toLowerCase(), null,
 			32, TextField.ANY | TextField.PASSWORD);
-
-	private UIButton but_cancel = new UIButton(rm
-			.getString(ResourceIDs.STR_STOP_LOGIN));
-
-	private UITextField tf_email = new UITextField(rm
-			.getString(ResourceIDs.STR_EMAIL_ADDRESS), null, 128,
-			TextField.EMAILADDR);
+	private UIHLayout buttonLayout;
+	private UITextField wizardText;
+	private UITextField wizardTextGateways;
+	private static boolean wizardShown = false;
+	// #endif
 
 	private UITextField tf_server = new UITextField(rm
 			.getString(ResourceIDs.STR_SERVER_NAME), null, 50, TextField.ANY
 			| TextField.NON_PREDICTIVE);
-
-	private UICheckbox grp_new_account = new UICheckbox(rm
-			.getString(ResourceIDs.STR_NEW_USER));
 
 	private UICheckbox grp_advanced = new UICheckbox(rm
 			.getString(ResourceIDs.STR_ADVANCED_OPTIONS));
@@ -121,11 +141,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	//private UIMenu scaryGmail;
 
-	private UIMenu wrongPwd;
+	private boolean enableRoll = true;
 
 	// #ifdef COMPRESSION
-	//@			private UICheckbox cb_compression = new UICheckbox(rm
-	//@					.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
+	//@		private UICheckbox cb_compression = new UICheckbox(rm
+	//@				.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
 	// #endif
 
 	// #ifdef TLS
@@ -143,10 +163,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UIButton btn_login = new UIButton(rm
 			.getString(ResourceIDs.STR_LOGIN));
 
-	private UIHLayout logLayout;
+	protected UIHLayout logLayout;
 
+// #ifndef GLIDER
 	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT)
 			.toUpperCase());
+	// #endif
 
 	private UILabel cmd_state = new UILabel(rm.getString(
 			ResourceIDs.STR_CHANGE_STATUS).toUpperCase());
@@ -155,20 +177,25 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	private UIButton buttonYes;
 	private UIButton buttonNo;
-	private UIHLayout buttonLayout;
-	private UITextField wizardText;
-	private UITextField wizardTextGateways;
 
 	private UIMenu instructionsSubMenu;
 
 	// #ifdef BLUENDO_REG
-
-	// used to know the steps of the Bluendo registration
-	// -1 not started, 0 started
-	private int regStatus = -1;
-
-	private BluendoXMLRPC blrpc = null;
-
+	//@
+	//@	// used to know the steps of the Bluendo registration
+	//@	// -1 not started, 0 started
+	//@	private int regStatus = -1;
+	//@
+	//@	private BluendoXMLRPC blrpc = null;
+	//@
+	//@	private UILabel captchaLabel = null;
+	//@
+	//@	private UITextField captchaText = new UITextField("", null, 10,
+	//@			TextField.NUMERIC | TextField.NON_PREDICTIVE,
+	//@			UITextField.FORMAT_LOWER_CASE);
+	//@
+	//@	private String sessionId = "";
+	//@
 	// #endif 
 
 	/*
@@ -199,8 +226,6 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UILabel instructionLabel = new UILabel(rm.getString(
 			ResourceIDs.STR_INSTRUCTIONS).toUpperCase());
 
-	private static boolean wizardShown = false;
-
 	private String exUsername = "<username>";
 	private String exServer = "<example.org>";
 
@@ -208,8 +233,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		// trick to remove the "exUsername" in the username textField
 		int ka = UICanvas.getInstance().getGameAction(key);
 		int selIndex = this.getSelectedIndex();
-		UIItem selItem = (UIItem) (selIndex >= 0 ? this.getItemList()
-				.elementAt(selIndex) : null);
+		UIItem selItem = (UIItem) (selIndex >= 0 ? this.getItems().elementAt(
+				selIndex) : null);
 		if (ka == UICanvas.FIRE && selItem == this.tf_jid_name) {
 			if (tf_jid_name.getText().indexOf(exUsername) == 0) {
 				String tfText = tf_jid_name.getText();
@@ -222,12 +247,17 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 						.indexOf(exServer)));
 			}
 		}
-		return super.keyPressed(key);
+
+		if (super.keyPressed(key)) return true;
+		if (enableRoll) return RosterScreen.makeRoll(key, this);
+		return false;
 	}
 
 	private RegisterScreen() {
+		progress_gauge.cancel();
 		resource = new UITextField(rm.getString(ResourceIDs.STR_RESOURCE), cfg
-				.getProperty(Config.YUP_RESOURCE, "Lampiro"), 50, TextField.ANY);
+				.getProperty(Config.YUP_RESOURCE, Config.CLIENT_NAME), 50,
+				TextField.ANY);
 		instructionsSubMenu = UIUtils.easyMenu("", 20, 20, UICanvas
 				.getInstance().getWidth(), instructionLabel);
 		tf_jid_label.setSubmenu(instructionsSubMenu);
@@ -261,9 +291,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 		tf_jid_name.setFocusable(true);
 		tf_pwd.setFocusable(true);
+		// #ifndef GLIDER
 		tf_pwd_confirm.setFocusable(true);
-		tf_server.setFocusable(true);
 		tf_email.setFocusable(true);
+		// #endif
+		tf_server.setFocusable(true);
 
 		// Add options to the connecting group
 		grp_server.append("automatic");
@@ -274,7 +306,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			String tempUser = cfg.getProperty(Config.USER, "") + "@"
 					+ cfg.getProperty(Config.SERVER, "");
 			if (tempUser.compareTo("@") == 0) {
-				tempUser = exUsername + "@" + Config.BLUENDO_SERVER;
+				tempUser = exUsername + "@" + Config.DEFAULT_SERVER;
 			} else
 				grp_server.setSelectedIndex(1);
 			tf_jid_name.setText(tempUser);
@@ -284,9 +316,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			tf_server.setText(savedServer);
 			if (savedServer.length() == 0) grp_server.setSelectedIndex(0);
 			//#ifdef COMPRESSION
-			//@									boolean enable_compression = Short.parseShort(cfg.getProperty(
-			//@											Config.COMPRESSION, "1")) == 1;
-			//@									cb_compression.setChecked(enable_compression);
+			//@						boolean enable_compression = Short.parseShort(cfg.getProperty(
+			//@								Config.COMPRESSION, "1")) == 1;
+			//@						cb_compression.setChecked(enable_compression);
 			//#endif
 			//#ifdef TLS
 			//@						boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
@@ -319,6 +351,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		//@		this.append(cmd_debug);
 	}
 
+	// #ifndef GLIDER
 	private void placeWizard() {
 		removeAll();
 
@@ -343,8 +376,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 		this.wizardTextGateways = new UITextField("", rm
 				.getString(ResourceIDs.STR_WIZARD_GATEWAYS)
-				+ " " + rm.getString(ResourceIDs.STR_SCARY_GMAIL), 1000,
-				TextField.UNEDITABLE);
+				+ " ", 1000, TextField.UNEDITABLE);
 		wizardTextGateways.setWrappable(true);
 		this.append(wizardTextGateways);
 
@@ -352,15 +384,26 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		this.askRepaint();
 	}
 
+	// #endif
+
 	/** Called to notify that the {@link UIScreen} has become visible */
 	public void showNotify() {
 		setStatusLabel();
+		// #ifndef GLIDER
 		String user = cfg.getProperty(Config.USER);
 		// the wizard is shown when the configuration is empty for the user
 		// or if the wizard has already been shown
 		if ((user == null || user.length() == 0) && wizardShown == false) placeWizard();
 		else
+			// #endif
 			placeItems();
+
+		// select the login button when shown for the first time
+		if (this.contains(logLayout)) {
+			this.setSelectedItem(logLayout);
+			logLayout.setSelectedItem(btn_login);
+			this.askRepaint();
+		}
 	}
 
 	public void setStatusLabel() {
@@ -402,9 +445,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	 * or compile flags.
 	 * It should be synch because it is called in many places by different threads.  
 	 */
-	synchronized private void placeItems() {
+	private void placeItems() {
 		UIItem oldSelectedItem = this.getSelectedIndex() > 0 ? (UIItem) this
-				.getItemList().elementAt(this.getSelectedIndex()) : null;
+				.getItems().elementAt(this.getSelectedIndex()) : null;
 		this.setFreezed(true);
 		removeAll();
 
@@ -417,19 +460,21 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		append(tf_jid_label);
 		append(tf_jid_name);
 		append(tf_pwd);
+		// #ifndef GLIDER
 		if (grp_new_account.isChecked()) {
 			append(tf_pwd_confirm);
 			append(tf_email);
 		}
+		// #endif
 		append(grp_advanced);
 		checkLogin();
 
 		if (grp_advanced.isChecked()) {
 			//#ifdef COMPRESSION
-			//@									append(this.cb_compression);
+			//@ append(this.cb_compression);
 			//#endif
 			//#ifdef TLS
-			//@						append(this.cb_TLS);
+			//@	append(this.cb_TLS);
 			//#endif
 
 			append(resource);
@@ -439,12 +484,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			if (grp_server.getSelectedIndex() == 1) {
 				append(tf_server);
 			}
+			// #ifndef GLIDER
 			append(grp_new_account);
+			// #endif
 			append(reset_config);
 			append(reset_all_data);
 		}
 		// #debug
 		//@		this.append(cmd_debug);
+		// #ifdef BLUENDO_REG
+		//@		if (regStatus == 0) {
+		//@			removeAll();
+		//@			append(UIUtils.easyCenterLayout(captchaLabel, 150));
+		//@			captchaText.setText("");
+		//@			append(captchaText);
+		//@			append(logLayout);
+		//@			checkLogin();
+		//@		}
+		// #endif
 		this.setFreezed(false);
 		if (oldSelectedItem != null) this.setSelectedItem(oldSelectedItem);
 		this.askRepaint();
@@ -452,7 +509,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	public void menuAction(UIMenu menu, UIItem c) {
 		if (c == cmd_exit) {
+// #ifndef GLIDER
 			LampiroMidlet.exit();
+			// #endif
 		} else if (c == instructionLabel) {
 			int labelWidth = UICanvas.getInstance().getWidth() - 20;
 			UILabel hint = new UILabel(rm.getString(ResourceIDs.STR_HINT));
@@ -466,14 +525,18 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			this.addPopup(instructionsMenu);
 		} else if (c == cmd_state) {
 			StatusScreen ssc = new StatusScreen();
-			UICanvas.getInstance().open(ssc, true);
+			UICanvas.getInstance().open(ssc, true, this);
 		} else if (c == loginLabel) {
 			this.itemAction(this.btn_login);
 		}
 
 	}
 
-	private void login() {
+	void login(final boolean goOnline) {
+		enableRoll = false;
+		String resourceString = this.resource.getText();
+		cfg.setProperty(Config.YUP_RESOURCE, resourceString);
+		cfg.saveToStorage();
 		// first do all the "clean" operation
 		if (this.reset_config.isChecked()) {
 			this.cfg.resetStorage(true);
@@ -495,6 +558,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			this.cfg.resetStorage(true);
 		}
 
+		// #ifndef GLIDER
 		// if registering check the pwds coherency
 		if (grp_new_account.isChecked()) {
 			if (wrongPwd != null) {
@@ -513,7 +577,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				return;
 			}
 		}
-
+		// #endif
 		removeAll();
 		ul.setAnchorPoint(Graphics.HCENTER | Graphics.TOP);
 		append(ul);
@@ -526,121 +590,219 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		UIHLayout uhl = UIUtils.easyCenterLayout(this.but_cancel, 100);
 		append(uhl);
 
+		String jabText = tf_jid_name.getText();
+		if (jabText.indexOf('@') >= 0) {
+			String tempUser = Contact.user(jabText);
+			String tempServer = Contact.domain(jabText);
+			jabText = Utils.jabberify(tempUser, -1) + '@'
+					+ Utils.jabberify(tempServer, -1);
+			tf_jid_name.setText(jabText);
+		}
+
 		new Thread() {
 			public void run() {
-				String server = getServer(tf_jid_name.getText());
 				// #ifdef BLUENDO_REG
-				if (register && server.compareTo(Config.BLUENDO_SERVER) == 0) {
-					if (regStatus == -1) bluendoReg();
-				} else {
-					xmppLogin(register);
-				}
+				//@				String server = getServer(tf_jid_name.getText());
+				//@				if (register && server.compareTo(Config.DEFAULT_SERVER) == 0) {
+				//@					if (regStatus == -1) {
+				//@						try {
+				//@							UICanvas.lock();
+				//@							bluendoReg();
+				//@						} catch (Exception e) {
+				// #mdebug
+				//@							Logger.log("In Bluendorreg :" + e.getClass());
+				//@							e.printStackTrace();
+				// #enddebug
+				//@						} finally {
+				//@							UICanvas.unlock();
+				//@						}
+				//@					}
+				//@				} else {
+				//@					xmppLogin(register, goOnline);
+				//@				}
 				// #endif
 // #ifndef BLUENDO_REG
-				//@				 xmppLogin(register);
+				xmppLogin(register, goOnline);
 				// #endif
 			}
 		}.start();
 	}
 
 	// #ifdef BLUENDO_REG
-
-	private void bluendoReg() {
-		Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
-		req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
-		Element method = req.addElement(null, "method");
-		method.setAttribute("name", "fast_register");
-		Element params = req.addElement(null, "params");
-
-		Element uidParam = params.addElement(null, "param");
-		uidParam.setAttribute("name", "jid");
-		uidParam.setAttribute("type", "string");
-		uidParam.addText(this.tf_jid_name.getText());
-
-		uidParam = params.addElement(null, "param");
-		uidParam.setAttribute("name", "password");
-		uidParam.setAttribute("type", "string");
-		uidParam.addText(this.tf_pwd.getText());
-
-		uidParam = params.addElement(null, "param");
-		uidParam.setAttribute("name", "email");
-		uidParam.setAttribute("type", "string");
-		String email = this.tf_email.getText();
-		uidParam.addText(email != null ? email : "");
-
-		blrpc = new BluendoXMLRPC("socket://" + Config.BLUENDO_SERVER + ":5221");
-
-		Element res = null;
-		try {
-			blrpc.open();
-			blrpc.write(req);
-			blrpc.flush();
-			res = blrpc.read();
-		} catch (Exception e) {
-			handleError(null);
-			// #mdebug
-			//@			e.printStackTrace();
-			// #enddebug
-			return;
-		}
-
-		String status = res.getAttribute("status");
-		if (status.compareTo("200") != 0) {
-			Element elError = res.getChildByName(null, "error");
-			if (status.compareTo("500") == 0) handleError(null);
-			else if (elError != null) handleError(elError.getText());
-			return;
-		}
-		Element result = res.getChildByName(null, "result");
-		String resString = result.getText();
-		if (resString.equals("ok")) {
-			regStatus = 0;
-			grp_new_account.setChecked(false);
-			register = false;
-			try {
-				this.blrpc.close();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			//placeItems();
-			this.xmppLogin(false);
-		} else {
-			handleError(resString);
-			return;
-		}
-		try {
-			blrpc.close();
-		} catch (IOException e) {
-			// #mdebug
-			//@			e.printStackTrace();
-			// #enddebug
-		}
-	}
-
-	private void handleError(String errorString) {
-		UICanvas.showAlert(AlertType.ERROR, rm
-				.getString(ResourceIDs.STR_REGFAIL_TITLE),
-				errorString != null ? errorString : rm
-						.getString(ResourceIDs.STR_REGFAIL_DESC));
-		try {
-			this.blrpc.close();
-		} catch (Exception e) {
-			// #mdebug
-			//@			System.out.println("Error in bluendo registration");
-			//@			e.printStackTrace();
-			// #enddebug
-		}
-		regStatus = -1;
-		progress_gauge.setOffset(0);
-		ul.setText(rm.getString(ResourceIDs.STR_LOGGING_IN));
-		progress_gauge.cancel();
-		placeItems();
-	}
-
+	//@	private void bluendoReg() {
+	//@		Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
+	//@		req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
+	//@		Element method = req.addElement(null, "method");
+	//@		method.setAttribute("name", "start_register");
+	//@		Element params = req.addElement(null, "params");
+	//@
+	//@		sessionId = this.tf_jid_name.getText() + System.currentTimeMillis();
+	//@		Element uidParam = params.addElement(null, "param");
+	//@		uidParam.setAttribute("name", "session_id");
+	//@		uidParam.setAttribute("type", "string");
+	//@		uidParam.addText(sessionId);
+	//@
+	//@		String bluendoRegServer = null;
+	// #ifdef DEBUG
+	//@		bluendoRegServer = Config.DEFAULT_SERVER + ":5221";
+	// #endif
+// #ifndef DEBUG
+	//@	bluendoRegServer = Config.DEFAULT_SERVER+":5221";
+	// #endif
+	//@		blrpc = new BluendoXMLRPC("socket://" + bluendoRegServer);
+	//@
+	//@		Element res = null;
+	//@		try {
+	//@			blrpc.open();
+	//@			blrpc.write(req);
+	//@			blrpc.flush();
+	//@			res = blrpc.read();
+	//@		} catch (Exception e) {
+	//@			handleError(null);
+	// #mdebug
+	//@			e.printStackTrace();
+	// #enddebug
+	//@			return;
+	//@		}
+	//@
+	//@		String status = res.getAttribute("status");
+	//@		if (status.compareTo("200") != 0) {
+	//@			Element elError = res.getChildByName(null, Iq.T_ERROR);
+	//@			if (status.compareTo("500") == 0) handleError(null);
+	//@			else if (elError != null) handleError(elError.getText());
+	//@			return;
+	//@		}
+	//@		Element result = res.getChildByName(null, "result");
+	//@		if (result.getAttribute("enable_captcha").equals("True")) {
+	//@			String resString = result.getText();
+	//@			byte[] imgBytes = Base64.decode(resString);
+	//@			Image img = Image.createImage(imgBytes, 0, imgBytes.length);
+	//@			captchaLabel = new UILabel(img);
+	//@			regStatus = 0;
+	//@			progress_gauge.cancel();
+	//@			placeItems();
+	//@		} else {
+	//@			// if i am not asking captcha it means i have to do 
+	//@			// the login now in case of success
+	//@			if (bluendoEndReg("0000") == false) {
+	//@				regStatus = -1;
+	//@			} else {
+	//@				regStatus = 1;
+	//@				login(true);
+	//@			}
+	//@		}
+	//@	}
+	//@
+	//@	/*
+	//@	 * Returns true when the registration is successeful
+	//@	 */
+	//@	private boolean bluendoEndReg(String captcha) {
+	//@		Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
+	//@		req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
+	//@		Element method = req.addElement(null, "method");
+	//@		method.setAttribute("name", "register");
+	//@		Element params = req.addElement(null, "params");
+	//@
+	//@		Element uidParam = params.addElement(null, "param");
+	//@		uidParam.setAttribute("name", "session_id");
+	//@		uidParam.setAttribute("type", "string");
+	//@		uidParam.addText(sessionId);
+	//@
+	//@		uidParam = params.addElement(null, "param");
+	//@		uidParam.setAttribute("name", "jid");
+	//@		uidParam.setAttribute("type", "string");
+	//@		uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
+	//@				.getBytesUtf8(this.tf_jid_name.getText()))));
+	//@
+	//@		uidParam = params.addElement(null, "param");
+	//@		uidParam.setAttribute("name", "password");
+	//@		uidParam.setAttribute("type", "string");
+	//@		uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
+	//@				.getBytesUtf8(this.tf_pwd.getText()))));
+	//@
+	//@		uidParam = params.addElement(null, "param");
+	//@		uidParam.setAttribute("name", "email");
+	//@		uidParam.setAttribute("type", "string");
+	//@		String email = null;
+	// #ifndef GLIDER
+	//@		this.tf_email.getText();
+	// #endif
+	//@		email = email != null ? email : "";
+	//@		uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
+	//@				.getBytesUtf8(email))));
+	//@
+	//@		uidParam = params.addElement(null, "param");
+	//@		uidParam.setAttribute("name", "captcha");
+	//@		uidParam.setAttribute("type", "string");
+	//@		uidParam.addText(captcha);
+	//@
+	//@		Element res = null;
+	//@		try {
+	//@			blrpc.write(req);
+	//@			blrpc.flush();
+	//@			res = blrpc.read();
+	//@		} catch (Exception e) {
+	//@			handleError(null);
+	// #mdebug
+	//@			e.printStackTrace();
+	// #enddebug
+	//@			return false;
+	//@		}
+	//@
+	//@		String status = res.getAttribute("status");
+	//@		if (status.compareTo("200") != 0) {
+	//@			Element elError = res.getChildByName(null, Iq.T_ERROR);
+	//@			if (status.compareTo("500") == 0) handleError(null);
+	//@			else if (elError != null) handleError(elError.getText());
+	//@			return false;
+	//@		}
+	//@		Element result = res.getChildByName(null, "result");
+	//@		String resString = result.getText();
+	//@		if (resString.equals("ok")) {
+	//@			regStatus = 1;
+	// #ifndef GLIDER
+	//@			grp_new_account.setChecked(false);
+	// #endif
+	//@			register = false;
+	//@			//placeItems();
+	//@		} else {
+	//@			handleError(resString);
+	//@			return false;
+	//@		}
+	//@		try {
+	//@			blrpc.close();
+	//@		} catch (IOException e) {
+	// #mdebug
+	//@			e.printStackTrace();
+	// #enddebug
+	//@		}
+	//@		return true;
+	//@	}
+	//@
+	//@	private void handleError(String errorString) {
+	//@		UICanvas.showAlert(AlertType.ERROR, rm
+	//@				.getString(ResourceIDs.STR_REGFAIL_TITLE),
+	//@				errorString != null ? errorString : rm
+	//@						.getString(ResourceIDs.STR_REGFAIL_DESC));
+	//@		try {
+	//@			this.blrpc.flush();
+	//@			this.blrpc.close();
+	//@		} catch (Exception e) {
+	// #mdebug
+	//@			System.out.println("Error in bluendo registration");
+	//@			e.printStackTrace();
+	// #enddebug
+	//@		}
+	//@		regStatus = -1;
+	//@		progress_gauge.setOffset(0);
+	//@		ul.setText(rm.getString(ResourceIDs.STR_LOGGING_IN));
+	//@		progress_gauge.cancel();
+	//@		placeItems();
+	//@	}
+	//@
 	// #endif
 
-	private void xmppLogin(boolean newUser) {
+	private void xmppLogin(boolean newUser, boolean goOnline) {
 		String user = getUser(tf_jid_name.getText());
 		String server = getServer(tf_jid_name.getText());
 
@@ -657,11 +819,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		cfg.setProperty(Config.USER, user);
 		cfg.setProperty(Config.SERVER, server);
 		cfg.setProperty(Config.PASSWORD, tf_pwd.getText());
+		// #ifndef GLIDER
 		cfg.setProperty(Config.EMAIL, tf_email.getText());
+		// #endif
 		// #ifdef COMPRESSION
-		//@						String enableCompression = "0";
-		//@						enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
-		//@						cfg.setProperty(Config.COMPRESSION, enableCompression);
+		//@				String enableCompression = "0";
+		//@				enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
+		//@				cfg.setProperty(Config.COMPRESSION, enableCompression);
 		// #endif
 		// #ifdef TLS
 		//@				String enableTlS = "0";
@@ -686,13 +850,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		//@		//				+ cfg.getProperty(Config.EMAIL) + " connecting-server:"
 		//@		//				+ cfg.getProperty(Config.CONNECTING_SERVER));
 		// #enddebug
-
 		cfg.saveToStorage();
 
 		// Get the XMPP client
 		XMPPClient xmpp = XMPPClient.getInstance();
+		xmpp.setMUCGroup(rm.getString(ResourceIDs.STR_GROUP_CHAT));
 		//#ifdef COMPRESSION
-		//@						xmpp.addCompression = cb_compression.isChecked();
+		//@				xmpp.addCompression = cb_compression.isChecked();
 		//#endif
 		//#ifdef TLS
 		//@				xmpp.addTLS = cb_TLS.isChecked();
@@ -710,116 +874,133 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 		EventQuery qAuth = new EventQuery(EventQuery.ANY_EVENT, null, null);
 		reg = BasicXmlStream.addEventListener(qAuth, RegisterScreen.this);
-		xmpp.openStream();
+		xmpp.openStream(goOnline);
 	}
 
 	public void gotStreamEvent(String event, Object source) {
-		XMPPClient client = XMPPClient.getInstance();
-		if (BasicXmlStream.STREAM_CONNECTED.equals(event)) {
-			ul.setText(rm.getString(ResourceIDs.STR_CONNECTED));
-			progress_gauge.setOffset(30);
-			this.askRepaint();
-			return;
-		} else if (BasicXmlStream.TLS_INITIALIZED.equals(event)) {
-			ul.setText(rm.getString(ResourceIDs.STR_TLS_INITIALIZED));
-			progress_gauge.setOffset(50);
-			this.askRepaint();
-			return;
-		} else if (BasicXmlStream.COMPRESSION_INITIALIZED.equals(event)) {
-			ul.setText(rm.getString(ResourceIDs.STR_COMPRESSION_INITIALIZED));
-			progress_gauge.setOffset(60);
-			this.askRepaint();
-			return;
-		} else if (BasicXmlStream.STREAM_AUTHENTICATED.equals(event)) {
-			ul.setText(rm.getString(ResourceIDs.STR_AUTHENTICATED));
-			progress_gauge.setOffset(70);
-			this.askRepaint();
-			return;
-		} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
-			ul.setText(rm.getString(ResourceIDs.STR_INITIALIZED));
-			progress_gauge.setOffset(90);
-			this.askRepaint();
-		}
-
-		if (BasicXmlStream.STREAM_ERROR.equals(event)
-				|| BasicXmlStream.CONNECTION_FAILED.equals(event)
-				|| BasicXmlStream.REGISTRATION_FAILED.equals(event)
-				|| BasicXmlStream.NOT_AUTHORIZED.equals(event)
-				|| BasicXmlStream.CONNECTION_LOST.equals(event)) {
-
-			reg.remove();
-			try {
-				client.closeStream();
-			} catch (Exception e) {
-				// #mdebug
-				//@				System.out.println(e);
-				// #enddebug
+		try {
+			UICanvas.lock();
+			XMPPClient client = XMPPClient.getInstance();
+			if (BasicXmlStream.STREAM_CONNECTED.equals(event)) {
+				ul.setText(rm.getString(ResourceIDs.STR_CONNECTED));
+				progress_gauge.setOffset(30);
+				this.askRepaint();
+				return;
+			} else if (BasicXmlStream.TLS_INITIALIZED.equals(event)) {
+				ul.setText(rm.getString(ResourceIDs.STR_TLS_INITIALIZED));
+				progress_gauge.setOffset(50);
+				this.askRepaint();
+				return;
+			} else if (BasicXmlStream.COMPRESSION_INITIALIZED.equals(event)) {
+				ul.setText(rm
+						.getString(ResourceIDs.STR_COMPRESSION_INITIALIZED));
+				progress_gauge.setOffset(60);
+				this.askRepaint();
+				return;
+			} else if (BasicXmlStream.STREAM_AUTHENTICATED.equals(event)) {
+				ul.setText(rm.getString(ResourceIDs.STR_AUTHENTICATED));
+				progress_gauge.setOffset(70);
+				this.askRepaint();
+				return;
+			} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+				ul.setText(rm.getString(ResourceIDs.STR_INITIALIZED));
+				progress_gauge.setOffset(90);
+				this.askRepaint();
 			}
+			if (BasicXmlStream.STREAM_ERROR.equals(event)
+					|| BasicXmlStream.CONNECTION_FAILED.equals(event)
+					|| BasicXmlStream.REGISTRATION_FAILED.equals(event)
+					|| BasicXmlStream.NOT_AUTHORIZED.equals(event)
+					|| BasicXmlStream.CONNECTION_LOST.equals(event)) {
 
-			String description = null;
-			if (BasicXmlStream.CONNECTION_FAILED.equals(event)) {
-				description = rm.getString(ResourceIDs.STR_CONNECTION_FAILED);
-			} else if (BasicXmlStream.CONNECTION_LOST.equals(event)) {
-				description = rm.getString(ResourceIDs.STR_CONNECTION_LOST);
-			} else if (BasicXmlStream.REGISTRATION_FAILED.equals(event)) {
-				description = rm.getString(ResourceIDs.STR_REG_UNALLOWED);
-			} else if (BasicXmlStream.NOT_AUTHORIZED.equals(event)) {
-				description = rm.getString(ResourceIDs.STR_WRONG_USERNAME);
-			} else {
-				description = (String) source;
+				reg.remove();
+				try {
+					client.closeStream();
+				} catch (Exception e) {
+					// #mdebug
+					//@					System.out.println(e);
+					// #enddebug
+				}
+
+				String description = null;
+				if (BasicXmlStream.CONNECTION_FAILED.equals(event)) {
+					description = rm
+							.getString(ResourceIDs.STR_CONNECTION_FAILED);
+				} else if (BasicXmlStream.CONNECTION_LOST.equals(event)) {
+					description = rm.getString(ResourceIDs.STR_CONNECTION_LOST);
+				} else if (BasicXmlStream.REGISTRATION_FAILED.equals(event)) {
+					description = rm.getString(ResourceIDs.STR_REG_UNALLOWED);
+				} else if (BasicXmlStream.NOT_AUTHORIZED.equals(event)) {
+					description = rm.getString(ResourceIDs.STR_WRONG_USERNAME);
+				} else {
+					description = (String) source;
+				}
+				if ("conflict".equals(source)) {
+					description = rm.getString(ResourceIDs.STR_ALREADY_EXIST);
+				}
+
+				//UITextField error = new UITextField()
+
+
+				String errTitle = register ? rm
+						.getString(ResourceIDs.STR_REGFAIL_TITLE) : rm
+						.getString(ResourceIDs.STR_LOGFAIL_TITLE);
+				String errString = (register ? (rm
+						.getString(ResourceIDs.STR_REGFAIL_DESC)) : (rm
+						.getString(ResourceIDs.STR_LOGFAIL_DESC)))
+						+ " " + description;
+				UICanvas.showAlert(AlertType.ERROR, errTitle, errString);
+				this.progress_gauge.cancel();
+				placeItems();
+
+			} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+				this.progress_gauge.cancel();
+				reg.remove();
+
+				// to clean the screen before the roster paint
+				this.removeAll();
+
+				RegisterScreen._registerScreen = null;
+				UICanvas.getInstance().close(this);
 			}
-			if (source != null && source.equals("conflict")) {
-				description = rm.getString(ResourceIDs.STR_ALREADY_EXIST);
-			}
-
-			//UITextField error = new UITextField()
-
-			UICanvas.showAlert(AlertType.ERROR, register ? rm
-					.getString(ResourceIDs.STR_REGFAIL_TITLE) : rm
-					.getString(ResourceIDs.STR_LOGFAIL_TITLE), (register ? (rm
-					.getString(ResourceIDs.STR_REGFAIL_DESC)) : (rm
-					.getString(ResourceIDs.STR_LOGFAIL_DESC)))
-					+ description);
-			this.progress_gauge.cancel();
-			placeItems();
-
-		} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
-			this.progress_gauge.cancel();
-			reg.remove();
-
-			// to clean the screen before the roster paint
-			this.removeAll();
-
-			RosterScreen rs = RosterScreen.getInstance();
-// #ifndef GLIDER
-			UIScreen nextScreen = rs;
-			// #endif
-			UICanvas.getInstance().open(nextScreen, true);
-			RegisterScreen._registerScreen = null;
-			UICanvas.getInstance().close(this);
+		} catch (Exception e) {
+			// #mdebug
+			//@			Logger.log("In Registerscreen event handling:" + e.getClass());
+			//@			e.printStackTrace();
+			// #enddebug
+		} finally {
+			UICanvas.unlock();
 		}
 	}
 
 	public void itemAction(UIItem item) {
 		if (item == key_configuration) {
 			KeyScreen ks = new KeyScreen();
-			UICanvas.getInstance().open(ks, true);
+			UICanvas.getInstance().open(ks, true, this);
 			ks.checkKeys();
-			UICanvas.getInstance().close(this);
+			//UICanvas.getInstance().close(this);
 		} else if (item == buttonYes) {
-			wizardShown = true;
 			this.tf_jid_name.setText(exUsername + "@" + exServer);
+			// #ifndef GLIDER
+			wizardShown = true;
 			grp_new_account.setChecked(false);
+			// #endif
 			placeItems();
 		} else if (item == buttonNo) {
+			// #ifndef GLIDER
 			wizardShown = true;
 			grp_new_account.setChecked(true);
+			// #endif
 			placeItems();
+			// #ifndef GLIDER
 			remove(tf_email);
 			this.itemAction(this.grp_new_account);
+			// #endif
+			// #ifndef GLIDER	
 		} else if (item == grp_new_account) {
 			register = grp_new_account.isChecked();
 			placeItems();
+			// #endif
 			// #mdebug
 			//@		} else if (item == cmd_debug) {
 			//@			DebugScreen debugScreen = new DebugScreen();
@@ -837,7 +1018,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				// #enddebug     
 			}
 			// #ifdef BLUENDO_REG
-			regStatus = -1;
+			//@			regStatus = -1;
 			// #endif
 			placeItems();
 		} else if (item == grp_server) {
@@ -846,7 +1027,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 					String serString = tf_jid_name.getText();
 					tf_server.setText(getServer(serString) + ":5222");
 				}
-				if (this.getItemList().contains(tf_server) == false) {
+				if (this.getItems().contains(tf_server) == false) {
 					append(tf_server);
 				}
 			} else {
@@ -857,7 +1038,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			placeItems();
 			return;
 		} else if (item == tf_jid_name || item == tf_pwd
-				|| item == this.tf_pwd_confirm) {
+		// #ifndef GLIDER
+				|| item == this.tf_pwd_confirm
+		// #endif
+		) {
 			if (grp_server.getSelectedIndex() == 1) {
 				String jsvr = getServer(tf_jid_name.getText());
 				if (!jid_server.equals(jsvr)) {
@@ -885,10 +1069,17 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 			placeItems();
 		} else if (item == btn_login) {
-			String resourceString = this.resource.getText();
-			cfg.setProperty(Config.YUP_RESOURCE, resourceString);
-			cfg.saveToStorage();
-			login();
+			// #ifdef BLUENDO_REG
+			//@			if (regStatus == 0) {
+			//@				if (bluendoEndReg(this.captchaText.getText()) == false) {
+			//@					regStatus = -1;
+			//@				} else {
+			//@					regStatus = 1;
+			//@					login(true);
+			//@				}
+			//@			} else
+			// #endif
+			login(true);
 			return;
 		} else if (item == this.last_status) {
 			menuAction(setStatus, cmd_state);
@@ -935,9 +1126,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 		UIMenu tempSubmenu = (complete == true ? loginMenu : null);
 		tf_jid_name.setSubmenu(tempSubmenu);
+		// #ifndef GLIDER
 		grp_new_account.setSubmenu(tempSubmenu);
-		tf_pwd.setSubmenu(tempSubmenu);
 		tf_pwd_confirm.setSubmenu(tempSubmenu);
+		// #endif
+		tf_pwd.setSubmenu(tempSubmenu);
 		btn_login.setSubmenu(tempSubmenu);
 		grp_advanced.setSubmenu(tempSubmenu);
 		resource.setSubmenu(tempSubmenu);
@@ -946,35 +1139,41 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		reset_config.setSubmenu(tempSubmenu);
 		reset_all_data.setSubmenu(tempSubmenu);
 		//logoLabel.setSubmenu(tempSubmenu);
+		// #ifndef GLIDER
 		String loginString = rm.getString(ResourceIDs.STR_LOGIN);
 		if (grp_new_account.isChecked() == false) {
 			this.btn_login.setText(loginString);
 		} else {
 			// #ifdef BLUENDO_REG 
-			String regString = rm.getString(ResourceIDs.STR_REGISTER);
-			if (getServer(tf_jid_name.getText()).compareTo(
-					Config.BLUENDO_SERVER) != 0) {
-				this.btn_login.setText(regString);
-				loginLabel.setText(regString.toUpperCase());
-			} else {
-				if (this.regStatus == -1) {
-					this.btn_login.setText(regString);
-					loginLabel.setText(regString.toUpperCase());
-				} else if (this.regStatus == 0) {
-					this.btn_login.setText(loginString);
-					loginLabel.setText(loginString.toUpperCase());
-				}
-			}
+			//@			String regString = rm.getString(ResourceIDs.STR_REGISTER);
+			//@			String captchaString = rm.getString(ResourceIDs.STR_CAPTCHA);
+			//@			if (getServer(tf_jid_name.getText()).compareTo(
+			//@					Config.DEFAULT_SERVER) != 0) {
+			//@				this.btn_login.setText(regString);
+			//@				loginLabel.setText(regString.toUpperCase());
+			//@			} else {
+			//@				if (this.regStatus == -1) {
+			//@					this.btn_login.setText(regString);
+			//@					loginLabel.setText(regString.toUpperCase());
+			//@				} else if (this.regStatus == 0) {
+			//@					this.btn_login.setText(captchaString);
+			//@					loginLabel.setText(captchaString.toUpperCase());
+			//@				} else if (this.regStatus == 1) {
+			//@					this.btn_login.setText(loginString);
+			//@					loginLabel.setText(loginString.toUpperCase());
+			//@				}
+			//@			}
 			// #endif
 // #ifndef BLUENDO_REG
-			//@									this.btn_login.setText(rm.getString(ResourceIDs.STR_REGISTER));
+			this.btn_login.setText(rm.getString(ResourceIDs.STR_REGISTER));
 			// #endif
 		}
+		// #endif
 		// #ifdef COMPRESSION
-		//@						cb_compression.setSubmenu(tempSubmenu);
+		//@				cb_compression.setSubmenu(tempSubmenu);
 		// #endif
 		// #ifdef TLS
-		//@				////@   cb_TLS.setSubmenu(tempSubmenu);
+		//@				cb_TLS.setSubmenu(tempSubmenu);
 		// #endif
 	}
 

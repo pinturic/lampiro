@@ -66,6 +66,10 @@ public class MetaVector extends Vector {
 	 */
 	private Vector innerVector = new Vector();
 
+	private static final int REMOVE = 0;
+	private static final int INSERT = 1;
+	private static final int SET = 2;
+
 	private Enumeration superEnumeration() {
 		return innerVector.elements();
 	}
@@ -156,31 +160,12 @@ public class MetaVector extends Vector {
 	}
 
 	public void insertElementAt(Object obj, int index) {
-		int count = 0;
-		Enumeration en = superEnumeration();
-		while (en.hasMoreElements()) {
-			Object o = en.nextElement();
-			if (o instanceof Vector == false) {
-				if (count == index) {
-					innerVector.insertElementAt(obj, innerVector.indexOf(o));
-					return;
-				}
-				count++;
-			} else {
-				Vector vectorObject = (Vector) o;
-				int vectorObjectSize = vectorObject.size();
-				if (vectorObjectSize + count > index) {
-					vectorObject.insertElementAt(obj, index - count);
-					return;
-				}
-				count += vectorObjectSize;
-			}
-		}
+		boolean inserted = this.operateElementAt(obj, index, INSERT);
 		if (index == this.size()) {
 			this.innerVector.addElement(obj);
 			return;
 		}
-		throw new ArrayIndexOutOfBoundsException();
+		if (inserted == false) throw new ArrayIndexOutOfBoundsException();
 	}
 
 	public boolean isEmpty() {
@@ -241,51 +226,61 @@ public class MetaVector extends Vector {
 	}
 
 	public void removeElementAt(int index) {
-		int count = 0;
-		Enumeration en = superEnumeration();
-		while (en.hasMoreElements()) {
-			Object o = en.nextElement();
-			if (o instanceof Vector == false) {
-				if (count == index) {
-					innerVector.removeElement(o);
-					return;
-				}
-				count++;
-			} else {
-				Vector vectorObject = (Vector) o;
-				int vectorObjectSize = vectorObject.size();
-				if (vectorObjectSize + count > index) {
-					vectorObject.removeElementAt(index - count);
-					return;
-				}
-				count += vectorObjectSize;
-			}
-		}
-		throw new ArrayIndexOutOfBoundsException();
+		boolean removed = operateElementAt(null, index, REMOVE);
+		if (removed == false) throw new ArrayIndexOutOfBoundsException();
 	}
 
 	public void setElementAt(Object obj, int index) {
+		boolean inserted = operateElementAt(obj, index, MetaVector.SET);
+		if (inserted == false) throw new ArrayIndexOutOfBoundsException();
+	}
+
+	/**
+	 * @param obj
+	 * @param index
+	 */
+	private boolean operateElementAt(Object obj, int index, int operation) {
 		int count = 0;
 		Enumeration en = superEnumeration();
 		while (en.hasMoreElements()) {
 			Object o = en.nextElement();
 			if (o instanceof Vector == false) {
 				if (count == index) {
-					innerVector.setElementAt(obj, innerVector.indexOf(o));
-					return;
+					switch (operation) {
+						case REMOVE:
+							innerVector.removeElement(o);
+							break;
+						case INSERT:
+							innerVector.insertElementAt(obj, innerVector
+									.indexOf(o));
+							break;
+						case SET:
+							innerVector.setElementAt(obj, innerVector
+									.indexOf(o));
+					}
+					return true;
 				}
 				count++;
 			} else {
 				Vector vectorObject = (Vector) o;
 				int vectorObjectSize = vectorObject.size();
 				if (vectorObjectSize + count > index) {
-					vectorObject.setElementAt(obj, index - count);
-					return;
+					switch (operation) {
+						case REMOVE:
+							vectorObject.removeElementAt(index - count);
+							break;
+						case INSERT:
+							vectorObject.insertElementAt(obj, index - count);
+							break;
+						case SET:
+							vectorObject.setElementAt(obj, index - count);
+					}
+					return true;
 				}
 				count += vectorObjectSize;
 			}
 		}
-		throw new ArrayIndexOutOfBoundsException();
+		return false;
 	}
 
 	public int size() {

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIRadioButtons.java 1561 2009-06-08 13:52:35Z luca $
+ * $Id: UIRadioButtons.java 1625 2009-07-31 09:45:41Z luca $
 */
 
 package it.yup.ui;
@@ -67,6 +67,10 @@ public class UIRadioButtons extends UIVLayout {
 		this.height = itemHeight * this.layoutItems.length;
 		return this.height;
 	}
+	
+	public boolean isFocusable() {
+		return super.isFocusable() && focusable;
+	}
 
 	public boolean keyPressed(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
@@ -127,6 +131,7 @@ public class UIRadioButtons extends UIVLayout {
 				.getUIImage("/icons/radio_checked.png");
 		selectedIndex = i;
 		this.chechedIndex = this.selectedIndex;
+		layoutItems[i].setSelected(false);
 		setDirty(true);
 		askRepaint();
 	}

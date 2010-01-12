@@ -1,13 +1,15 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceManager.java 1539 2009-05-25 21:05:01Z luca $
+ * $Id: ResourceManager.java 1891 2009-11-03 17:43:52Z luca $
 */
 
 package it.yup.util;
 
+import it.yup.xmpp.Config;
 import it.yup.xmpp.XMPPClient;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Hashtable;
@@ -21,38 +23,53 @@ public class ResourceManager {
 
 	private Hashtable resources = new Hashtable();
 
+
 	private ResourceManager(String name, String locale) {
 // #ifndef GLIDER
-					InputStream is = this.getClass().getResourceAsStream("/" + name + "." + locale);
+					InputStream is = this.getClass().getResourceAsStream(
+							name + "." + locale);
 			// #endif
 			try {
+
+				// the max length that the common file can contain
+				ByteArrayOutputStream baos = new ByteArrayOutputStream();
 				int b;
-				StringBuffer buf = new StringBuffer();
 				while ((b = is.read()) != -1) {
-					char c = (char) b;
-					if (c == '\n') {
-						Vector tokens = Utils.tokenize(buf.toString(), '\t');
-						resources.put(tokens.elementAt(0), tokens.elementAt(1));
-						buf.delete(0, buf.length());
+					byte c = (byte) b;
+					if (b == '\n') {
+						String str = Utils.getStringUTF8(baos.toByteArray());
+						Vector tokens = Utils.tokenize(str, '\t');
+						Object key = tokens.elementAt(0);
+						Object element = tokens.elementAt(1);
+						resources.put(key, element);
+						baos.reset();
 					} else {
-						buf.append(c);
+						baos.write(c);
 					}
 				}
 				is.close();
 			} catch (IOException e) {
 				// XXX we should launch an exception and trap it outside, without using the XMPPClient
-				XMPPClient.getInstance().showAlert(AlertType.INFO,
-						"Resource Manager Error",
-						"Can't read resources:\n" + e.getMessage(), null);
+				XMPPClient.getInstance().showAlert(AlertType.ERROR,
+						Config.ALERT_DATA,Config.ALERT_DATA,e.getMessage());
 
 			}
 	}
+
 
 	public static ResourceManager getManager(String name, String locale) {
 		if (ResourceManager.manager == null) {
 			manager = new ResourceManager(name, locale);
 		}
 		return manager;
+	}
+
+	public static ResourceManager getManager(String name) {
+		return getManager(name, Config.lang);
+	}
+
+	public static ResourceManager getManager() {
+		return getManager("/locale/common", Config.lang);
 	}
 
 	public String getString(int id) {

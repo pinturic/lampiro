@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 1273 2009-03-13 15:57:53Z luca $
+ * $Id: DataFormScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 /**
@@ -81,8 +81,7 @@ import javax.microedition.lcdui.TextField;
 public class DataFormScreen extends Form implements CommandListener,
 		ItemCommandListener, ItemStateListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	/** The handled data form */
 	private DataForm df;

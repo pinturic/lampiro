@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 1273 2009-03-13 15:57:53Z luca $
+ * $Id: DataResultScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 /**
@@ -29,8 +29,7 @@ import javax.microedition.lcdui.StringItem;
  */
 public class DataResultScreen extends Form implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private Command cmd_close = new Command(
 			rm.getString(ResourceIDs.STR_CLOSE), Command.EXIT, 1);

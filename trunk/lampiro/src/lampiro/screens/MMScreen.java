@@ -29,8 +29,7 @@ import lampiro.LampiroMidlet;
  */
 public class MMScreen extends Canvas {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	/*
 	 * The default jid for the user to send the multimedia file
@@ -77,7 +76,7 @@ public class MMScreen extends Canvas {
 			VideoControl mControl = (VideoControl) mPlayer
 					.getControl("VideoControl");
 			InnerMMScreen ics = new InnerMMScreen(mPlayer, mControl,
-					Config.imgType, contactToSend);
+					Config.IMG_TYPE, contactToSend);
 			Display.getDisplay(LampiroMidlet._lampiro).setCurrent(ics);
 			mPlayer.start();
 			repaint();
@@ -134,7 +133,7 @@ public class MMScreen extends Canvas {
 			//#enddebug
 			return;
 		}
-		InnerMMScreen ics = new InnerMMScreen(p, rc, Config.audioType,
+		InnerMMScreen ics = new InnerMMScreen(p, rc, Config.AUDIO_TYPE,
 				this.contactToSend);
 		ics.setTypeIndex(typeIndex);
 		Display.getDisplay(LampiroMidlet._lampiro).setCurrent(ics);

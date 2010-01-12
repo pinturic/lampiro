@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 1586 2009-06-17 12:26:55Z luca $
+ * $Id: ChatScreen.java 1907 2009-11-12 17:11:10Z luca $
 */
 
 package lampiro.screens;
@@ -61,142 +61,10 @@ import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
 
-import com.sun.j2me.global.Resource;
-
 import lampiro.LampiroMidlet;
 
 public class ChatScreen extends UIScreen implements PacketListener,
 		CommandListener {
-
-	class ForwardScreen extends UIScreen {
-
-		private UIPanel contactPanel = new UIPanel(true, true);
-
-		private UILabel cmd_exit = new UILabel(rm.getString(
-				ResourceIDs.STR_CLOSE).toUpperCase());
-
-		Vector orderedContacts = null;
-
-		private String messageToForward = "";
-
-		private String fromContact = "";
-
-		public ForwardScreen(String text, String fromContact) {
-			this.append(contactPanel);
-			this.messageToForward = text;
-			this.fromContact = fromContact;
-			this.setTitle(ChatScreen.this.getTitle());
-			this.orderedContacts = RosterScreen.getOrderedContacts();
-			UILabel instrLabel = new UILabel(rm
-					.getString(ResourceIDs.STR_FORWARD)
-					+ " \""
-					+ this.messageToForward
-					+ "\" "
-					+ rm.getString(ResourceIDs.STR_TO).toLowerCase() + ":");
-			instrLabel.setWrappable(true,
-					UICanvas.getInstance().getWidth() - 40);
-			instrLabel.setAnchorPoint(Graphics.HCENTER);
-			Font xFont = UIConfig.font_body;
-			Font lfont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
-					.getSize());
-			instrLabel.setFont(lfont);
-			UISeparator sep = new UISeparator(2, UIUtils.colorize(
-					UIConfig.bg_color, -10));
-			this.contactPanel.addItem(instrLabel);
-			this.contactPanel.addItem(sep);
-			instrLabel.setFocusable(false);
-
-			setMenu(new UIMenu(""));
-			UIMenu menu = getMenu();
-			menu.append(cmd_exit);
-
-			for (Enumeration en = orderedContacts.elements(); en
-					.hasMoreElements();) {
-				Contact c = (Contact) en.nextElement();
-				String printableName = c.getPrintableName();
-				Presence[] ps = c.getAllPresences();
-				if (ps.length == 1) {
-					UILabel ithContactLabel = new UILabel(printableName);
-					ithContactLabel.setFocusable(true);
-					ithContactLabel.setWrappable(true, UICanvas.getInstance()
-							.getWidth() - 40);
-					this.contactPanel.addItem(ithContactLabel);
-					ithContactLabel.setStatus(c);
-				} else if (ps.length >= 2) {
-					for (int i = 0; i < ps.length; i++) {
-						String printablePresName = printableName
-								+ " "
-								+ Contact.resource(ps[i]
-										.getAttribute(Message.ATT_FROM));
-						UILabel ithContactLabel = new UILabel(printablePresName);
-						ithContactLabel.setWrappable(true, UICanvas
-								.getInstance().getWidth() - 30);
-						ithContactLabel.setFocusable(true);
-						this.contactPanel.addItem(ithContactLabel);
-						ithContactLabel.setStatus(ps[i]);
-					}
-				}
-			}
-			// select the first contact
-			if (this.contactPanel.getItems().size() >= 3) contactPanel
-					.setSelectedIndex(2);
-			this.setSelectedItem(contactPanel);
-		}
-
-		public void itemAction(UIItem item) {
-			if (item instanceof UILabel) {
-				Object statusTo = item.getStatus();
-				if (statusTo != null) {
-					Message msg = null;
-					String forwardResource = null;
-					String to = (statusTo instanceof Contact ? ((Contact) statusTo).jid
-							: ((Presence) statusTo)
-									.getAttribute(Message.ATT_FROM));
-					Contact forwardContact = XMPPClient.getInstance()
-							.getRoster().getContactByJid(to);
-					if (statusTo instanceof Contact) {
-						to = ((Contact) statusTo).jid;
-						Presence[] resources = forwardContact.getAllPresences();
-						forwardResource = (resources != null
-								&& resources.length > 0 ? resources[0]
-								.getAttribute(Message.ATT_FROM) : to);
-					} else if (statusTo instanceof Presence) {
-						to = ((Presence) statusTo)
-								.getAttribute(Message.ATT_FROM);
-						forwardResource = to;
-					}
-					msg = new Message(to, Message.CHAT);
-					msg.setBody(rm.getString(ResourceIDs.STR_FORWARDED_TEXT)
-							+ fromContact + ": \"" + this.messageToForward
-							+ "\"");
-					XMPPClient.getInstance().sendPacket(msg);
-
-					user.addMessageToHistory(preferredResource, msg);
-					if (forwardContact != null) {
-						// i added to the message history and the remove it
-						// so that it is mantained now but the "icon" is not updated
-						forwardContact
-								.addMessageToHistory(forwardResource, msg);
-						forwardContact.resetMessageHistory(forwardResource);
-					}
-
-				}
-				this.closeMe();
-			}
-		}
-
-		public void menuAction(UIMenu menu, UIItem cmd) {
-			if (cmd == cmd_exit) {
-				closeMe();
-			}
-		}
-
-		private void closeMe() {
-			UICanvas.getInstance().close(this);
-			UICanvas.getInstance().open(ChatScreen.this, true);
-		}
-
-	}
 
 	class MUCUpdateListener extends IQResultListener {
 
@@ -210,8 +78,19 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			Contact mucContact = xmppClient.getRoster().getContactByJid(mucJid);
 			if (mucContact == null) return;
 			MUC muc = (MUC) mucContact;
-			UICanvas.getInstance().close(ChatScreen.this);
-			RosterScreen.getInstance().chatWithContact(muc, null);
+			try {
+				UICanvas.lock();
+				UICanvas.getInstance().close(ChatScreen.this);
+				RosterScreen.getInstance().chatWithContact(muc, null);
+			} catch (Exception ex) {
+				// #mdebug
+//@				Logger.log("In updating mucresultlistener");
+//@				System.out.println(ex.getMessage());
+//@				ex.printStackTrace();
+				// #enddebug
+			} finally {
+				UICanvas.unlock();
+			}
 			MUCScreen mucScreen = (MUCScreen) RosterScreen.getChatScreenList()
 					.get(mucJid);
 			// the jid of the already present contact
@@ -219,12 +98,13 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			if (cJid == null) cJid = ChatScreen.this.user.jid;
 			mucScreen.sendInvite(cJid);
 			mucScreen.setSelectedItem(mucScreen.chatPanel);
-			mucScreen.chatPanel.setSelectedItem(mucScreen.rosterCombo);
+			mucScreen.chatPanel.setSelectedItem(mucScreen.mucParticipants);
 			mucScreen.keyPressed(UICanvas.getInstance().getKeyCode(
 					UICanvas.FIRE));
 			// meanwhile send the whole history!! :D
 
-			Enumeration en = ChatScreen.this.current_conversation.elements();
+			Enumeration en = ChatScreen.this.getCurrent_conversation()
+					.elements();
 			String myJid = xmppClient.my_jid;
 			while (en.hasMoreElements()) {
 				ConversationEntry entry = (ConversationEntry) en.nextElement();
@@ -252,6 +132,10 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			this.completeText = completeText;
 			// TODO Auto-generated constructor stub
 		}
+		
+		public String getText() {
+			return completeText;
+		}
 
 		protected void paint(Graphics g, int w, int h) {
 			super.paint(g, w, h);
@@ -260,22 +144,19 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			if (currentFont == null) currentFont = UIConfig.font_body;
 			String moreString = " " + rm.getString(ResourceIDs.STR_MORE) + " ";
 			int moreWidth = currentFont.stringWidth(moreString);
-			g.fillRect(w - moreWidth - 2, h - currentFont.getHeight() - 2,
-					moreWidth + 1, currentFont.getHeight() + 1);
+			g.fillRect(1, h - currentFont.getHeight() - 2, moreWidth + 1,
+					currentFont.getHeight() + 1);
 			g.setColor(0xFFFFFF);
-			g
-					.drawString(moreString, w - moreWidth - 1, h
-							- currentFont.getHeight() - 1, Graphics.TOP
-							| Graphics.LEFT);
+			g.drawString(moreString, 1, h - currentFont.getHeight() - 1,
+					Graphics.TOP | Graphics.LEFT);
 		}
 
 	}
 
-	static ResourceManager rm = ResourceManager.getManager("common", "en");
+	static ResourceManager rm = ResourceManager.getManager();
 
-	UITextField topic_name_field = new UITextField(rm.getString(
-			ResourceIDs.STR_ROOM_NAME), "", 50,
-			TextField.ANY);
+	UITextField topic_name_field = new UITextField(rm
+			.getString(ResourceIDs.STR_ROOM_NAME), "", 50, TextField.ANY);
 
 	UIButton topic_button = new UIButton(rm.getString(ResourceIDs.STR_SUBMIT));
 
@@ -305,9 +186,11 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	 * 
 	 */
 	protected Contact user;
-	UILabel cmd_exit;
-	private UILabel cmd_write;
-	protected UILabel cmd_clear;
+	UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE));
+	protected UILabel cmd_write = new UILabel(rm
+			.getString(ResourceIDs.STR_WRITE));
+	protected UILabel cmd_clear = new UILabel(rm
+			.getString(ResourceIDs.STR_CLEAR_HIST));
 
 	protected UILabel addUser = new UILabel(rm
 			.getString(ResourceIDs.STR_GROUP_CHAT));
@@ -337,6 +220,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 //@	private UILabel cmd_debug = new UILabel("Debug");
 	// #enddebug
 
+	/* Used to save the "http" addresses seen on screen*/
 	private Hashtable cmd_urls = new Hashtable();
 
 	// XXX add a global handler for icons
@@ -344,8 +228,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	// the panel containing headers and labels
 	protected UIPanel chatPanel;
-
-	// private Image buffer;
 
 	// /** number of currently displayed entries */
 	// private int displayed_entries;
@@ -362,7 +244,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	private int hs = 2 * Short.parseShort(Config.getInstance().getProperty(
 			Config.HISTORY_SIZE, "30"));
 	UIMenu zoomSubmenu = new UIMenu("");
-	UILabel zoomLabel = new UILabel("EXPAND");
+	UILabel zoomLabel = new UILabel(rm.getString(ResourceIDs.STR_MORE)
+			.toUpperCase());
 
 	protected String preferredResource;
 
@@ -373,6 +256,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	// the start index of the chat lines in the chat panel:
 	// 0 for chats and 2 for MUCs (the rosterCombo is present)
 	int chatLineStart = 0;
+
+	String defaultText = "";
 
 	static {
 		try {
@@ -410,28 +295,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 		user = u;
 		this.preferredResource = preferredResource;
-		// buffer = null;
-
-		cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE));
-		cmd_write = new UILabel(rm.getString(ResourceIDs.STR_WRITE));
-		cmd_clear = new UILabel(rm.getString(ResourceIDs.STR_CLEAR_HIST));
-
 		setMenu(new UIMenu(""));
-		UIMenu menu = getMenu();
-		// #debug
-//@		menu.append(cmd_debug);
-		menu.append(cmd_write);
-		menu.append(cmd_forward_message);
-		RosterScreen rs = RosterScreen.getInstance();
-		if (rs.isCameraOn()) menu.append(this.cmd_capture_img);
-		if (rs.isMicOn()) menu.append(this.cmd_capture_aud);
-		menu.append(this.cmd_send_file);
-		menu.append(cmd_clear);
-		if (rs.mucJid != null
-				&& user.supportsMUC(user.getPresence(preferredResource))) menu
-				.append(addUser);
-		menu.append(cmd_exit);
-
 		setTitle(rm.getString(ResourceIDs.STR_CHAT_WITH) + " "
 				+ user.getPrintableName());
 
@@ -449,7 +313,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		chatPanel = new UIPanel();
 		chatPanel.setMaxHeight(-1);
 		chatPanel.setFocusable(true);
-		// the panel has a contestual menu that let close the the screen
+		// the panel has a contextual menu that let close the the screen
 		// as well as the uilabels used to print the chat lines
 		chatPanel.setSubmenu(this.closeMenu);
 		chatPanel.setModal(true);
@@ -507,20 +371,42 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		}
 
 		// so to reset the status in the roster
-		// it must be locked because it interferes 
-		// with the items positioning in the roster screen!!!
-		// hence all these operations must be done alltogether
-		try {
-			UICanvas.lock();
-			updateConversation();
-			RosterScreen roster = RosterScreen.getInstance();
-			roster.reorganizeContact(user, Contact.CH_MESSAGE_READ);
-		} finally {
-			UICanvas.unlock();
-		}
+		updateConversation();
+		RosterScreen roster = RosterScreen.getInstance();
+		roster._updateContact(user, Contact.CH_MESSAGE_READ);
 
 		this.askRepaint();
 
+	}
+
+	/**
+	 * @param preferredResource
+	 */
+	void toggleMenu() {
+		UIMenu menu = getMenu();
+		menu.removeAll();
+		// #debug
+//@		menu.append(cmd_debug);
+		if (RosterScreen.isOnline()) {
+			menu.append(cmd_write);
+			menu.append(cmd_forward_message);
+			RosterScreen rs = RosterScreen.getInstance();
+			if (rs.isCameraOn()) menu.append(this.cmd_capture_img);
+			if (rs.isMicOn()) menu.append(this.cmd_capture_aud);
+			menu.append(this.cmd_send_file);
+			if (rs.mucJid != null
+					&& user.supportsMUC(user.getPresence(preferredResource))) menu
+					.append(addUser);
+		}
+		menu.append(cmd_clear);
+		menu.append(cmd_exit);
+		// the menu has been cleaned hence the url have been lost
+		Enumeration en = this.cmd_urls.elements();
+		while (en.hasMoreElements()) {
+			UILabel object = (UILabel) en.nextElement();
+			UILabel ithItem = object;
+			menu.append(ithItem);
+		}
 	}
 
 	private String getPrintableStatus() {
@@ -573,8 +459,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	protected void paint(Graphics g, int w, int h) {
 		if (this.updateConversation()) this.chatPanel.setDirty(true);
-		RosterScreen.getInstance().reorganizeContact(user,
-				Contact.CH_MESSAGE_READ);
+		RosterScreen.getInstance()
+				._updateContact(user, Contact.CH_MESSAGE_READ);
 		super.paint(g, w, h);
 	}
 
@@ -609,7 +495,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		if (messages == null || messages.size() == 0) { return false; }
 		for (int i = 0; i < messages.size(); i++) {
 			String msg[] = (String[]) messages.elementAt(i);
-			checkUrls(msg[1]);
 			ConversationEntry entry = wrapMessage(msg);
 			updateLabel(entry);
 			current_conversation.addElement(entry);
@@ -629,8 +514,9 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	 * @param entry
 	 */
 	private void updateLabel(ConversationEntry entry) {
-		String s = (String) entry.text;
+		String s = entry.text;
 		s = getLabelHeader(entry) + s;
+		checkUrls(cmd_urls, s, this.getMenu());
 		UIEmoLabel uel = new UIEmoLabel(s);
 		uel.setWrappable(true, this.width - 10);
 		uel.setFocusable(true);
@@ -705,6 +591,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			uicl.setWrappable(true, this.width - 10);
 			uicl.setSubmenu(zoomSubmenu);
 			uicl.setTextLines(null);
+			// the status of UILabel is the conversatino entry
+			uicl.setStatus(uel.getStatus());
 			int index = this.chatPanel.getItems().indexOf(uel);
 			this.chatPanel.insertItemAt(uicl, index);
 			this.chatPanel.removeItem(uel);
@@ -722,6 +610,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	}
 
 	public void showNotify() {
+		toggleMenu();
 		// reset the status img
 		Image img = XMPPClient.getInstance().getPresenceIcon(user,
 				preferredResource, user.getAvailability());
@@ -731,7 +620,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		}
 	}
 
-	private void checkUrls(String text) {
+	public static void checkUrls(Hashtable cmd_urls, String text, UIMenu menu) {
 		// parse the urls and add to the command menu
 		Enumeration en = Utils.find_urls(text).elements();
 		while (en.hasMoreElements()) {
@@ -739,7 +628,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			if (!cmd_urls.containsKey(url)) {
 				UILabel cmd = new UILabel(url);
 				cmd_urls.put(url, cmd);
-				UIMenu menu = getMenu();
 				menu.append(cmd);
 			}
 		}
@@ -769,8 +657,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		// #endif
 
 		ConversationEntry convEntry = new ConversationEntry(text[1], type);
-		if (text[3] != null) convEntry.arriveTime = text[3];
-		convEntry.messageType = text[4];
+		convEntry.arriveTime = text[2];
+		convEntry.messageType = text[3];
 		return convEntry;
 	}
 
@@ -779,19 +667,15 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			closeMe();
 		} else if (cmd == cmd_capture_aud) {
 			RosterScreen.getInstance().captureMedia(preferredResource,
-					Config.audioType);
+					Config.AUDIO_TYPE);
 		} else if (cmd == cmd_capture_img) {
 			RosterScreen.getInstance().captureMedia(preferredResource,
-					Config.imgType);
+					Config.IMG_TYPE);
 		} else if (cmd == cmd_send_file) {
 			AlbumScreen alb = AlbumScreen.getInstance(preferredResource);
 			UICanvas.getInstance().open(alb, true);
 		} else if (cmd == cmd_write) {
-			SimpleComposerScreen cs = null;
-			if (user instanceof MUC == true) cs = new MUCComposer((MUC) user);
-			else
-				cs = new SimpleComposerScreen(user, this.preferredResource);
-			UICanvas.display(cs);
+			openComposer();
 		} else if (cmd == cmd_clear) {
 			current_conversation.removeAllElements();
 			Enumeration en = cmd_urls.elements();
@@ -827,21 +711,22 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			text = ((UILabel) selItem).getText();
 			Object status = selItem.getStatus();
 			if (status instanceof ConversationEntry == false) return;
-			ConversationEntry entry = (ConversationEntry) status;
+			//			ConversationEntry entry = (ConversationEntry) status;
 			String fromContact = "";
-			if (entry.type == ConversationEntry.ENTRY_TO) fromContact = XMPPClient
-					.getInstance().my_jid;
-			else
-				fromContact = (preferredResource != null ? preferredResource
-						: user.jid);
-			ForwardScreen fs = new ForwardScreen(text, fromContact);
+			fromContact = XMPPClient.getInstance().my_jid;
+			//			if (entry.type == ConversationEntry.ENTRY_TO) fromContact = XMPPClient
+			//					.getInstance().my_jid;
+			//			else
+			//				fromContact = (preferredResource != null ? preferredResource
+			//						: user.jid);
+			ForwardScreen fs = new ForwardScreen(this, text, fromContact, user,
+					preferredResource);
 			UICanvas.getInstance().open(fs, true);
 		} else if (cmd == topic_button) {
 			RosterScreen rs = RosterScreen.getInstance();
-			rs.muc_name_field.setText(this.topic_name_field.getText());
-			this.topic_name_field.setText("");
-			rs.createMUC(new RosterScreen.MUCStateHandler(
-					new MUCUpdateListener()));
+			HandleMucScreen.createMUC(this.topic_name_field.getText(),
+					rs.mucJid, null, null, new HandleMucScreen.MUCStateHandler(
+							new MUCUpdateListener()), true, true);
 		} else if (cmd == this.zoomLabel) {
 			UICutLabel selLabel = (UICutLabel) this.chatPanel.getSelectedItem();
 			final String selText = selLabel.completeText;
@@ -868,13 +753,17 @@ public class ChatScreen extends UIScreen implements PacketListener,
 					}
 				}
 			};
-			zoomScreen.setMenu(expandMenu);
+			UIPanel uip = new UIPanel(false, false);
+			zoomScreen.append(uip);
+			uip.addItem(expField);
+			expField.setSubmenu(expandMenu);
+			//uip.setSubmenu(expandMenu);
+			zoomScreen.setSelectedItem(uip);
+			uip.setSelectedItem(expField);
 			zoomScreen.setTitle(rm.getString(ResourceIDs.STR_EXPANDED));
-			zoomScreen.append(expField);
-			zoomScreen.setSelectedItem(expField);
 			UICanvas.getInstance().open(zoomScreen, true);
+			expField.setSelected(true);
 			expField.expand();
-
 		} else {
 			if (this.cmd_urls.contains(cmd)) {
 				String url = ((UILabel) cmd).getText();
@@ -891,7 +780,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	public void closeMe() {
 		// so that the user preferred resource is reset
-		user.lastResource = null;
+		//user.lastResource = null;
 		Hashtable chatScreenList = RosterScreen.getChatScreenList();
 		// better to search me and nothing else
 		Enumeration en = chatScreenList.keys();
@@ -903,14 +792,14 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		//chatScreenList.remove(this.user.jid);
 
 		// reset the status in the roster
-		RosterScreen roster = RosterScreen.getInstance();
-		roster.updateContact(user, Contact.CH_MESSAGE_READ);
+		RosterScreen rs = RosterScreen.getInstance();
+		rs._updateContact(user, Contact.CH_MESSAGE_READ);
 		if (reg != null) {
 			reg.remove();
 			reg = null;
 		}
 		// to reset the header from outside this screen to ;
-		roster.setDirty(true);
+		rs.setDirty(true);
 		UICanvas.getInstance().close(this);
 	}
 
@@ -951,13 +840,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 				if (this.chatPanel.getSelectedIndex() < 0
 						|| this.chatPanel.getItems().elementAt(
 								this.chatPanel.getSelectedIndex()) instanceof UICombobox == false) {
-					SimpleComposerScreen cs = null;
-					if (user instanceof MUC == true) cs = new MUCComposer(
-							(MUC) user);
-					else
-						cs = new SimpleComposerScreen(user,
-								this.preferredResource);
-					UICanvas.display(cs);
+					if (RosterScreen.isOnline()) openComposer();
 					return true;
 				}
 			}
@@ -965,19 +848,25 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			switch (ga) {
 				case Canvas.RIGHT: {
 					RosterScreen roster = RosterScreen.getInstance();
-					roster.updateContact(user, Contact.CH_MESSAGE_READ);
+					roster._updateContact(user, Contact.CH_MESSAGE_READ);
 					RosterScreen.showNextScreen(this);
 					return true;
 				}
 				case Canvas.LEFT: {
 					RosterScreen roster = RosterScreen.getInstance();
-					roster.updateContact(user, Contact.CH_MESSAGE_READ);
+					roster._updateContact(user, Contact.CH_MESSAGE_READ);
 					RosterScreen.showPreviousScreen(this);
 					return true;
 				}
 			}
 		}
 		return super.keyPressed(kc);
+	}
+
+	protected void openComposer() {
+		SimpleComposerScreen cs = new SimpleComposerScreen(this, user,
+				this.preferredResource);
+		UICanvas.display(cs);
 	}
 
 	public void packetReceived(Element e) {
@@ -997,15 +886,14 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			try {
 				UICanvas.lock();
 				updated = updateConversation();
-				RosterScreen.getInstance().reorganizeContact(user,
+				RosterScreen.getInstance()._updateContact(user,
 						Contact.CH_MESSAGE_READ);
+				if (updated == false) {
+					this.setFreezed(false);
+					return;
+				}
 			} finally {
 				UICanvas.unlock();
-			}
-
-			if (updated == false) {
-				this.setFreezed(false);
-				return;
 			}
 		} else if (myPacket == false) {
 			((UILabel) this.header.getItem(1)).setImg(img_msg);
@@ -1013,8 +901,19 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			/*((UILabel) this.header.getItem(1)).setDirty(true);
 			this.askRepaint();*/
 		}
-		this.setFreezed(false);
-		if (updated) askRepaint();
+		try {
+			UICanvas.lock();
+			this.setFreezed(false);
+			if (updated) askRepaint();
+		} catch (Exception ex) {
+			// #mdebug
+//@			Logger.log("In updating chatscreen");
+//@			System.out.println(ex.getMessage());
+//@			ex.printStackTrace();
+			// #enddebug
+		} finally {
+			UICanvas.unlock();
+		}
 
 	}
 
@@ -1057,9 +956,17 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	}
 
 	public void commandAction(Command cmd, Displayable disp) {
-		UICanvas.display(null);
-		this.dirty = true;
-		this.askRepaint();
+		try {
+			UICanvas.lock();
+			UICanvas.display(null);
+			this.dirty = true;
+		} finally {
+			UICanvas.unlock();
+		}
 
+	}
+
+	public Vector getCurrent_conversation() {
+		return current_conversation;
 	}
 }

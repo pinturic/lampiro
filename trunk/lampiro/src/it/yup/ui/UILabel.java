@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILabel.java 1578 2009-06-16 11:07:59Z luca $
+ * $Id: UILabel.java 1879 2009-10-23 16:34:34Z luca $
 */
 
 /**
@@ -28,7 +28,7 @@ public class UILabel extends UIItem {
 	Image img;
 	boolean flip = false;
 
-	private Vector textLines = null;
+	Vector textLines = null;
 
 	/**
 	 * The font used to paint the Label
@@ -41,6 +41,12 @@ public class UILabel extends UIItem {
 	 * this behaviour.
 	 */
 	boolean wrappable = false;
+
+	int hPadding = 0;
+
+	int vPadding = 0;
+
+	private int maxWrappedLines = -1;
 
 	public UILabel(String text) {
 		this(null, text);
@@ -103,9 +109,6 @@ public class UILabel extends UIItem {
 			lineHeight = imgLine.getHeight() + 2;
 			imgHeight = imgLine.getHeight();
 		}
-		// if (imgHeight < g.getFont().getHeight() + 2) {
-		// imgHeight = g.getFont().getHeight() + 2;
-		// }
 		if (h > lineHeight) {
 			lineHeight = h;
 		}
@@ -114,17 +117,17 @@ public class UILabel extends UIItem {
 		// text and Image must have an offset from the TOP
 		// in order to be aligned
 		int imgVerticalOffset = (lineHeight - imgHeight - 2) / 2;
-		int textVerticalOffset = (lineHeight - textHeight - 2) / 2;
+		int textVerticalOffset = (h - textHeight - 2) / 2;
 
 		// the horizontalSpace left "free"; must be set depending on the
 		// orientation
 		int horizontalSpace = 0;
 		lineWidth = 0;
-		if (imgLine != null) lineWidth += imgLine.getWidth() + 3
+		if (imgLine != null) lineWidth = imgLine.getWidth() + 3
 				+ getTextWidth(textLine, usedFont);
 		else
 			lineWidth = getTextWidth(textLine, usedFont) + 2;
-
+		lineWidth += (2 * hPadding);
 		if (w > lineWidth) {
 			horizontalSpace = w - lineWidth;
 			this.width = w;
@@ -132,25 +135,24 @@ public class UILabel extends UIItem {
 		int horizontalAnchor = this.divideAP()[1];
 		switch (horizontalAnchor) {
 			case Graphics.LEFT:
-				horizontalSpace = 0;
+				horizontalSpace = hPadding;
 				break;
 			case Graphics.HCENTER:
 				horizontalSpace /= 2;
 				break;
 			case Graphics.RIGHT:
+				horizontalSpace -= hPadding;
 				break;
-
 			default:
 				break;
 		}
-
 		// first erase background
 		g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-		if (this.getGradientColor() < 0) g.fillRect(0, 0, w, lineHeight);
+		if (this.getGradientColor() < 0) g.fillRect(0, 0, w, h);
 		else {
-			g.fillRect(0, 0, w, lineHeight / 2);
+			g.fillRect(0, 0, w, h / 2);
 			g.setColor(this.getGradientColor());
-			g.fillRect(0, lineHeight / 2, w, lineHeight - (lineHeight / 2));
+			g.fillRect(0, h / 2, w, h - (h / 2));
 		}
 
 		// than paint in case it is needed
@@ -161,8 +163,7 @@ public class UILabel extends UIItem {
 					&& (textVerticalOffset < offset || imgLine == null)) offset = textVerticalOffset;
 			g.setColor(this.getSelectedColor());
 			int selHeight = java.lang.Math.max(imgHeight, textHeight) + 2;
-			if (this.getGradientSelectedColor() < 0) g.fillRect(0, offset, w,
-					selHeight);
+			if (this.getGradientSelectedColor() < 0) g.fillRect(0, 0, w, h);
 			else {
 				g.fillRect(0, offset, w, selHeight / 2);
 				g.setColor(this.getGradientSelectedColor());
@@ -173,35 +174,26 @@ public class UILabel extends UIItem {
 		g.setColor(selected ? UIConfig.header_fg : UIConfig.fg_color);
 		if (this.fg_color >= 0) g.setColor(this.fg_color);
 		if (flip == false) {
-			if (this.img != null) {
+			if (imgLine != null) {
 				// if the imgAnchorPoint is set it means image must be overridden
-				int imgHOffset = 1;
+				int imgHOffset = 0;
 				if (this.imgAnchorPoint != Graphics.LEFT) imgHOffset += horizontalSpace;
-				g.drawImage(imgLine, imgHOffset, 1 + imgVerticalOffset,
+				g.drawImage(img, imgHOffset, 1 + imgVerticalOffset,
 						Graphics.LEFT | Graphics.TOP);
-				// g.drawString(textLine,
-				// imgLine.getWidth() + 2 + horizontalSpace,
-				// 1 + textVerticalOffset, Graphics.LEFT | Graphics.TOP);
 				paintTextLine(g, textLine, imgLine.getWidth() + 2
 						+ horizontalSpace, 1 + textVerticalOffset);
 			} else {
-				// g.drawString(textLine, 1 + horizontalSpace,
-				// 1 + textVerticalOffset, Graphics.LEFT | Graphics.TOP);
 				paintTextLine(g, textLine, 1 + horizontalSpace,
 						1 + textVerticalOffset);
 			}
 		} else {
-			// g.drawString(textLine, 1 + horizontalSpace, 1 +
-			// textVerticalOffset,
-			// Graphics.LEFT | Graphics.TOP);
 			paintTextLine(g, textLine, 1 + horizontalSpace,
 					1 + textVerticalOffset);
-			if (this.img != null) {
+			if (imgLine != null) {
 				g.drawImage(imgLine, textWidth + 2 + horizontalSpace,
 						1 + imgVerticalOffset, Graphics.LEFT | Graphics.TOP);
 			}
 		}
-
 	}
 
 	void paintTextLine(Graphics g, String textLine, int horizontalSpace,
@@ -210,20 +202,6 @@ public class UILabel extends UIItem {
 		g.drawString(textLine, horizontalSpace, verticalSpace, Graphics.LEFT
 				| Graphics.TOP);
 	}
-
-	/*
-	 * String[] split(String original, String separator) { Vector nodes = new
-	 * Vector(); // Parse nodes into vector int index =
-	 * original.indexOf(separator); while (index >= 0) {
-	 * nodes.addElement(original.substring(0, index)); original =
-	 * original.substring(index + separator.length()); index =
-	 * original.indexOf(separator); } // Get the last node
-	 * nodes.addElement(original); // Create splitted string array String[]
-	 * result = new String[nodes.size()]; if (nodes.size() > 0) { for (int loop =
-	 * 0; loop < nodes.size(); loop++) result[loop] = (String)
-	 * nodes.elementAt(loop); } return result; }
-	 * 
-	 */
 
 	/*
 	 * (non-Javadoc)
@@ -235,68 +213,84 @@ public class UILabel extends UIItem {
 		if (this.font != null) g.setFont(this.font);
 
 		this.height = 0;
-		this.width = 0;
+		this.width = (2 * hPadding);
 		if (this.img != null) {
 			if (this.text != null && this.text.length() >= 2) {
-				this.width += img.getWidth() + 3
-						+ g.getFont().stringWidth(text);
+				this.width += (img.getWidth() + 3 + g.getFont().stringWidth(
+						text));
 			} else
-				this.width += img.getWidth() + 2;
+				this.width += (img.getWidth() + 2);
 		} else
-			this.width = g.getFont().stringWidth(text) + 2;
+			this.width += (g.getFont().stringWidth(text) + 2);
 
 		// if the label is not wrappable we remove the extra characters
 		// we must check that image is not wider than w
 		if (this.wrappable == false) {
 			if (this.width > w && (this.img == null || this.img.getWidth() < w)) {
-				//				String newText = new String(this.text);
-				//				do {
-				//					this.width = 0;
-				//					int index = newText.length() - 2;
-				//					if (index < 0) index = 0;
-				//					newText = newText.substring(0, Math.max(newText.length() - 2,0));
-				//					if (img != null) this.width += img.getWidth() + 3
-				//							+ g.getFont().stringWidth(newText + "...");
-				//					else
-				//						this.width = g.getFont().stringWidth(newText + "...") + 2;
-				//				} while (this.width > w && newText.length() > 0);
-
 				String newText = new String("");
-				int index = 0;
-				this.width = 0;
+				this.width = (2 * hPadding);
+				/*
 				while (this.width < w) {
 					newText = newText + this.text.charAt(index);
 					this.width = g.getFont().stringWidth(newText + "...") + 2;
 					if (img != null) this.width += (img.getWidth() + 1);
 					index++;
 				}
-				if (newText.length() > 1) newText = newText.substring(0,
-						newText.length() - 2);
-				newText = newText + "...";
-				paintLine(g, w, h, img, newText);
+				*/
+				int min = 0, max = this.text.length(), med = 0;
+				int nl = 0;
+				while (min != max) {
+					med = (min + max) / 2;
+					newText = this.text.substring(0, med);
+					nl = g.getFont().stringWidth(newText + "...") + 2;
+					if (img != null) this.width += (img.getWidth() + 1);
+					if (nl < w) min = med + 1;
+					else
+						max = med;
+				}
+				if (newText.length() > 1) {
+					newText = newText.substring(0, newText.length() - 2);
+					newText = newText + "...";
+				}
+
+				paintLine(g, w, h, this.img, newText);
 			} else {
-				paintLine(g, w, h, img, this.text);
+				paintLine(g, w, h, this.img, this.text);
 			}
 		} else {
 			this.width = w;
 
 			// just in case it has not been called before
 			Font usedFont = (this.font != null ? this.font : g.getFont());
+			int reservedWidth = this.width - (2 * hPadding);
+			reservedWidth -= (img != null ? (img.getWidth() + 3) : 0);
 			if (textLines == null) {
-				computeTextLines(usedFont, this.width);
+				computeTextLines(usedFont, reservedWidth);
 			}
-			this.height = (usedFont.getHeight() + 2) * this.textLines.size();
+			this.height = (usedFont.getHeight() + 2) * this.textLines.size()
+					+ 2 * vPadding;
 
 			int originalY = g.getTranslateY();
-			int reservedHeight = g.getFont().getHeight() + 2;
-			g.translate(0, (h - (reservedHeight * this.textLines.size())) / 2);
-			for (int i = 0; i < textLines.size(); i++) {
-				String subStr = (String) textLines.elementAt(i);
-				paintLine(g, w, reservedHeight, img, subStr);
+			int reservedHeight = (this.textLines.size() > 0 ? h
+					/ this.textLines.size() : 0);
+			int summedheight = 0;
+			Enumeration en = this.textLines.elements();
+			int i = 0;
+			while (en.hasMoreElements()) {
+				String subStr = (String) en.nextElement();
+				if (i == textLines.size() - 1) reservedHeight = h
+						- summedheight;
+				paintLine(g, w, reservedHeight, null, subStr);
+
 				g.translate(0, reservedHeight);
+				summedheight += reservedHeight;
+				i++;
 			}
 			g.translate(0, originalY - g.getTranslateY());
-
+			// draw the first line with image
+			String tempText = this.textLines.size() > 0 ? (String) textLines
+					.elementAt(0) : "";
+			paintLine(g, w, reservedHeight, this.img, tempText);
 		}
 
 		// #mdebug
@@ -314,13 +308,11 @@ public class UILabel extends UIItem {
 				new String[] { "\n", " " }, true);
 		String[] splittedStrings = new String[splittedVector.size()];
 		if (splittedVector.size() > 0) {
-			for (int loop = 0; loop < splittedVector.size(); loop++)
-				splittedStrings[loop] = (String) splittedVector.elementAt(loop);
+			splittedVector.copyInto(splittedStrings);
 		} else {
 			// for "white lines"
 			splittedStrings = new String[] { " " };
 		}
-
 		int index = 0;
 		String tempString = "";
 		while (index < splittedStrings.length) {
@@ -331,9 +323,7 @@ public class UILabel extends UIItem {
 					&& getTextWidth(tempString + splittedStrings[index],
 							usedFont) < w
 					&& (splittedStrings[index].compareTo("\n") != 0));
-
 			tempString = tempString.trim();
-
 			// just in case the line is empty it is not shown
 			if (tempString.length() > 0) {
 				// just in case the string is toooooooooo big
@@ -347,6 +337,14 @@ public class UILabel extends UIItem {
 				}
 			}
 			tempString = "";
+		}
+		if (maxWrappedLines > 0 && textLines.size() > maxWrappedLines) {
+			textLines.setSize(maxWrappedLines);
+			String lastString = (String) textLines
+					.elementAt(maxWrappedLines - 1);
+			lastString.substring(0, lastString.length() - 4);
+			lastString += "...";
+			textLines.setElementAt(lastString, maxWrappedLines - 1);
 		}
 	}
 
@@ -410,15 +408,24 @@ public class UILabel extends UIItem {
 					.getHeight() + 2;
 
 		} else {
+			// #mdebug
+//@			//			if (this.getContainer() == null || ((UIItem) this.getContainer()).getWidth()<=0)
+//@			//			{
+//@			//				System.out.println("+++++ wrong container width");
+//@			//			}
+			// #enddebug
+
 			int fontHeight = usedFont.getHeight();
 			if (textLines == null) {
-				computeTextLines(usedFont, this.width);
+				int reservedWidth = this.width - (2 * hPadding);
+				reservedWidth -= (img != null ? (img.getWidth() + 3) : 0);
+				computeTextLines(usedFont, reservedWidth);
 			}
 			if (img != null) this.height = img.getHeight() + 2;
 			int tempHeight = (fontHeight + 2) * this.textLines.size();
 			if (tempHeight > this.height) this.height = tempHeight;
 		}
-
+		height += (2 * vPadding);
 		return height;
 	}
 
@@ -463,7 +470,7 @@ public class UILabel extends UIItem {
 	 *            the wrappable to set
 	 */
 	public void setWrappable(boolean wrappable, int width) {
-		if (this.img != null) return;
+		//if (this.img != null) return;
 		if (wrappable != this.wrappable) this.setDirty(true);
 		this.wrappable = wrappable;
 		//		if (this.width != width)
@@ -509,7 +516,6 @@ public class UILabel extends UIItem {
 		this.dirty = true;
 		this.img = img;
 		this.wrappable = false;
-
 	}
 
 	/**
@@ -534,5 +540,22 @@ public class UILabel extends UIItem {
 
 	public int getImgAnchorPoint() {
 		return imgAnchorPoint;
+	}
+
+	public void setPaddings(int hPadding, int vPadding) {
+		this.hPadding = hPadding;
+		this.vPadding = vPadding;
+	}
+
+	public int[] getPaddings() {
+		return new int[] { hPadding, vPadding };
+	}
+
+	public void setMaxWrappedLines(int maxWrappedLines) {
+		this.maxWrappedLines = maxWrappedLines;
+	}
+
+	public int getMaxWrappedLines() {
+		return maxWrappedLines;
 	}
 }

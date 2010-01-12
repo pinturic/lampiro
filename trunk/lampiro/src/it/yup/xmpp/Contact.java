@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 1597 2009-06-19 11:54:12Z luca $
+ * $Id: Contact.java 1913 2009-12-02 14:21:24Z luca $
 */
 
 package it.yup.xmpp;
@@ -30,6 +30,9 @@ public class Contact extends IQResultListener {
 	public static final int AV_AWAY = 3;
 	public static final int AV_XA = 4;
 	public static final int AV_UNAVAILABLE = 5;
+	
+	public static final int MUC_IMG = 6;
+	public static final int MUC_IMG_OFFLINE = 7;
 
 	/* reason for status change */
 	public static final int CH_MESSAGE_NEW = 0;
@@ -37,8 +40,7 @@ public class Contact extends IQResultListener {
 	public static final int CH_STATUS = 2;
 	public static final int CH_TASK_NEW = 3;
 	public static final int CH_TASK_REMOVED = 4;
-	public static final int CH_CONTACT_REMOVED = 5;
-	public static final int CH_GROUP = 6;
+	public static final int CH_GROUP = 5;
 
 	/*
 	 * The last resource associated to this user that sent a message
@@ -49,8 +51,12 @@ public class Contact extends IQResultListener {
 			Presence.SHOW_DND, // AV_DND
 			Presence.SHOW_AWAY, // AV_AWAY
 			Presence.SHOW_XA, // AV_XA
-			Presence.T_UNAVAILABLE // AV_UNAVAILABLE
-	};
+			Presence.T_UNAVAILABLE, // AV_UNAVAILABLE
+			// to special presence used only for contact with partial presence
+			Message.ATT_FROM, // from,
+			Message.ATT_TO, // to
+			// and for presence
+			MUC.MUC, MUC.MUC_OFFLINE };
 
 	/**
 	 * Get the icon for a presence show
@@ -75,13 +81,21 @@ public class Contact extends IQResultListener {
 
 	public boolean pending_tasks = false;
 
+	protected boolean unread_msg = false;
+
+	public void set_unread_msg(boolean unread_msg) {
+		this.unread_msg = unread_msg;
+	}
+
 	public boolean unread_msg() {
-		Enumeration en = this.convs.elements();
-		while (en.hasMoreElements()) {
-			Object[] ithCouple = (Object[]) en.nextElement();
-			if (((Vector) ithCouple[1]).size() > 0) return true;
-		}
-		return false;
+		//		Enumeration en = this.convs.elements();
+		//		while (en.hasMoreElements()) {
+		//			Object[] ithCouple = (Object[]) en.nextElement();
+		//			if (((Vector) ithCouple[1]).size() > 0) return true;
+		//		}
+		//		return false;
+
+		return unread_msg;
 	}
 
 	/*
@@ -100,8 +114,7 @@ public class Contact extends IQResultListener {
 	/*
 	 * the last (in time order) resource associated to this user
 	 */
-	public String lastResource = null;
-
+	//public String lastResource = null;
 	public Contact(String jid, String name, String subscription,
 			String groups[]) {
 		this.jid = jid;
@@ -138,7 +151,7 @@ public class Contact extends IQResultListener {
 	}
 
 	public Element store() {
-		Element el = new Element(Roster.NS_IQ_ROSTER, "item");
+		Element el = new Element(XMPPClient.NS_IQ_ROSTER, "item");
 		el.setAttributes(new String[] { "jid", "name", "subscription" },
 				new String[] { jid, name, subscription });
 		for (int i = 0; i < this.groups.length; i++) {
@@ -147,7 +160,7 @@ public class Contact extends IQResultListener {
 			}
 		}
 		// #mdebug
-//@				System.out.println("Dump: " + jid);
+//@		//System.out.println("Dump: " + jid);
 		// #enddebug
 		return el;
 	}
@@ -170,25 +183,26 @@ public class Contact extends IQResultListener {
 		if (found == false) {
 			convs.addElement(new Object[] { preferredResource, new Vector() });
 		}
-
+		unread_msg = true;
 		compileMessage(preferredResource, msg, type);
 	}
 
 	protected void compileMessage(String preferredResource, Message msg,
 			String type) {
 		String body = msg.getBody();
+		body = body != null ? body : "";
 		String to = msg.getAttribute(Stanza.ATT_TO);
 		String from = msg.getAttribute(Stanza.ATT_FROM);
 		Element error = msg.getChildByName(null, Message.ERROR);
 		if (error != null) {
-			String code = error.getAttribute("code");
+			String code = error.getAttribute(XMPPClient.CODE);
 			if (code != null) {
-				String mappedCode = XMPPClient.getErrorString (code);
-				body = body + " - Error:" + mappedCode;
+				String mappedCode = XMPPClient.getErrorString(code);
+				body = body + " - Error: " + mappedCode;
 			}
-			Element text = error.getChildByName(null, "text");
-			if (text!=null){
-				body = body + ". "+ text.getText();
+			Element text = error.getChildByName(null, XMPPClient.TEXT);
+			if (text != null) {
+				body = body + ". " + text.getText();
 			}
 		}
 		// muc can have a delay child that modifies the from 
@@ -217,10 +231,10 @@ public class Contact extends IQResultListener {
 		arriveTime = new String((hour < 10 ? "0" : "") + hour + ":"
 				+ (minute < 10 ? "0" : "") + minute);
 
-		if (from != null) lastResource = from;
 		if (body != null && body.length() > 0) {
 			getMessageHistory(preferredResource).addElement(
-					new String[] { to, body, lastResource, arriveTime, type });
+					new String[] { to, body, /*lastResource,*/arriveTime,
+							type, from });
 		}
 	}
 
@@ -245,6 +259,15 @@ public class Contact extends IQResultListener {
 
 	public void resetMessageHistory(String preferredResource) {
 		getMessageHistory(preferredResource).removeAllElements();
+
+		Enumeration en = this.convs.elements();
+		while (en.hasMoreElements()) {
+			Object[] ithCouple = (Object[]) en.nextElement();
+			if (((Vector) ithCouple[1]).size() > 0) unread_msg = true;
+			else
+				unread_msg = false;
+		}
+
 	}
 
 	public String getPrintableName() {
@@ -322,9 +345,16 @@ public class Contact extends IQResultListener {
 	 * 
 	 * @return
 	 */
-	public Presence getPresence() {
-		if (resources == null) return null;
-		return resources[0];
+	public Presence getPresence(String jid) {
+		if (resources != null && resources.length > 0) {
+			if (jid == null) return resources[0];
+			for (int i = 0; i < resources.length; i++) {
+				String ijid = resources[i].getAttribute(Stanza.ATT_FROM);
+				if (jid.equals(ijid)) { return resources[i]; }
+			}
+			return resources[0];
+		}
+		return null;
 	}
 
 	/**
@@ -335,6 +365,10 @@ public class Contact extends IQResultListener {
 	public Presence[] getAllPresences() {
 		// XXX it should be safer to return a copy
 		return resources;
+	}
+
+	public void resetAllPresences() {
+		this.resources = null;
 	}
 
 	/**
@@ -381,27 +415,7 @@ public class Contact extends IQResultListener {
 				// first resource create the list
 				resources = new Presence[] { p };
 			} else {
-				// add or update and finally sort
-				String jid = p.getAttribute(Stanza.ATT_FROM);
-				boolean found = false;
-				// check if we can just update
-				for (int i = 0; i < resources.length; i++) {
-					if (jid.equals(resources[i].getAttribute(Stanza.ATT_FROM))) {
-						resources[i] = p;
-						found = true;
-						break;
-					}
-				}
-
-				if (!found) {
-					// new resource found, add it
-					Presence v[] = new Presence[resources.length + 1];
-					v[0] = p;
-					for (int i = 0; i < resources.length; i++) {
-						v[i + 1] = resources[i];
-					}
-					resources = v;
-				}
+				addPresence(p);
 
 				// presence order may have changed sort the resources
 				if (resources.length > 1) {
@@ -452,12 +466,39 @@ public class Contact extends IQResultListener {
 			if (cap != null) {
 				Element identity = cap.getChildByName(null, "identity");
 				if (identity != null) {
-					String name = identity.getAttribute("name");
-					if (name != null && name.compareTo("Lampiro") == 0) {
+					String type = identity.getAttribute("type");
+					if (type != null && type.indexOf("phone") >= 0) {
 						p.pType = Presence.PHONE;
 					}
 				}
 			}
+		}
+	}
+
+	/**
+	 * @param p
+	 */
+	protected void addPresence(Presence p) {
+		// add or update and finally sort
+		String jid = p.getAttribute(Stanza.ATT_FROM);
+		boolean found = false;
+		// check if we can just update
+		for (int i = 0; i < resources.length; i++) {
+			if (jid.equals(resources[i].getAttribute(Stanza.ATT_FROM))) {
+				resources[i] = p;
+				found = true;
+				break;
+			}
+		}
+
+		if (!found) {
+			// new resource found, add it
+			Presence v[] = new Presence[resources.length + 1];
+			v[0] = p;
+			for (int i = 0; i < resources.length; i++) {
+				v[i + 1] = resources[i];
+			}
+			resources = v;
 		}
 	}
 
@@ -573,18 +614,6 @@ public class Contact extends IQResultListener {
 		return AV_UNAVAILABLE;
 	}
 
-	public Presence getPresence(String jid) {
-		if (resources != null) {
-			if (jid == null) return resources[0];
-			for (int i = 0; i < resources.length; i++) {
-				String ijid = resources[i].getAttribute(Stanza.ATT_FROM);
-				if (jid.equals(ijid)) { return resources[i]; }
-			}
-			return resources[0];
-		}
-		return null;
-	}
-
 	// XXX -> move to the Utils?
 	public static String userhost(String jid) {
 		int spos = jid.indexOf('/');
@@ -679,7 +708,10 @@ public class Contact extends IQResultListener {
 						break;
 					}
 				}
-				if (found == retVal) return true;
+				if (found == false) {
+					retVal = true;
+					break;
+				}
 			}
 		}
 
@@ -704,30 +736,26 @@ public class Contact extends IQResultListener {
 	}
 
 	public boolean supportsMUC(Presence p) {
-		if (p == null)
-			return false;
+		if (p == null) return false;
 		/*
 		 * Gmail supports only the old "deprecated" format with CAPS Extension
 		 * 
 		 */
-		Element c = p.getChildByName(XMPPClient.NS_CAPS, "c") ;
-		if (c!=null){
+		Element c = p.getChildByName(XMPPClient.NS_CAPS, "c");
+		if (c != null) {
 			String ext = c.getAttribute("ext");
-			if (ext != null && ext.indexOf("pmuc-v1")>=0)
-				return true;
+			if (ext != null && ext.indexOf("pmuc-v1") >= 0) return true;
 		}
-		
+
 		/*
 		 * While this is the suggested one
 		 */
 		Element caps = this.getCapabilities(p);
-		if (caps == null)
-			return false;
-		Element[] features= caps.getChildrenByName(null, "feature");
+		if (caps == null) return false;
+		Element[] features = caps.getChildrenByName(null, XMPPClient.FEATURE);
 		for (int i = 0; i < features.length; i++) {
 			Element ithFeature = features[i];
-			if (ithFeature.getAttribute("var").equals(XMPPClient.NS_MUC))
-				return true;
+			if (ithFeature.getAttribute("var").equals(XMPPClient.NS_MUC)) return true;
 		}
 		return false;
 	}

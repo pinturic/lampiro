@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIItem.java 1577 2009-06-15 14:38:27Z luca $
+ * $Id: UIItem.java 1702 2009-08-28 10:29:19Z luca $
 */
 
 /**
@@ -91,13 +91,12 @@ public abstract class UIItem {
 	int bg_color = -1;
 	int fg_color = -1;
 	int selectedColor = -1;
-	
-	
+
 	/*
 	 * A status used to carry data between object accesses (like MFC visual objects status)
 	 */
 	private Object status = null;
-	
+
 	/**
 	 * @return the status
 	 */
@@ -308,10 +307,10 @@ public abstract class UIItem {
 			paint(g, w, h);
 		} catch (Exception e) {
 			// #mdebug
-//@												System.out.println(e);
-//@												e.printStackTrace();
-//@												System.out.println("In paint0: " + e.getMessage());
-//@												Logger.log("In paint0:" + e.getMessage());
+//@			System.out.println(e);
+//@			e.printStackTrace();
+//@			System.out.println("In paint0: " + e.getMessage());
+//@			Logger.log("In paint0:" + e.getMessage());
 			// #enddebug
 		}
 		this.dirty = false;
@@ -401,18 +400,14 @@ public abstract class UIItem {
 				int colorij = border[i][j];
 				if (colorij >= 0) {
 					g.setColor(colorij);
-					drawPixel(g, i + x0, j + y0);
-					drawPixel(g, x1 - i, j + y0);
-					drawPixel(g, x0 + i, y1 - j);
-					drawPixel(g, x1 - i, y1 - j);
+					UIUtils.drawPixel(g, i + x0, j + y0);
+					UIUtils.drawPixel(g, x1 - i, j + y0);
+					UIUtils.drawPixel(g, x0 + i, y1 - j);
+					UIUtils.drawPixel(g, x1 - i, y1 - j);
 				}
 			}
 		}
 		g.setColor(oldColor);
-	}
-
-	protected void drawPixel(Graphics g, int x, int y) {
-		g.drawLine(x, y, x, y);
 	}
 
 	protected void drawInput(Graphics g, int x0, int y0, int x1, int y1) {

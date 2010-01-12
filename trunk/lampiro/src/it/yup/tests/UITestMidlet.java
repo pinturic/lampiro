@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITestMidlet.java 1326 2009-03-30 16:53:29Z luca $
+ * $Id: UITestMidlet.java 1833 2009-10-09 08:17:44Z luca $
 */
 
 package it.yup.tests;
@@ -146,78 +146,78 @@ public class UITestMidlet extends MIDlet {
 		}
 
 		public void buildScreen() {
-//			UILabel gradientLabel = new UILabel("gradient");
-//			gradientLabel.setGradientColor(0x336699);
-//			gradientLabel.setGradientSelectedColor(0x5577BB);
-//			gradientLabel.setFocusable(true);
-//			this.append(gradientLabel);
-//			
-//			UIAccordion uia = new UIAccordion();
-//
-//			UILabel titleLabel = new UILabel("title1");
-//			Vector uip = new Vector();
-//			UILabel aLabel = new UILabel("a");
-//			UILabel bLabel = new UILabel("b");
-//			UILabel cLabel = new UILabel("d");
-//			uip.addElement(aLabel);
-//			uip.addElement(bLabel);
-//			uip.addElement(cLabel);
-//			uia.addItem(titleLabel, uip);
-//
-//			titleLabel = new UILabel("title2");
-//			uip = new Vector();
-//			aLabel = new UILabel("e");
-//			bLabel = new UILabel("f");
-//			cLabel = new UILabel("g");
-//			uip.addElement(aLabel);
-//			uip.addElement(bLabel);
-//			uip.addElement(cLabel);
-//			uia.addItem(titleLabel, uip);
-//
-//			titleLabel = new UILabel("title3");
-//			uip = new Vector();
-//			aLabel = new UILabel("h");
-//			bLabel = new UILabel("i");
-//			cLabel = new UILabel("j");
-//			uip.addElement(aLabel);
-//			uip.addElement(bLabel);
-//			uip.addElement(cLabel);
-//			uia.addItem(titleLabel, uip);
-//
-//			this.append(uia);
-//
-//			UIAccordion uiaMenu = new UIAccordion();
-//			
-//			
-//			titleLabel = new UILabel("title1");
-//			uip = new Vector();
-//			aLabel = new UILabel("a");
-//			bLabel = new UILabel("b");
-//			cLabel = new UILabel("d");
-//			uip.addElement(aLabel);
-//			uip.addElement(bLabel);
-//			uip.addElement(cLabel);
-//			uiaMenu.addItem(titleLabel, uip);
-//
-//			titleLabel = new UILabel("title2");
-//			uip = new Vector();
-//			aLabel = new UILabel("e");
-//			bLabel = new UILabel("f");
-//			cLabel = new UILabel("g");
-//			uip.addElement(aLabel);
-//			uip.addElement(bLabel);
-//			uip.addElement(cLabel);
-//			uiaMenu.addItem(titleLabel, uip);
-//
-//			titleLabel = new UILabel("title3");
-//			uip = new Vector();
-//			aLabel = new UILabel("h");
-//			bLabel = new UILabel("i");
-//			cLabel = new UILabel("j");
-//			uip.addElement(aLabel);
-//			uip.addElement(bLabel);
-//			uip.addElement(cLabel);
-//			uiaMenu.addItem(titleLabel, uip);
+			//			UILabel gradientLabel = new UILabel("gradient");
+			//			gradientLabel.setGradientColor(0x336699);
+			//			gradientLabel.setGradientSelectedColor(0x5577BB);
+			//			gradientLabel.setFocusable(true);
+			//			this.append(gradientLabel);
+			//			
+			//			UIAccordion uia = new UIAccordion();
+			//
+			//			UILabel titleLabel = new UILabel("title1");
+			//			Vector uip = new Vector();
+			//			UILabel aLabel = new UILabel("a");
+			//			UILabel bLabel = new UILabel("b");
+			//			UILabel cLabel = new UILabel("d");
+			//			uip.addElement(aLabel);
+			//			uip.addElement(bLabel);
+			//			uip.addElement(cLabel);
+			//			uia.addItem(titleLabel, uip);
+			//
+			//			titleLabel = new UILabel("title2");
+			//			uip = new Vector();
+			//			aLabel = new UILabel("e");
+			//			bLabel = new UILabel("f");
+			//			cLabel = new UILabel("g");
+			//			uip.addElement(aLabel);
+			//			uip.addElement(bLabel);
+			//			uip.addElement(cLabel);
+			//			uia.addItem(titleLabel, uip);
+			//
+			//			titleLabel = new UILabel("title3");
+			//			uip = new Vector();
+			//			aLabel = new UILabel("h");
+			//			bLabel = new UILabel("i");
+			//			cLabel = new UILabel("j");
+			//			uip.addElement(aLabel);
+			//			uip.addElement(bLabel);
+			//			uip.addElement(cLabel);
+			//			uia.addItem(titleLabel, uip);
+			//
+			//			this.append(uia);
+			//
+			//			UIAccordion uiaMenu = new UIAccordion();
+			//			
+			//			
+			//			titleLabel = new UILabel("title1");
+			//			uip = new Vector();
+			//			aLabel = new UILabel("a");
+			//			bLabel = new UILabel("b");
+			//			cLabel = new UILabel("d");
+			//			uip.addElement(aLabel);
+			//			uip.addElement(bLabel);
+			//			uip.addElement(cLabel);
+			//			uiaMenu.addItem(titleLabel, uip);
+			//
+			//			titleLabel = new UILabel("title2");
+			//			uip = new Vector();
+			//			aLabel = new UILabel("e");
+			//			bLabel = new UILabel("f");
+			//			cLabel = new UILabel("g");
+			//			uip.addElement(aLabel);
+			//			uip.addElement(bLabel);
+			//			uip.addElement(cLabel);
+			//			uiaMenu.addItem(titleLabel, uip);
+			//
+			//			titleLabel = new UILabel("title3");
+			//			uip = new Vector();
+			//			aLabel = new UILabel("h");
+			//			bLabel = new UILabel("i");
+			//			cLabel = new UILabel("j");
+			//			uip.addElement(aLabel);
+			//			uip.addElement(bLabel);
+			//			uip.addElement(cLabel);
+			//			uiaMenu.addItem(titleLabel, uip);
 
 			UIEmoLabel emoLabel = new UIEmoLabel("emo:):(eheh:Obene");
 			emoLabel.setAnchorPoint(Graphics.RIGHT);
@@ -704,9 +704,9 @@ public class UITestMidlet extends MIDlet {
 				Display.getDisplay(UITestMidlet.this).setCurrent(canvas);
 				TestScreen screen = new TestScreen();
 				canvas.open(screen, true);
-				UICanvas.getInstance().askRepaint(screen);
+				screen.askRepaint();
 				screen.buildScreen();
-				UICanvas.getInstance().askRepaint(screen);
+				screen.askRepaint();
 				return;
 			}
 

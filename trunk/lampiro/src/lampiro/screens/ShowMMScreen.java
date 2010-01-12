@@ -17,7 +17,9 @@ import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 
 //#mdebug
-//@import it.yup.util.Logger;
+//@
+//@import it.yup.util.Logger; 
+//@
 //#enddebug
 
 import it.yup.util.ResourceIDs;
@@ -34,8 +36,7 @@ public class ShowMMScreen extends UIScreen {
 	/**
 	 * 
 	 */
-	protected static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	protected static ResourceManager rm = ResourceManager.getManager();
 
 	protected UIPanel mainPanel = new UIPanel(true, false);
 	protected byte[] originalImage = null;
@@ -49,6 +50,13 @@ public class ShowMMScreen extends UIScreen {
 	protected UITextField fileNameTextField;
 
 	protected UITextField fileDescTextField;
+	
+	/*
+	 * The default file description used; in case it is not modified the default file description is
+	 * not sent
+	 *  
+	 */
+	String defaultFileDescription = "<" + rm.getString(ResourceIDs.STR_DESC) + ">";
 
 	protected UIButton cmd_save = new UIButton(rm
 			.getString(ResourceIDs.STR_SAVE));
@@ -76,10 +84,10 @@ public class ShowMMScreen extends UIScreen {
 	public static int getFileType(String fileName) {
 		Vector tokens = Utils.tokenize(fileName, '.');
 		String fileType = (String) tokens.elementAt(tokens.size() - 1);
-		int mmType = Config.imgType;
-		for (int i = 0; i < Config.audioType; i++) {
+		int mmType = Config.IMG_TYPE;
+		for (int i = 0; i < Config.AUDIO_TYPE; i++) {
 			if (fileType.compareTo(Config.audioTypes[i]) == 0) {
-				mmType = Config.audioType;
+				mmType = Config.AUDIO_TYPE;
 				break;
 			}
 		}
@@ -107,7 +115,7 @@ public class ShowMMScreen extends UIScreen {
 	private void init() {
 		Image resImg;
 		int count = AlbumScreen.getCount(mmType);
-		if (mmType == Config.imgType) {
+		if (mmType == Config.IMG_TYPE) {
 			setTitle(rm.getString(ResourceIDs.STR_IMAGE));
 			Image convImage = null;
 			convImage = Image.createImage(fileData, 0, fileData.length);
@@ -116,7 +124,7 @@ public class ShowMMScreen extends UIScreen {
 					.getString(ResourceIDs.STR_IMAGE)
 					+ count + "." + fileType, 255, TextField.ANY);
 			resImg = UIUtils.imageResize(convImage, UICanvas.getInstance()
-					.getWidth() - 10, -1);
+					.getWidth() - 10, -1, false);
 		} else {
 			setTitle(rm.getString(ResourceIDs.STR_AUDIO));
 			resImg = UICanvas.getUIImage("/icons/mic.png");
@@ -126,7 +134,7 @@ public class ShowMMScreen extends UIScreen {
 					+ count + "." + fileType, 255, TextField.ANY);
 		}
 		fileDescTextField = new UITextField(rm.getString(ResourceIDs.STR_DESC),
-				"<" + rm.getString(ResourceIDs.STR_DESC) + ">", 255,
+				defaultFileDescription, 255,
 				TextField.ANY);
 		if (fileName != null) {
 			fileNameTextField.setText(fileName);
@@ -145,7 +153,7 @@ public class ShowMMScreen extends UIScreen {
 		uil = new UILabel(resImg, "");
 		uil.setFocusable(true);
 		UIHLayout ehl = UIUtils.easyCenterLayout(uil, resImg.getWidth());
-		if (mmType == Config.audioType) {
+		if (mmType == Config.AUDIO_TYPE) {
 			UIMenu sub = new UIMenu("");
 			sub.append(playLabel);
 			uil.setSubmenu(sub);
@@ -170,7 +178,7 @@ public class ShowMMScreen extends UIScreen {
 	}
 
 	public void itemAction(UIItem c) {
-		if (c == this.uil && this.mmType == Config.audioType) {
+		if (c == this.uil && this.mmType == Config.AUDIO_TYPE) {
 			this.playAudio();
 		} else if (c == cmd_save) {
 			AlbumScreen.addAlbum(this.fileData, fileNameTextField.getText(),
@@ -178,7 +186,6 @@ public class ShowMMScreen extends UIScreen {
 			AlbumScreen alb = AlbumScreen.getInstance();
 			UICanvas.getInstance().close(this);
 			UICanvas.getInstance().open(alb, true);
-
 		}
 	}
 
@@ -188,7 +195,7 @@ public class ShowMMScreen extends UIScreen {
 
 	public synchronized void playAudio() {
 		//#mdebug
-//@						Logger.log("playing audio file");
+//@				Logger.log("playing audio file");
 		//#enddebug
 		Thread t = new Thread() {
 			public void run() {
@@ -201,9 +208,9 @@ public class ShowMMScreen extends UIScreen {
 					p2.start();
 				} catch (Exception e) {
 					//#mdebug
-//@															e.printStackTrace();
-//@															Logger.log("In setup video 1" + e.getClass().getName()
-//@																	+ "\n" + e.getMessage());
+//@										e.printStackTrace();
+//@										Logger.log("In setup video 1" + e.getClass().getName()
+//@												+ "\n" + e.getMessage());
 					//#enddebug
 				}
 			}

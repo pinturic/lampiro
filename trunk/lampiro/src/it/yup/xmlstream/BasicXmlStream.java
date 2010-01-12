@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 1578 2009-06-16 11:07:59Z luca $
+ * $Id: BasicXmlStream.java 1617 2009-07-20 15:11:30Z luca $
 */
 
 package it.yup.xmlstream;
@@ -102,12 +102,15 @@ public abstract class BasicXmlStream implements TransportListener,
 	protected BasicXmlStream() {
 		// prepare the default initializers
 		// #ifdef TLS
-		//@				if (XMPPClient.getInstance().addTLS)
-		//@				initializers.addElement(new TLSInitializer());
+		//@		if (XMPPClient.getInstance().addTLS){
+		//@		initializers.addElement(new TLSInitializer());
+		//@}
 		// #endif
 		// #ifdef COMPRESSION    
-//@		if (XMPPClient.getInstance().addCompression) initializers
-//@				.addElement(new CompressionInitializer());
+//@		if (XMPPClient.getInstance().addCompression) {
+//@			initializers.addElement(new CompressionInitializer());
+//@		}
+//@
 		// #endif    	
 		initializers.addElement(new SASLAuthenticator());
 		initializers.addElement(new ResourceBinding());
@@ -437,6 +440,12 @@ public abstract class BasicXmlStream implements TransportListener,
 			this.features.put(features[i].uri, features[i]);
 		}
 		// received a set of features trigger the stream initialization
+		Vector workingInitializers = new Vector();
+		Enumeration en = this.initializers.elements();
+		while (en.hasMoreElements()) {
+			workingInitializers.addElement(en.nextElement());
+		}
+		initializerInterator = workingInitializers.elements();
 		nextInitializer();
 	}
 
@@ -446,9 +455,6 @@ public abstract class BasicXmlStream implements TransportListener,
 	 * initializers have been processed
 	 */
 	public void nextInitializer() {
-		if (initializerInterator == null) {
-			initializerInterator = initializers.elements();
-		}
 		while (initializerInterator.hasMoreElements()) {
 			Initializer initializer = (Initializer) initializerInterator
 					.nextElement();
@@ -457,7 +463,6 @@ public abstract class BasicXmlStream implements TransportListener,
 				return;
 			}
 		}
-		initializerInterator = null;
 		dispatchEvent(BasicXmlStream.STREAM_INITIALIZED, null);
 	}
 

@@ -12,7 +12,7 @@ import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
 
-public class FTSender {
+public class FTSender extends IQResultListener implements PacketListener {
 
 	/*
 	 * Initiate a session with jingle
@@ -28,16 +28,6 @@ public class FTSender {
 	 * Initiate a session with jingle
 	 */
 	public static String SESSION_TERMINATE = "session-terminate";
-
-	/*
-	 * Jingle related action
-	 */
-	public static String ACTION = "action";
-
-	/*
-	 * Jingle related DATA
-	 */
-	public static String DATA = "data";
 
 	/*
 	 * Jingle related jingle
@@ -175,7 +165,7 @@ public class FTSender {
 	public static boolean supportFT(String fullJid) {
 		Contact c = XMPPClient.getInstance().getRoster().getContactByJid(
 				fullJid);
-		if (c == null) return false;
+		if (c == null || c instanceof MUC) return false;
 		Presence p = c.getPresence(fullJid);
 		if (p == null) return false;
 		Element caps = c.getCapabilities(p);
@@ -184,27 +174,30 @@ public class FTSender {
 
 	public static boolean supportFT(Element caps) {
 		if (caps == null) return false;
-		Element[] features = caps.getChildrenByName(null, "feature");
+		Element[] features = caps.getChildrenByName(null, XMPPClient.FEATURE);
 		Vector vars = new Vector(features.length);
 		for (int i = 0; i < features.length; i++) {
 			Element ithFeature = features[i];
 			vars.addElement(ithFeature.getAttribute("var"));
 		}
-		if (vars.contains(XMPPClient.JINGLE) == false
+		if (vars.contains(XMPPClient.FILE_TRANSFER) == false
+				|| vars.contains(XMPPClient.JINGLE) == false
 				|| vars.contains(XMPPClient.JINGLE_FILE_TRANSFER) == false
-				|| vars.contains(XMPPClient.JINGLE_IBB_TRANSPORT) == false ) return false;
+				|| vars.contains(XMPPClient.JINGLE_IBB_TRANSPORT) == false) return false;
 		return true;
 	}
 
 	public interface FTSEventHandler {
 
-		public void fileAcceptance(Contact c, String fileName, boolean accept, FTSender sender);
+		public void fileAcceptance(Contact c, String fileName, boolean accept,
+				FTSender sender);
 
 		public void fileError(Contact c, String fileName, Element e);
 
-		public void fileSent(Contact c, String fileName, boolean b,FTSender sender);
+		public void fileSent(Contact c, String fileName, boolean success,
+				FTSender sender);
 
-		public void chunkSent(int sentBytes, int length,FTSender sender);
+		public void chunkSent(int sentBytes, int length, FTSender sender);
 
 		public void sessionInitated(Contact contactByJid, String fileName,
 				FTSender sender);
@@ -213,7 +206,8 @@ public class FTSender {
 	/*
 	 * The constructor that initiate a Jingle file transfer
 	 */
-	public FTSender(String fileName, byte[] fileData, String to, String desc, FTSEventHandler eh) {
+	public FTSender(String fileName, byte[] fileData, String to, String desc,
+			FTSEventHandler eh) {
 		this.fileName = fileName;
 		this.fileData = fileData;
 		this.to = to;
@@ -225,7 +219,7 @@ public class FTSender {
 		Iq sessionInitiateIq = new Iq(this.to, Iq.T_SET);
 		Element jingle = sessionInitiateIq.addElement(XMPPClient.JINGLE,
 				FTSender.JINGLE);
-		jingle.setAttribute(ACTION, SESSION_INITIATE);
+		jingle.setAttribute(XMPPClient.ACTION, SESSION_INITIATE);
 		jingle.setAttribute(INITIATOR, xmppClient.my_jid);
 		String encodedSid = Utils.hexDigest(System.currentTimeMillis() + "",
 				"sha1");
@@ -241,8 +235,8 @@ public class FTSender {
 		file.setAttribute(NAME, this.fileName);
 		if (fileData != null) file
 				.setAttribute(SIZE, this.fileData.length + "");
-		if (desc != null && desc.length()>0)
-			file.addElement(null, DESC).addText(this.desc);
+		if (desc != null && desc.length() > 0) file.addElement(null, DESC)
+				.addText(this.desc);
 		Element transport = content.addElement(XMPPClient.JINGLE_IBB_TRANSPORT,
 				TRANSPORT);
 		transport.setAttribute(FTSender.BLOCK_SIZE, this.chuck_length + "");
@@ -251,44 +245,9 @@ public class FTSender {
 		transportSid = new String(encodedSid);
 		transport.setAttribute(FTSender.SID, transportSid);
 
-		IQResultListener sessionInitiateListener = new IQResultListener() {
-			public void handleError(Element e) {
-				eh.fileError(XMPPClient.getInstance().getRoster()
-						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-						fileName, e);
-			}
-
-			public void handleResult(Element e) {
-				Element jingle = e.getChildByName(XMPPClient.JINGLE,
-						FTSender.JINGLE);
-				if (jingle != null) {
-					Element decline = jingle.getChildByName(null,
-							FTSender.DECLINE);
-					if (decline != null) {
-						eh.fileAcceptance(XMPPClient.getInstance().getRoster()
-								.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-								fileName, false,FTSender.this);
-						return;
-					}
-				}
-				FTSender.this.initiateInteraction();
-			}
-		};
-
 		PacketListener terminateListener = new PacketListener() {
 			public void packetReceived(Element e) {
-				Element jingle = e.getChildByName(XMPPClient.JINGLE,
-						FTSender.JINGLE);
-				if (jingle != null) {
-					Element decline = jingle.getChildByName(null,
-							FTSender.DECLINE);
-					if (decline != null) {
-						eh.fileAcceptance(XMPPClient.getInstance().getRoster()
-								.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-								fileName, false,FTSender.this);
-						return;
-					}
-				}
+				isAccepted(e);
 			}
 		};
 		//this.encodedData.setLength(fileSize*2);
@@ -296,13 +255,13 @@ public class FTSender {
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM,
 				Iq.ATT_TYPE }, new String[] { this.to, Iq.T_SET });
 		EventQuery eqChild = eq.child = new EventQuery(FTSender.JINGLE,
-				new String[] { FTSender.ACTION },
+				new String[] { XMPPClient.ACTION },
 				new String[] { FTSender.SESSION_TERMINATE });
 		eqChild.child = new EventQuery(FTSender.DECLINE, null, null);
 		BasicXmlStream.addEventListener(eq, terminateListener);
 
-		xmppClient.sendIQ(sessionInitiateIq, sessionInitiateListener);
-		
+		xmppClient.sendIQ(sessionInitiateIq, this);
+
 		eh.sessionInitated(XMPPClient.getInstance().getRoster()
 				.getContactByJid(this.to), fileName, this);
 	}
@@ -311,72 +270,31 @@ public class FTSender {
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_TYPE },
 				new String[] { Iq.T_SET });
 		eq.child = new EventQuery(FTSender.JINGLE, new String[] { "xmlns",
-				FTSender.ACTION, FTSender.SID }, new String[] {
-				XMPPClient.JINGLE, FTSender.SESSION_ACCEPT,
-				FTSender.this.jingleSid });
-		PacketListener ibbSender = new PacketListener() {
+				XMPPClient.ACTION, FTSender.SID }, new String[] {
+				XMPPClient.JINGLE, FTSender.SESSION_ACCEPT, this.jingleSid });
 
-			public void packetReceived(Element e) {
-				eh.fileAcceptance(XMPPClient.getInstance().getRoster()
-						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-						fileName, true,FTSender.this);
-				Element recIq = e;
-				Iq reply = Utils.easyReply(recIq);
-				xmppClient.sendPacket(reply);
-				if (sessionOpened) FTSender.this.sendFile();
-				// this iq must have arrived and the packet received below
-				sessionOpened = true;
-			}
-		};
-		BasicXmlStream.addOnetimeEventListener(eq, ibbSender);
+		BasicXmlStream.addOnetimeEventListener(eq, this);
 
 		Iq initiateInteraction = new Iq(this.to, Iq.T_SET);
 		Element open = initiateInteraction.addElement(XMPPClient.NS_IBB, OPEN);
 		open.setAttribute(SID, transportSid);
 		open.setAttribute(BLOCK_SIZE, chuck_length + "");
-		IQResultListener initiateInteractionListener = new IQResultListener() {
-			public void handleError(Element e) {
-				eh.fileAcceptance(XMPPClient.getInstance().getRoster()
-						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-						fileName, false,FTSender.this);
-			}
 
-			public void handleResult(Element e) {
-				if (sessionOpened) FTSender.this.sendFile();
-				// this result must have arrived and the packet received below
-				sessionOpened = true;
-			}
-		};
-
-		xmppClient.sendIQ(initiateInteraction, initiateInteractionListener);
+		xmppClient.sendIQ(initiateInteraction, this);
 	}
 
 	private int fileOffset = 0;
 	private String encodedData = "";
-	private IQResultListener chunkListener;
 	private int seq = 0;
 
 	private void sendFile() {
 		this.fileOffset = 0;
-		this.encodedData = new String(Base64.encode(this.fileData));
-
-		chunkListener = new IQResultListener() {
-			public void handleError(Element e) {
-			}
-
-			public void handleResult(Element e) {
-				if (fileOffset < encodedData.length()) FTSender.this
-						.sendChunk();
-				else
-					FTSender.this.sendFooter();
-			}
-		};
 		sendChunk();
 	}
 
 	private void sendChunk() {
 		Iq chunkIq = new Iq(this.to, Iq.T_SET);
-		Element data = chunkIq.addElement(XMPPClient.NS_IBB, DATA);
+		Element data = chunkIq.addElement(XMPPClient.NS_IBB, XMPPClient.DATA);
 		data.setAttribute(SID, transportSid);
 		data.setAttribute(SEQ, seq + "");
 		seq++;
@@ -386,8 +304,8 @@ public class FTSender {
 		String substr = this.encodedData.substring(fileOffset, endIndex);
 		fileOffset += chuck_length;
 		data.addText(substr);
-		xmppClient.sendIQ(chunkIq, chunkListener);
-		eh.chunkSent(fileOffset + chuck_length,encodedData.length(),FTSender.this);
+		xmppClient.sendIQ(chunkIq, this);
+		eh.chunkSent(fileOffset + chuck_length, encodedData.length(), this);
 	}
 
 	private void sendFooter() {
@@ -395,36 +313,144 @@ public class FTSender {
 		Element close = closeInteraction.addElement(XMPPClient.NS_IBB, CLOSE);
 		close.setAttribute(SID, transportSid);
 
-		IQResultListener closeListener = new IQResultListener() {
-			public void handleError(Element e) {
-				eh.fileSent(XMPPClient.getInstance().getRoster()
-						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-						fileName, true,FTSender.this);
-			}
-
-			public void handleResult(Element e) {
-				sessionOpened = false;
-				eh.fileSent(XMPPClient.getInstance().getRoster()
-						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
-						fileName, true,FTSender.this);
-			}
-		};
-
-		// first setup the listener to SESSION_TERMINATE
-		PacketListener terminateListener = new PacketListener() {
-			public void packetReceived(Element e) {
-				Iq reply = Utils.easyReply(e);
-				xmppClient.sendPacket(reply);
-			}
-		};
-
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM,
 				Iq.ATT_TYPE }, new String[] { this.to, Iq.T_SET });
 		eq.child = new EventQuery(FTSender.JINGLE, new String[] {
-				FTSender.ACTION, "xmlns" }, new String[] {
+				XMPPClient.ACTION, "xmlns" }, new String[] {
 				FTSender.SESSION_TERMINATE, XMPPClient.JINGLE });
-		BasicXmlStream.addOnetimeEventListener(eq, terminateListener);
+		BasicXmlStream.addOnetimeEventListener(eq, this);
 
-		xmppClient.sendIQ(closeInteraction, closeListener);
+		xmppClient.sendIQ(closeInteraction, this);
+	}
+
+	/**
+	 * @param e
+	 */
+	private boolean isAccepted(Element e) {
+		Element decline = e.getPath(new String[] { XMPPClient.JINGLE, null },
+				new String[] { FTSender.JINGLE, FTSender.DECLINE });
+
+		if (decline != null) {
+			eh.fileAcceptance(XMPPClient.getInstance().getRoster()
+					.getContactByJid(e.getAttribute(Iq.ATT_FROM)), fileName,
+					false, this);
+			return false;
+		}
+		return true;
+	}
+
+	// FT machine state variables 
+	public static final int FT_RESET = 0;
+	public static final int FT_INITIATED = 1;
+	public static final int FT_SENDING = 2;
+	public static final int FT_WAITING_CLOSE = 3;
+	public static final int FT_WAITING_TERMINATE = 4;
+
+	private int FT_STATE = FT_RESET;
+
+	public void handleError(Element e) {
+		switch (FT_STATE) {
+			case FT_RESET:
+				eh.fileError(XMPPClient.getInstance().getRoster()
+						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
+						fileName, e);
+				FT_STATE = FT_RESET;
+				break;
+
+			case FT_INITIATED:
+				eh.fileAcceptance(XMPPClient.getInstance().getRoster()
+						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
+						fileName, false, this);
+				FT_STATE = FT_RESET;
+				break;
+
+			case FT_SENDING:
+				FT_STATE = FT_RESET;
+				break;
+
+			case FT_WAITING_CLOSE:
+				FT_STATE = FT_RESET;
+				eh.fileSent(XMPPClient.getInstance().getRoster()
+						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
+						fileName, true, this);
+				break;
+
+			default:
+				break;
+		}
+
+	}
+
+	public void handleResult(Element e) {
+		switch (FT_STATE) {
+			case FT_RESET:
+				if (isAccepted(e)) this.initiateInteraction();
+				FT_STATE = FT_INITIATED;
+				break;
+
+			case FT_INITIATED:
+				if (sessionOpened) this.sendFile();
+				else
+					this.encodedData = new String(Base64.encode(this.fileData));
+				// this result must have arrived and the packet received below
+				sessionOpened = true;
+				FT_STATE = FT_SENDING;
+				break;
+
+			case FT_SENDING:
+				if (fileOffset < encodedData.length()) {
+					FT_STATE = FT_SENDING;
+					this.sendChunk();
+				} else {
+					FT_STATE = FT_WAITING_CLOSE;
+					this.sendFooter();
+				}
+				break;
+
+			case FT_WAITING_CLOSE:
+				sessionOpened = false;
+				eh.fileSent(XMPPClient.getInstance().getRoster()
+						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
+						fileName, true, this);
+				FT_STATE = FT_WAITING_TERMINATE;
+				break;
+
+			default:
+				break;
+		}
+
+	}
+
+	public void packetReceived(Element e) {
+
+		Iq reply = Utils.easyReply(e);
+
+		switch (FT_STATE) {
+			case FT_RESET:
+			case FT_INITIATED:
+			case FT_SENDING:
+				eh.fileAcceptance(XMPPClient.getInstance().getRoster()
+						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
+						fileName, true, this);
+				xmppClient.sendPacket(reply);
+				if (sessionOpened) this.sendFile();
+				else
+					this.encodedData = new String(Base64.encode(this.fileData));
+				// this iq must have arrived and the packet received below
+				sessionOpened = true;
+				FT_STATE = FT_SENDING;
+				break;
+
+			case FT_WAITING_CLOSE:
+				xmppClient.sendPacket(reply);
+				FT_STATE = FT_RESET;
+				break;
+
+			case FT_WAITING_TERMINATE:
+				xmppClient.sendPacket(reply);
+				FT_STATE = FT_RESET;
+				break;
+		}
+
 	}
 }

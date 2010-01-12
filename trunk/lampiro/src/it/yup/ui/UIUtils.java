@@ -1,20 +1,28 @@
 package it.yup.ui;
 
+import java.util.Enumeration;
+import java.util.Vector;
+
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 
 public class UIUtils {
 
-	/**
-	 * The lookup table used to memorize letters for search pattern
-	 */
-	public static char[][] itu_keys = { { ' ', '0' }, { '1' },
-			{ 'a', 'b', 'c', 'à', '2' }, { 'd', 'e', 'f', 'è', 'é', '3' },
-			{ 'g', 'h', 'i', 'ì', '4' }, { 'j', 'k', 'l', '5' },
-			{ 'm', 'n', 'o', 'ò', '6' }, { 'p', 'q', 'r', 's', '7' },
-			{ 't', 'u', 'v', 'ù', '8' }, { 'w', 'x', 'y', 'z', '9' } };
+	protected static boolean contains(Vector items, UIItem item) {
+		if (items.contains(item)) return true;
+		Enumeration en = items.elements();
+		while (en.hasMoreElements()) {
+			UIItem ithItem = (UIItem) en.nextElement();
+			if (ithItem instanceof UIIContainer) {
+				UIIContainer iic = (UIIContainer) ithItem;
+				if (iic.contains(item)) return true;
+			}
+		}
+		return false;
+	}
 
-	public static Image imageResize(Image image, int finalWidth, int finalHeight) {
+	public static Image imageResize(Image image, int finalWidth,
+			int finalHeight, boolean grayScale) {
 		int sourceWidth = image.getWidth();
 		int sourceHeight = image.getHeight();
 		if (finalHeight == -1) finalHeight = finalWidth * sourceHeight
@@ -50,6 +58,17 @@ public class UIUtils {
 						(int) destXOrigin, (int) destYOrigin, finalWidth);
 			}
 		}
+		if (grayScale) {
+			for (int i = 0; i < out.length; i++) {
+				int newVal = out[i];
+				int alpha = (newVal & 0xff000000);
+				newVal = (((newVal & 0xff0000) >> 16) * 30) / 100
+						+ (((newVal & 0xff00) >> 8) * 59) / 100
+						+ (((newVal & 0xff)) * 11) / 100;
+				newVal = newVal * 0x10101+alpha;
+				out[i] = newVal;
+			}
+		}
 
 		return Image.createRGBImage(out, finalWidth, finalHeight, true);
 	}
@@ -65,20 +84,25 @@ public class UIUtils {
 			}
 		}
 	}
+	
+	protected static void drawPixel(Graphics g, int x, int y) {
+		g.drawLine(x, y, x, y);
+	}
 
 	public static int colorize(int inputColor, int percentage) {
 		int[] rgb = new int[] { inputColor, inputColor, inputColor };
 		int outputColor = 0;
 		for (int i = 0; i < 3; i++) {
 			rgb[i] &= (0xFF0000 >> (i * 8));
-			int temp = rgb[i]  >> (16 -i * 8); 
-			temp += ((0xFF * (percentage > 0 ? 1 : 0) - temp) * Math.abs(percentage) )/100;
-			rgb[i] = temp << (16 -i * 8); 
+			int temp = rgb[i] >> (16 - i * 8);
+			temp += ((0xFF * (percentage > 0 ? 1 : 0) - temp) * Math
+					.abs(percentage)) / 100;
+			rgb[i] = temp << (16 - i * 8);
 			outputColor += rgb[i];
 		}
 		return outputColor;
 	}
-	
+
 	/*
 	 * An helper function that builds and initialize a UIMenu.
 	 * 
@@ -105,15 +129,16 @@ public class UIUtils {
 		}
 		return retMenu;
 	}
-	
+
 	public static UIMenu easyMenu(String title, int absoluteX, int absoluteY,
-			int width, UIItem firstItem,String cancelString, String selectString) {
-		UIMenu retMenu = UIUtils.easyMenu(title,absoluteX,absoluteY,width,firstItem);
+			int width, UIItem firstItem, String cancelString,
+			String selectString) {
+		UIMenu retMenu = UIUtils.easyMenu(title, absoluteX, absoluteY, width,
+				firstItem);
 		retMenu.cancelMenuString = cancelString;
 		retMenu.selectMenuString = selectString;
 		return retMenu;
 	}
-
 
 	/*
 	 * An helper function that builds an horizontal layout of three items.
@@ -128,23 +153,28 @@ public class UIUtils {
 	public static UIHLayout easyCenterLayout(UIItem item, int size) {
 		UIHLayout buttonLayout = new UIHLayout(3);
 		UISeparator dummySeparator = new UISeparator(0);
-		if (item instanceof UILabel)
-			((UILabel)item).setAnchorPoint(Graphics.HCENTER);
+		if (item instanceof UILabel) ((UILabel) item)
+				.setAnchorPoint(Graphics.HCENTER);
 		buttonLayout.setGroup(false);
-		buttonLayout.insert(dummySeparator, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		buttonLayout.insert(dummySeparator, 0, 50,
+				UILayout.CONSTRAINT_PERCENTUAL);
 		buttonLayout.insert(item, 1, size, UILayout.CONSTRAINT_PIXELS);
-		buttonLayout.insert(dummySeparator, 2, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		buttonLayout.insert(dummySeparator, 2, 50,
+				UILayout.CONSTRAINT_PERCENTUAL);
 		return buttonLayout;
 	}
 
 	public static int medColor(int firstColor, int secondColor) {
-		int[] rgb1 = new int[] { firstColor & 0xFF0000, firstColor& 0xFF00, firstColor & 0xFF};
-		int[] rgb2 = new int[] { secondColor & 0xFF0000, secondColor& 0xFF00, secondColor & 0xFF};
+		int[] rgb1 = new int[] { firstColor & 0xFF0000, firstColor & 0xFF00,
+				firstColor & 0xFF };
+		int[] rgb2 = new int[] { secondColor & 0xFF0000, secondColor & 0xFF00,
+				secondColor & 0xFF };
 		int outputColor = 0;
 		for (int i = 0; i < 3; i++) {
-			int temp = ( (rgb1[i]+rgb2[i])/2 ) & (0xFF0000 >> (i*8));
-			outputColor+=temp;
+			int temp = ((rgb1[i] + rgb2[i]) / 2) & (0xFF0000 >> (i * 8));
+			outputColor += temp;
 		}
 		return outputColor;
 	}
+
 }

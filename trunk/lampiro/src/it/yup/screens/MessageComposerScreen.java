@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MessageComposerScreen.java 1312 2009-03-24 12:04:13Z luca $
+ * $Id: MessageComposerScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 package it.yup.screens;
@@ -27,8 +27,7 @@ import javax.microedition.lcdui.TextField;
 
 public class MessageComposerScreen extends Form implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 	private Displayable next_screen = null;
 	private Contact user = null;
 	private ChoiceGroup cg_type = new ChoiceGroup("Type", ChoiceGroup.EXCLUSIVE);

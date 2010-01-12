@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketStream.java 1577 2009-06-15 14:38:27Z luca $
+ * $Id: SocketStream.java 1918 2009-12-15 12:47:25Z luca $
 */
 
 package it.yup.xmlstream;
@@ -144,14 +144,22 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		} catch (XmlPullParserException e) {
 			// #debug			
 //@			Logger.log(e.getMessage());
-			this.channel.close();
-			connectionLost(this.channel);
+			try {
+				this.channel.close();
+				connectionLost(this.channel);
+			} catch (Exception ex) {
+				// TODO: handle exception
+			}
 		} catch (IOException e) {
 			// #mdebug			
 //@			Logger.log(e.getMessage());
 //@			e.printStackTrace();
 			// #enddebug
-			connectionLost(this.channel);
+			try {
+				connectionLost(this.channel);
+			} catch (Exception ex) {
+				// TODO: handle exception
+			}
 		} catch (Exception e) {
 			// catch this to avoid a problem that cannot be catched outside
 			try {
@@ -175,9 +183,9 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 	//	 #endif
 
 	// #ifdef COMPRESSION
-//@	protected void startCompression() {
-//@		channel.startCompression();
-//@	}
+//@		protected void startCompression() {
+//@			channel.startCompression();
+//@		}
 	// #endif
 
 }

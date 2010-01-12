@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ContactInfoScreen.java 1559 2009-06-08 11:07:14Z luca $
+ * $Id: ContactInfoScreen.java 1873 2009-10-21 16:41:20Z luca $
 */
 
 /**
@@ -43,8 +43,7 @@ import org.bouncycastle.util.encoders.UrlBase64;
  */
 public class ContactInfoScreen extends UIScreen {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-			"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel close = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
 			.toUpperCase());
@@ -129,7 +128,8 @@ public class ContactInfoScreen extends UIScreen {
 		this.contactPanel.addItem(jidLayout);
 
 		if (contact.name != null && contact.name.length() > 0) {
-			UILabel nic = new UILabel(rm.getString(ResourceIDs.STR_NICK_NAME));
+			UILabel nic = new UILabel(rm
+					.getString(ResourceIDs.STR_DISPLAYED_NAME));
 			nickLayout = contactLayout(nic, new UILabel(contact.name));
 			this.contactPanel.addItem(nickLayout);
 		}
@@ -161,8 +161,10 @@ public class ContactInfoScreen extends UIScreen {
 
 				Graphics g = UICanvas.getInstance().getCurrentScreen()
 						.getGraphics();
-				UILabel ii_res = new UILabel(presenceIcon, Contact
-						.resource(jid));
+				String resource = Contact
+						.resource(jid);
+				resource = resource!= null ? resource : "";
+				UILabel ii_res = new UILabel(presenceIcon, resource);
 				ii_res.setWrappable(true, this.getWidth() - 30);
 				resVl.insert(ii_res, 0, ii_res.getHeight(g),
 						UILayout.CONSTRAINT_PIXELS);
@@ -200,34 +202,37 @@ public class ContactInfoScreen extends UIScreen {
 			}
 
 			public void handleResult(Element e) {
-				ContactInfoScreen ci = ContactInfoScreen.this;
-				ci.contactPanel.removeItem(loadingLabel);
+				UICanvas.lock();
+				try {
+					ContactInfoScreen ci = ContactInfoScreen.this;
+					ci.contactPanel.removeItem(loadingLabel);
 
-				Element vCard = e.getChildByName(null, XMPPClient.VCARD);
-				if (vCard == null) {
-					ci.askRepaint();
-					return;
-				}
+					Element vCard = e.getChildByName(null, XMPPClient.VCARD);
+					if (vCard == null) {
+						ci.askRepaint();
+						return;
+					}
 
-				// full name 
-				Element FN = vCard.getChildByName(null, XMPPClient.FN);
-				updateContactLayout(fnLayout, FN);
+					// full name 
+					Element FN = vCard.getChildByName(null, XMPPClient.FN);
+					updateContactLayout(fnLayout, FN);
 
-				// nickName
-				Element NICK = vCard.getChildByName(null, XMPPClient.NICKNAME);
-				updateContactLayout(nnLayout, NICK);
+					// nickName
+					Element NICK = vCard.getChildByName(null,
+							XMPPClient.NICKNAME);
+					updateContactLayout(nnLayout, NICK);
 
-				// email
-				Element EMAIL = vCard.getChildByName(null, XMPPClient.EMAIL);
-				if (EMAIL != null) updateContactLayout(eeLayout, EMAIL
-						.getChildByName(null, XMPPClient.USERID));
+					// email
+					Element EMAIL = vCard
+							.getChildByName(null, XMPPClient.EMAIL);
+					if (EMAIL != null) updateContactLayout(eeLayout, EMAIL
+							.getChildByName(null, XMPPClient.USERID));
 
-				// photo
+					// photo
 
-				Element PHOTO = vCard.getChildByName(null, XMPPClient.PHOTO);
-				if (PHOTO != null) {
-					Element BINVAL = PHOTO.getChildByName(null,
-							XMPPClient.BINVAL);
+					Element BINVAL = vCard
+							.getPath(new String[] { null, null }, new String[] {
+									XMPPClient.PHOTO, XMPPClient.BINVAL });
 					if (BINVAL != null) {
 						String vCardString = BINVAL.getText();
 						byte[] vCardBytes = UrlBase64.decode(vCardString
@@ -235,11 +240,16 @@ public class ContactInfoScreen extends UIScreen {
 						Image img = Image.createImage(vCardBytes, 0,
 								vCardBytes.length);
 						ContactInfoScreen.this.imgLabel.setImg(img);
-
 					}
+					ci.askRepaint();
+				} catch (Exception ex) {
+					// #mdebug
+//@					System.out.println(ex.getMessage());
+//@					ex.printStackTrace();
+					// #enddebug
+				} finally {
+					UICanvas.unlock();
 				}
-
-				ci.askRepaint();
 			}
 
 		});
@@ -292,7 +302,7 @@ public class ContactInfoScreen extends UIScreen {
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == this.close) {
-			RosterScreen.closeAndOpenRoster(this);
+			UICanvas.getInstance().close(this);
 		}
 	}
 

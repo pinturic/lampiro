@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICheckbox.java 846 2008-09-11 12:20:05Z luca $
+ * $Id: UICheckbox.java 1913 2009-12-02 14:21:24Z luca $
 */
 
 package it.yup.ui;
@@ -9,6 +9,7 @@ package it.yup.ui;
 import java.io.IOException;
 
 import javax.microedition.lcdui.Canvas;
+import javax.microedition.lcdui.Image;
 
 /**
  * 
@@ -19,6 +20,13 @@ import javax.microedition.lcdui.Canvas;
  * 
  */
 public class UICheckbox extends UILabel {
+	private Image checkedImg=null;
+	private Image uncheckedImg=null;
+	
+	{
+	checkedImg = UICanvas.getUIImage("/icons/checked.png");
+	uncheckedImg = UICanvas.getUIImage("/icons/unchecked.png");
+	}
 
 	/**
 	 * Keeps the checked state of the Checkbox
@@ -36,6 +44,11 @@ public class UICheckbox extends UILabel {
 		this.wrappable = false;
 	}
 
+	public UICheckbox(String text, boolean checked) {
+		this(text);
+		this.setChecked(checked);
+	}
+
 	public boolean isChecked() {
 		return checked;
 	}
@@ -47,9 +60,9 @@ public class UICheckbox extends UILabel {
 		this.checked = checked;
 		if (changed == true) {
 			if (checked == true)
-				this.img = UICanvas.getUIImage("/icons/checked.png");
+				this.img = this.checkedImg;
 			else
-				this.img = UICanvas.getUIImage("/icons/unchecked.png");
+				this.img = this.uncheckedImg;
 			this.dirty = true;
 			this.askRepaint();
 		}
@@ -63,5 +76,37 @@ public class UICheckbox extends UILabel {
 		if (UICanvas.getInstance().getGameAction(key) == Canvas.FIRE)
 			this.setChecked(!this.checked);
 		return false;
+	}
+
+	/**
+	 * @param checkedImg the checkedImg to set
+	 */
+	public void setCheckedImg(Image checkedImg) {
+		this.checkedImg = checkedImg;
+		this.dirty = true;
+		this.askRepaint();
+	}
+
+	/**
+	 * @return the checkedImg
+	 */
+	public Image getCheckedImg() {
+		return checkedImg;
+	}
+
+	/**
+	 * @param uncheckedImg the uncheckedImg to set
+	 */
+	public void setUncheckedImg(Image uncheckedImg) {
+		this.uncheckedImg = uncheckedImg;
+		this.dirty = true;
+		this.askRepaint();
+	}
+
+	/**
+	 * @return the uncheckedImg
+	 */
+	public Image getUncheckedImg() {
+		return uncheckedImg;
 	}
 }

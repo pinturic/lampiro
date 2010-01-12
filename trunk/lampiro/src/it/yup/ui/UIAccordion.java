@@ -22,6 +22,7 @@ public class UIAccordion extends UIPanel {
 	private Hashtable accordionItems = new Hashtable(5);
 
 	private int sepColor = 0xBBBBBB;
+	private int sepSelectedColor = 0x00000;
 	private int sepSize = 2;
 	private int labelColor = 0xAAAAAA;
 	private int labelGradientColor = -1;
@@ -80,7 +81,7 @@ public class UIAccordion extends UIPanel {
 		this.setItems(new MetaVector(5));
 	}
 
-	private void setSubPanel(UIItem item, Vector subPanel) {
+	public void setSubPanel(UIItem item, Vector subPanel) {
 		AccordionItem ai = (AccordionItem) this.accordionItems.get(item);
 		ai.subPanel = subPanel;
 		Enumeration en = subPanel.elements();
@@ -206,6 +207,7 @@ public class UIAccordion extends UIPanel {
 		v.removeElement(item);
 		if (this.getScreen() != null) this.getScreen().removePaintedItem(item);
 		if (label == this.openedItem && v.size() == 0) this.close(label);
+		this.setDirty(true);
 	}
 
 	public void insertPanelItem(UIItem label, UIItem item, int idx) {
@@ -215,6 +217,13 @@ public class UIAccordion extends UIPanel {
 		if (openedItem == label) {
 			if (selectedIdx >= this.getItems().indexOf(item)) selectedIdx++;
 		}
+		this.setDirty(true);
+	}
+
+	public void appendPanelItem(UIItem label, UIItem item) {
+		Vector v = getSubpanel(label);
+		int size = v.size();
+		insertPanelItem(label, item, size);
 	}
 
 	private UIVLayout wrapItem(UIItem item) {
@@ -361,6 +370,35 @@ public class UIAccordion extends UIPanel {
 		}
 	}
 
+	protected void paintIthItem(Graphics g, int w, UIItem ui, int ih, int l) {
+		super.paintIthItem(g, w, ui, ih, l);
+		UIItem selItem = this.getSelectedItem();
+		if (selItem !=null) {
+			AccordionItem ai = null;
+			ai = (AccordionItem) accordionItems.get(selItem);
+			if (ai != null && ai.wrappedItem == ui) {
+				UISeparator fakeSep = new UISeparator(1, sepSelectedColor);
+				fakeSep.paint(g, w, sepSize);
+				g.translate(0, ih-1);
+				fakeSep.paint(g, w, sepSize);
+				g.translate(0, -ih+1);
+			}
+		}
+	}
+	
+	public void setScreen(UIScreen _us) {
+		super.setScreen(_us);
+		Enumeration en = this.accordionItems.elements();
+		while (en.hasMoreElements()) {
+			AccordionItem ai = (AccordionItem) en.nextElement();
+			Enumeration en2 = ai.subPanel.elements();
+			while (en2.hasMoreElements()) {
+				UIItem ui= (UIItem) en2.nextElement();
+				ui.setScreen(_us);
+			}
+		}
+	}
+
 	private void open(UIItem itemToOpen) {
 		AccordionItem ai = (AccordionItem) this.accordionItems.get(itemToOpen);
 		Vector newPanel = ai.subPanel;
@@ -379,6 +417,7 @@ public class UIAccordion extends UIPanel {
 	}
 
 	public void setBg_color(int bg_color) {
+		super.setBg_color(bg_color);
 		Enumeration en = this.accordionItems.elements();
 		while (en.hasMoreElements()) {
 			AccordionItem ithItem = (AccordionItem) en.nextElement();
@@ -474,8 +513,8 @@ public class UIAccordion extends UIPanel {
 			this.setSelectedItem(firstItem);
 		} catch (Exception e) {
 			// #mdebug 
-//@									System.out.println("in swapping elements");
-//@									e.printStackTrace();
+//@			System.out.println("in swapping elements");
+//@			e.printStackTrace();
 			// #enddebug
 		}
 	}
@@ -487,8 +526,9 @@ public class UIAccordion extends UIPanel {
 				firstIndex = secondIndex;
 				secondIndex = tempIndex;
 			}
-			UIItem oldSelectedItem = selectedIdx >= 0 ? (UIItem) this
-					.getItems().elementAt(selectedIdx) : null;
+			UIItem oldSelectedItem = (selectedIdx >= 0 && selectedIdx < this
+					.getItems().size()) ? (UIItem) this.getItems().elementAt(
+					selectedIdx) : null;
 			UIItem oldOpenedItem = openedItem;
 			if (openedItem != null) {
 				this.close(openedItem);
@@ -515,8 +555,8 @@ public class UIAccordion extends UIPanel {
 					.setSelectedItem(oldSelectedItem);
 		} catch (Exception e) {
 			// #mdebug 
-//@									System.out.println("in swapping elements");
-//@									e.printStackTrace();
+//@			System.out.println("in swapping elements");
+//@			e.printStackTrace();
 			// #enddebug
 		}
 	}
@@ -557,5 +597,13 @@ public class UIAccordion extends UIPanel {
 			UIHLayout ihl = (UIHLayout) ivl.layoutItems[0];
 			setItemsColor(ihl.layoutItems[0], ihl.layoutItems[1]);
 		}
+	}
+
+	public void setSepSelectedColor(int sepSelectedColor) {
+		this.sepSelectedColor = sepSelectedColor;
+	}
+
+	public int getSepSelectedColor() {
+		return sepSelectedColor;
 	}
 }

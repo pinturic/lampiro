@@ -30,4 +30,6 @@ public interface DataFormListener {
 	 * while message not)           
 	 */
 	public boolean execute(int cmd);
+	
+	public String getFrom ();
 }

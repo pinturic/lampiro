@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AddContactScreen.java 1310 2009-03-23 11:12:58Z luca $
+ * $Id: AddContactScreen.java 1644 2009-08-09 14:11:15Z luca $
 */
 
 package it.yup.screens;
@@ -34,8 +34,7 @@ import javax.microedition.lcdui.TextField;
  */
 public class AddContactScreen extends Form implements CommandListener {
 
-	private static ResourceManager rm = ResourceManager.getManager("common",
-																	"en");
+	private static ResourceManager rm = ResourceManager.getManager();
 
 	private TextField t_name;
 	private TextField t_jid;

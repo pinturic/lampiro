@@ -135,7 +135,7 @@ public class UITextPanel extends UIPanel {
 						this.askRepaint();
 						return true;
 					} else if (lastLabel == this.textLines.size() - 1
-							&& needScrollbar == false) { return false; }
+							&& (needScrollbar == false )) { return false; }
 					return true;
 
 				case Canvas.UP: {
@@ -145,7 +145,8 @@ public class UITextPanel extends UIPanel {
 						this.setDirty(true);
 						this.askRepaint();
 						return true;
-					} else if (firstLabel == 0 && needScrollbar == false) { return false; }
+					} else if (firstLabel == 0
+							&& (needScrollbar == false )) { return false; }
 					return true;
 				}
 			}
@@ -155,25 +156,7 @@ public class UITextPanel extends UIPanel {
 
 	protected void drawScrollBar(Graphics g, int w, int h, int rh) {
 		this.needScrollbar = true;
-		int otx = g.getTranslateX();
-		int oty = g.getTranslateY();
-		int oc = g.getColor();
-		g.setColor(UIConfig.scrollbar_bg);
-		g.translate(w - UIConfig.scrollbarWidth, 0);
-		g.fillRect(0, 0, UIConfig.scrollbarWidth, h);
-
-		/* calculate y and height of scrollbar */
-		int sy = h * firstLabel / textLines.size();
-		int sh = (h * h) / rh;
-		if (sy + sh > h || lastLabel == textLines.size() - 1) {
-			sy = h - sh;
-		}
-
-		g.setColor(UIConfig.scrollbar_fg);
-		g.fillRect(1, sy, UIConfig.scrollbarWidth - 2, sh);
-		/* resets origin to old value */
-		g.translate(-otx + g.getTranslateX(), -oty + g.getTranslateY());
-		g.setColor(oc);
+		drawScrollBarItems(g, w, h, rh, textLines, firstLabel, lastLabel);
 	}
 
 	public UIItem getSelectedItem() {
