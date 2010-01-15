@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SubscriptionConfirmAlert.java 1644 2009-08-09 14:11:15Z luca $
+ * $Id: SubscriptionConfirmAlert.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.screens;
@@ -54,7 +54,7 @@ public class SubscriptionConfirmAlert extends Alert implements CommandListener {
 		if (cmd == cmd_yes) {
 			Contact c = client.roster.getContactByJid(contact.jid);
 			if (c == null) {
-				c = new Contact(contact.jid, contact.name, "from",
+				c = new Contact(contact.jid, contact.name, Contact.SUB_FROM,
 						contact.getGroups());
 				// xmpp.addContact(c);
 			}

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 1905 2009-11-11 14:56:07Z luca $
+ * $Id: SplashScreen.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package lampiro.screens;
@@ -34,19 +34,19 @@ public class SplashScreen extends UIScreen {
 	// since the software may be uniintialized so
 	// lots of shortcuts, pointing events and controls are handled manually like this
 	//
-		class UISplashTextField extends UITextField {
-			public UISplashTextField(String label, String text, int maxSize,
-					int constraints) {
-				super(label, text, maxSize, constraints);
-			}
-	
-			public boolean keyPressed(int key) {
-				boolean retVal = super.keyPressed(key);
-				int ga = UICanvas.getInstance().getGameAction(key);
-				if (ga == Canvas.FIRE) { return false; }
-				return retVal;
-			}
-		};
+	class UISplashTextField extends UITextField {
+		public UISplashTextField(String label, String text, int maxSize,
+				int constraints) {
+			super(label, text, maxSize, constraints);
+		}
+
+		public boolean keyPressed(int key) {
+			boolean retVal = super.keyPressed(key);
+			int ga = UICanvas.getInstance().getGameAction(key);
+			if (ga == Canvas.FIRE) { return false; }
+			return retVal;
+		}
+	};
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -77,9 +77,9 @@ public class SplashScreen extends UIScreen {
 
 			setTitle(Config.CLIENT_NAME);
 // #ifndef GLIDER
-						
-				Image logo = Image.createImage("/icons/lampiro_icon.png");
-				UILabel ul = new UILabel("Loading Lampiro...");
+									
+							Image logo = Image.createImage("/icons/lampiro_icon.png");
+							UILabel ul = new UILabel("Loading Lampiro...");
 			// #endif
 			UILabel up = new UILabel(logo);
 			up.setAnchorPoint(Graphics.HCENTER | Graphics.VCENTER);
@@ -100,21 +100,20 @@ public class SplashScreen extends UIScreen {
 
 		Utils.tasks.schedule(new TimerTask() {
 			public void run() {
-				try{
-				UICanvas.lock();
-				checkKeys();
-				}
-				finally{
+				try {
+					UICanvas.lock();
+					checkKeys();
+				} finally {
 					UICanvas.unlock();
 				}
-				
+
 			}
 		}, 2000);
 	}
-	
+
 	public void menuAction(UIMenu menu, UIItem item) {
-		if (item == this.helpField)
-			keyPressed(UICanvas.getInstance().getKeyCode(Canvas.FIRE));
+		if (item == this.helpField) keyPressed(UICanvas.getInstance()
+				.getKeyCode(Canvas.FIRE));
 	}
 
 	public boolean keyPressed(int kc) {
@@ -122,11 +121,11 @@ public class SplashScreen extends UIScreen {
 
 		int ga = UICanvas.getInstance().getGameAction(kc);
 		switch (ga) {
-//			case Canvas.UP:
-//			case Canvas.DOWN:
-//			case Canvas.LEFT:
-//			case Canvas.RIGHT:
-//				return super.keyPressed(kc);
+			//			case Canvas.UP:
+			//			case Canvas.DOWN:
+			//			case Canvas.LEFT:
+			//			case Canvas.RIGHT:
+			//				return super.keyPressed(kc);
 			case Canvas.FIRE:
 				this.removePopup(this.helpMenu);
 				this.helpMenu = null;
@@ -139,23 +138,38 @@ public class SplashScreen extends UIScreen {
 
 	private void checkKeys() {
 		int q;
-		String keys = Config.getInstance().getProperty(Config.CANVAS_KEYS);
+		Config cfg = Config.getInstance();
+		String keys = cfg.getProperty(Config.CANVAS_KEYS);
 		if (keys != null && (q = keys.indexOf(',')) != -1) {
 			int l = Integer.parseInt(keys.substring(0, q));
 			int r = Integer.parseInt(keys.substring(q + 1));
 			UICanvas.setMenuKeys(l, r);
 			UIScreen sc = null;
 // #ifndef GLIDER
-						sc=RegisterScreen.getInstance();
+									sc=RegisterScreen.getInstance();
 			// #endif 
 			UICanvas.getInstance().open(sc, true);
 			UICanvas.getInstance().close(SplashScreen.this);
+			if (cfg.updatedConfig) {
+				cfg.updatedConfig = false;
+				String upText = Config.CLIENT_NAME + " "
+						+ rm.getString(ResourceIDs.STR_UPDATE_TEXT);
+				upText = Utils.replace(upText, "SOFTWARE_VERSION", cfg
+						.getProperty(Config.VERSION));
+				UILabel label = new UILabel(upText);
+				int avWidth = UICanvas.getInstance().getWidth() - 60;
+				label.setWrappable(true, avWidth - 10);
+				UIMenu popup = UIUtils.easyMenu(rm
+						.getString(ResourceIDs.STR_UPDATE), 30, 30, avWidth,
+						label, "", rm.getString(ResourceIDs.STR_CONTINUE));
+				sc.addPopup(popup);
+			}
 		} else {
 			// save actual configuration
 			//SplashScreen.this.close = new UIButton(rm.getString(ResourceIDs.STR_CLOSE));
 			keys = UICanvas.MENU_LEFT + "," + UICanvas.MENU_RIGHT;
-			Config.getInstance().setProperty(Config.CANVAS_KEYS, keys);
-			Config.getInstance().saveToStorage();
+			cfg.setProperty(Config.CANVAS_KEYS, keys);
+			cfg.saveToStorage();
 
 			String help = rm.getString(ResourceIDs.STR_KEY_HELP);
 			help = help.replace('<', '\n');
@@ -180,10 +194,10 @@ public class SplashScreen extends UIScreen {
 		}
 	}
 
-//	public void menuAction(UIMenu menu, UIItem c) {
-//		if (menu == this.helpMenu) {
-//			UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
-//			UICanvas.getInstance().close(SplashScreen.this);
-//		}
-//	}
+	//	public void menuAction(UIMenu menu, UIItem c) {
+	//		if (menu == this.helpMenu) {
+	//			UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
+	//			UICanvas.getInstance().close(SplashScreen.this);
+	//		}
+	//	}
 }

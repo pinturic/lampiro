@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleDataFormExecutor.java 1833 2009-10-09 08:17:44Z luca $
+ * $Id: SimpleDataFormExecutor.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.xmpp;
@@ -150,7 +150,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	}
 
 	public String getFrom() {
-		return form_element.getAttribute("from");
+		return form_element.getAttribute(Stanza.ATT_FROM);
 	}
 
 	public void setEnableDisplay(boolean enableDisplay) {

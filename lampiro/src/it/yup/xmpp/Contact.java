@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 1913 2009-12-02 14:21:24Z luca $
+ * $Id: Contact.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.xmpp;
@@ -41,7 +41,17 @@ public class Contact extends IQResultListener {
 	public static final int CH_TASK_NEW = 3;
 	public static final int CH_TASK_REMOVED = 4;
 	public static final int CH_GROUP = 5;
-
+	
+	/*
+	 * Subscriptions
+	 */
+	public static final String SUB_BOTH = "both";
+	public static final String SUB_TO = "to";
+	public static final String SUB_FROM = "from";
+	public static final String SUB_UNKNOWN = "unknown";
+	public static final String SUB_NONE = "none";
+	
+	
 	/*
 	 * The last resource associated to this user that sent a message
 	 */
@@ -126,7 +136,7 @@ public class Contact extends IQResultListener {
 		}
 
 		if (subscription == null || "".equals(subscription)) {
-			this.subscription = "none";
+			this.subscription = Contact.SUB_NONE;
 		} else {
 			this.subscription = subscription;
 		}
