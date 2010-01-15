@@ -57,7 +57,6 @@
 57	Nome
 58	Nickname
 59	Hai già un account jabber (GTalk, jabber.org, ...)?
-60	Inserisci codice
 61	Stato trasferimento file
 62	Completato
 63	In corso
@@ -76,6 +75,17 @@
 76	News
 77	Servizi
 78	Invia codice
+79	Update
+80	è stato aggiornato alla versione SOFTWARE_VERSION. In caso di malfunzionamenti provare a resettare la configurazione.
+81	E-mail 
+82	Sottoscrizione
+83	Risorse
+84	JID
+85	both
+86	to
+87	from
+88	unknown
+89	none
 100	Scrivi messaggio
 101	Chatta con
 102	Azzera chat
@@ -156,6 +166,7 @@
 265	Comando annullato con successo
 266	Comando terminato
 267	Errore durante l'esecuzione del task
+268	Tipo server
 300	Invia messaggio a
 500	Completa il form
 700	Invia messaggio
@@ -175,7 +186,6 @@
 714	Immagine
 715	Contatti
 716	Nome file
-717	Start
 718	vuole inviarti un file:
 719	Trasferimento file
 720	Registra audio
@@ -228,11 +238,7 @@
 903	Accetta tutto
 904	Accetta sempre
 905	Richiesta di sottoscrizione presenza
-906	non ha accettato:
-907	accettato:
 908	inviato a
-909	non
-910	Ricevente
 911	Ho salvato un file per te a:
 912	Rifiuta
 1001	Scegli un comando

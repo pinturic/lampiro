@@ -23,7 +23,7 @@
 		<echo message="Preprocessing EclipseME Antenna build environment..." />
 		<wtkpreprocess verbose="false" srcdir="${project.root.lampiro}/src" destdir="${project.root.lampiro}/preprocess/src" device="Generic/Java" symbols="${preprocess.symbols},LANG=&quot;${lang}&quot;" printsymbols="true">
 			<patternset>
-			<excludesfile name="${exclude-list}" />
+				<excludesfile name="${exclude-list}" />
 			</patternset >
 		</wtkpreprocess>
 	</target>
@@ -76,7 +76,7 @@
 		<wtkbuild destdir="${path.build.classes}" encoding="${src.encoding}" source="1.3" sourcepath="" srcdir="${project.root.lampiro}/preprocess/src">
 			<classpath refid="classpath.lampiro" />
 			<patternset>
-			<excludesfile name="${exclude-list}" />
+				<excludesfile name="${exclude-list}" />
 			</patternset >
 		</wtkbuild>
 		<wtkbuild destdir="${path.build.classes}" encoding="${src.encoding}" source="1.3" sourcepath="" srcdir="${project.root.lampiro}/res">
@@ -115,9 +115,8 @@
 			</fileset>
 			<fileset dir="${project.root.lampiro}/res">
 				<patternset>
-				<excludesfile name="${exclude-list}" />
+					<excludesfile name="${exclude-list}" />
 				</patternset >
-		
 			</fileset>
 			<fileset dir="${project.root.lampiro}/res">
 				<include name="locale/common.${lang}" />

@@ -57,7 +57,6 @@
 57	Name
 58	Nickname
 59	Do you already have a jabber account (GTalk, jabber.org, ...)?
-60	Insert code
 61	File transfer status
 62	Finished
 63	Ongoing
@@ -76,6 +75,17 @@
 76	News
 77	Services
 78	Send code
+79	Update
+80	has been updated to version SOFTWARE_VERSION. Try resetting the configuration in case of malfunction.
+81	E-mail 
+82	Subscription
+83	Resources
+84	JID
+85	both
+86	to
+87	from
+88	unknown
+89	none
 100	Write message
 101	Chat with
 102	Clear chat
@@ -156,6 +166,7 @@
 265	The task has been succesfully canceled
 266	Task finished
 267	An error occurred while executing the task
+268	Server type
 300	Send message to
 500	Fill the form
 700	Send message
@@ -175,7 +186,6 @@
 714	Image
 715	Contacts
 716	File name
-717	Start
 718	wishes to send you this file:
 719	File Transfer
 720	Record audio
@@ -212,7 +222,7 @@
 753	Your album screen is empty. First you need to capture audio or images.  
 754	Manage group chat  
 755	Deleting a group chat will definitely remove it and all users will be disconnected; this operation cannot be undone.
-756	IM Newtworks
+756	IM Networks
 757	Log on / Log off  
 758	Unregister network
 759	Active sessions
@@ -228,11 +238,7 @@
 903	Accept all
 904	Always accept
 905	Presence subscription request
-906	did not accept:
-907	accepted:
 908	sent to
-909	not
-910	Receiver
 911	I uploaded a file for you at:
 912	Reject
 1001	Choose a command
