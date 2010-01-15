@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1913 2009-12-02 14:21:24Z luca $
+ * $Id: XMPPClient.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.xmpp;
@@ -646,7 +646,7 @@ public class XMPPClient implements StreamEventListener {
 
 		me = new Contact(Contact.userhost(my_jid), null, null, null);
 		Presence p = new Presence();
-		p.setAttribute("from", my_jid);
+		p.setAttribute(Stanza.ATT_FROM, my_jid);
 		p.setAttribute(XMPPClient.XML_NS, "lang", Config.lang);
 		p.toXml();
 		String show = cfg.getProperty(Config.LAST_PRESENCE_SHOW);
@@ -875,7 +875,7 @@ public class XMPPClient implements StreamEventListener {
 					if (type != null
 							&& type.compareTo(Presence.T_UNAVAILABLE) == 0) return;
 					// XXX Guess the subscription
-					u = new Contact(Contact.userhost(from), null, "unknown",
+					u = new Contact(Contact.userhost(from), null, Contact.SUB_UNKNOWN,
 							null);
 
 					u.updatePresence(new Presence(e));
@@ -906,7 +906,7 @@ public class XMPPClient implements StreamEventListener {
 			}
 
 			// subscription handling
-			if ("both".equals(u.subscription) || "to".equals(u.subscription)
+			if (Contact.SUB_BOTH.equals(u.subscription) || Contact.SUB_TO.equals(u.subscription)
 					|| Config.LAMPIRO_AGENT.equals(Contact.userhost(jid))) {
 				// subscribe received: if already granted, I don't ask anything
 				Presence pmsg = new Presence();
@@ -1134,7 +1134,7 @@ public class XMPPClient implements StreamEventListener {
 
 		// set my lang
 		new_p.setAttribute(XMPPClient.XML_NS, "lang", Config.lang);
-		new_p.setAttribute("from", p.getAttribute("from"));
+		new_p.setAttribute(Stanza.ATT_FROM, p.getAttribute(Stanza.ATT_FROM));
 
 		if (availability >= 0) {
 			if (Contact.AV_ONLINE == availability) {

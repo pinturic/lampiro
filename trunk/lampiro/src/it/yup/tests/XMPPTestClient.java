@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPTestClient.java 1220 2009-02-27 09:41:06Z luca $
+ * $Id: XMPPTestClient.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.tests;
@@ -17,6 +17,7 @@ import it.yup.xmlstream.StreamEventListener;
 import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
+import it.yup.xmpp.packets.Stanza;
 
 public class XMPPTestClient {
 
@@ -46,7 +47,7 @@ public class XMPPTestClient {
 			Message m = new Message(e);
 			//int[] bytes = XMPPClient.getTraffic();
 			//TestMidlet.yup.log.setText("echoed " + m.getBody()+ ", bytes: "+ bytes[0] + "/" + bytes[1]);
-			Message reply = new Message(m.getAttribute("from"), m
+			Message reply = new Message(m.getAttribute(Stanza.ATT_FROM), m
 					.getAttribute("type"));
 			reply.setBody(m.getBody());
 			stream.send(reply, -1);

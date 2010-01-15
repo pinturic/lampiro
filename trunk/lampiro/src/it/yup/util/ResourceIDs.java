@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1905 2009-11-11 14:56:07Z luca $
+ * $Id: ResourceIDs.java 1954 2010-01-15 15:14:09Z luca $
 */
 
 /**
@@ -71,7 +71,7 @@ public class ResourceIDs {
 	public static final int STR_NAME = 57;
 	public static final int STR_NICK_NAME = 58;
 	public static final int STR_WIZARD_TEXT = 59;
-	public static final int STR_INSERT_CODE = 60;
+	//public static final int STR_INSERT_CODE = 60;
 	public static final int STR_FT_STATUS = 61;
 	public static final int STR_FINISHED = 62;
 	public static final int STR_ONGOING = 63;
@@ -90,7 +90,18 @@ public class ResourceIDs {
 	public static final int STR_NEWS = 76;
 	public static final int STR_SERVICES = 77;
 	public static final int STR_CAPTCHA = 78;
-
+	public static final int STR_UPDATE = 79;
+	public static final int STR_UPDATE_TEXT = 80;
+	public static final int STR_E_MAIL = 81;
+	public static final int STR_SUBSCRIPTION = 82;
+	public static final int STR_RESOURCES = 83;
+	public static final int STR_JID = 84;
+	public static final int STR_SUB_BOTH = 85;
+	public static final int STR_SUB_TO = 86;
+	public static final int STR_SUB_FROM = 87;
+	public static final int STR_SUB_UNKNOWN = 88;
+	public static final int STR_SUB_NONE = 89;
+	
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;
 	public static final int STR_CLEAR_HIST = 102;
@@ -173,6 +184,7 @@ public class ResourceIDs {
 	public static final int STR_COMMAND_CANCELED = 265;
 	public static final int STR_TASK_FINISHED = 266;
 	public static final int STR_TASK_ERROR = 267;
+	public static final int STR_SERVER_TYPE = 268;
 	
 	public static final int STR_MESSAGE_TO = 300;
 	public static final int STR_FILL_FORM = 500;
@@ -193,7 +205,7 @@ public class ResourceIDs {
 	public static final int STR_IMAGE = 714;
 	public static final int STR_CONTACTS = 715;
 	public static final int STR_FILE_NAME = 716;
-	public static final int STR_START = 717;
+	// public static final int STR_START = 717;
 	public static final int STR_ASK_FT = 718;
 	public static final int STR_FT = 719;
 	public static final int STR_CAPTURE_AUDIO = 720;
@@ -248,11 +260,11 @@ public class ResourceIDs {
 	public static final int STR_ACCEPT_ALL = 903;
 	public static final int STR_ACCEPT_ALWAYS = 904;
 	public static final int STR_SUBSCRIPTION_REQUEST = 905;
-	public static final int STR_FT_DECLINED = 906;
-	public static final int STR_FT_ACCEPTED = 907;
+//	public static final int STR_FT_DECLINED = 906;
+//	public static final int STR_FT_ACCEPTED = 907;
 	public static final int STR_FT_SENT = 908;
-	public static final int STR_FT_NOT = 909;
-	public static final int STR_FT_RECEIVER = 910;
+	// public static final int STR_FT_NOT = 909;
+	// public static final int STR_FT_RECEIVER = 910;
 	public static final int STR_UPLOAD_TEXT = 911;
 	public static final int STR_REJECT = 912;
 

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1944 2010-01-11 16:32:55Z luca $
+ * $Id: Config.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.xmpp;
@@ -13,10 +13,10 @@ package it.yup.xmpp;
 // #enddebug
 
 import it.yup.util.RMSIndex;
-import it.yup.util.Utils;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
 import it.yup.xmpp.packets.Presence;
+import it.yup.util.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -50,16 +50,22 @@ public class Config {
 	// #endif
 	;
 
-	private static String version = "10.1";
+	private static String version = "10.1.1";
 
 	// #if LANG = "en"
 	public static String lang = "en";
 	// #elif LANG = "it"
-	//@			public static String lang = "it";
+	//@	public static String lang = "it";
 	// #elif LANG = "es"
 	//@	public static String lang = "es";
 	// #else 
-	//@				public static String lang = "en";
+	//@			public static String lang = "en";
+	// #endif
+
+	// #ifdef ATOM
+	//@	public static final String ATOM = "atom";
+	//@	public static final String ATOM_JID = "rss.ooros.com";
+	//@	public static final short NEWS_COUNT = 0x0033;
 	// #endif
 
 	public static final String RMS_NAME = CLIENT_NAME + "rms";
@@ -92,7 +98,7 @@ public class Config {
 	/** path of the GPRS/HTTP gateway */
 	public static final String SRV_QUERY_PATH =
 	// #ifdef GLIDER
-	//@		"http://services.ooros.com/srv/?domain=";
+	//@	"http://services.ooros.com/srv/?domain=";
 	// #else
 	"http://services.bluendo.com/srv/?domain=";
 	// #endif
@@ -314,6 +320,11 @@ public class Config {
 	 */
 	private RMSIndex rms = new RMSIndex(RMS_NAME);
 
+	/*
+	 * The configuration has been updated; i.e. Lampiro has been updated
+	 */
+	public boolean updatedConfig = false;
+
 	/**
 	 * Load the the configuration from the RMS
 	 */
@@ -376,9 +387,17 @@ public class Config {
 			if (needSave == true) this.saveToStorage();
 			String _version = getProperty(Config.VERSION);
 
-			if (_version == null || _version.compareTo(Config.version) < 0) {
-				// the software has been updated, handle here the "update" logic
+			// new installation
+			if (_version == null) {
 				setDefaults();
+			}
+			// updated installation
+			else if (_version.compareTo(Config.version) != 0) {
+				// the software has been updated, handle here the "update" logic
+				// setDefaults();
+				setProperty(Config.VERSION, Config.version);
+				this.saveToStorage();
+				this.updatedConfig = true;
 			}
 		} catch (Exception e) {
 			this.resetStorage(true);

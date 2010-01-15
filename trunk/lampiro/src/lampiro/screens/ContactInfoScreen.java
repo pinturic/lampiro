@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ContactInfoScreen.java 1873 2009-10-21 16:41:20Z luca $
+ * $Id: ContactInfoScreen.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 /**
@@ -119,11 +119,11 @@ public class ContactInfoScreen extends UIScreen {
 		nnLayout = contactLayout(nickName, nnLabel);
 		this.contactPanel.addItem(nnLayout);
 
-		UILabel email = new UILabel("E-mail:");
+		UILabel email = new UILabel(rm.getString(ResourceIDs.STR_E_MAIL) + ":");
 		eeLayout = contactLayout(email, eeLabel);
 		this.contactPanel.addItem(eeLayout);
 
-		UILabel JID = new UILabel("JID:");
+		UILabel JID = new UILabel(rm.getString(ResourceIDs.STR_JID) + ":");
 		jidLayout = contactLayout(JID, new UILabel(contact.jid));
 		this.contactPanel.addItem(jidLayout);
 
@@ -134,9 +134,23 @@ public class ContactInfoScreen extends UIScreen {
 			this.contactPanel.addItem(nickLayout);
 		}
 
-		UILabel subscription = new UILabel("Subscription:");
-		subLayout = contactLayout(subscription, new UILabel(
-				contact.subscription));
+		UILabel subscription = new UILabel(rm
+				.getString(ResourceIDs.STR_SUBSCRIPTION)
+				+ ":");
+		int subText = 0;
+		if (contact.subscription.equals(Contact.SUB_BOTH)) {
+			subText = ResourceIDs.STR_SUB_BOTH;
+		} else if (contact.subscription.equals(Contact.SUB_TO)) {
+			subText = ResourceIDs.STR_SUB_TO;
+		} else if (contact.subscription.equals(Contact.SUB_FROM)) {
+			subText = ResourceIDs.STR_SUB_FROM;
+		} else if (contact.subscription.equals(Contact.SUB_NONE)) {
+			subText = ResourceIDs.STR_SUB_NONE;
+		} else {
+			subText = ResourceIDs.STR_SUB_UNKNOWN;
+		}
+		subLayout = contactLayout(subscription, new UILabel(rm
+				.getString(subText)));
 		this.contactPanel.addItem(subLayout);
 
 		Presence[] resources = contact.getAllPresences();
@@ -144,7 +158,9 @@ public class ContactInfoScreen extends UIScreen {
 			sep = new UISeparator(1);
 			sep.setFg_color(0xAAAAAA);
 			contactPanel.addItem(sep);
-			UILabel si_rres = new UILabel("Resources");
+			UILabel si_rres = new UILabel(rm
+					.getString(ResourceIDs.STR_RESOURCES)
+					+ ":");
 			si_rres.setAnchorPoint(Graphics.HCENTER);
 			addToPanel(si_rres);
 			for (int i = 0; i < resources.length; i++) {
@@ -161,9 +177,8 @@ public class ContactInfoScreen extends UIScreen {
 
 				Graphics g = UICanvas.getInstance().getCurrentScreen()
 						.getGraphics();
-				String resource = Contact
-						.resource(jid);
-				resource = resource!= null ? resource : "";
+				String resource = Contact.resource(jid);
+				resource = resource != null ? resource : "";
 				UILabel ii_res = new UILabel(presenceIcon, resource);
 				ii_res.setWrappable(true, this.getWidth() - 30);
 				resVl.insert(ii_res, 0, ii_res.getHeight(g),
@@ -244,8 +259,8 @@ public class ContactInfoScreen extends UIScreen {
 					ci.askRepaint();
 				} catch (Exception ex) {
 					// #mdebug
-//@					System.out.println(ex.getMessage());
-//@					ex.printStackTrace();
+					//@					System.out.println(ex.getMessage());
+					//@					ex.printStackTrace();
 					// #enddebug
 				} finally {
 					UICanvas.unlock();

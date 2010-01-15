@@ -294,8 +294,8 @@ public class HandleMucScreen extends UIScreen {
 									false, true);
 						} catch (Exception ex) {
 							// #mdebug
-							//@							Logger.log("In creating a MUC:");
-							//@							ex.printStackTrace();
+//@														Logger.log("In creating a MUC:");
+//@														ex.printStackTrace();
 							// #enddebug
 						} finally {
 							UICanvas.unlock();

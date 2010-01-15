@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1942 2010-01-11 15:40:21Z luca $
+ * $Id: RegisterScreen.java 1950 2010-01-15 10:28:48Z luca $
  */
 
 package lampiro.screens;
@@ -153,7 +153,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	//@				.getString(ResourceIDs.STR_ENABLE_TLS));
 	// #endif
 
-	private UICombobox grp_server = new UICombobox("Server type", false);
+	private UICombobox grp_server = new UICombobox(rm
+			.getString(ResourceIDs.STR_SERVER_TYPE), false);
 
 	/** Progress bar during login */
 	private UIGauge progress_gauge = new UIGauge(rm
@@ -181,21 +182,21 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UIMenu instructionsSubMenu;
 
 	// #ifdef BLUENDO_REG
-	//@
-	//@	// used to know the steps of the Bluendo registration
-	//@	// -1 not started, 0 started
-	//@	private int regStatus = -1;
-	//@
-	//@	private BluendoXMLRPC blrpc = null;
-	//@
-	//@	private UILabel captchaLabel = null;
-	//@
-	//@	private UITextField captchaText = new UITextField("", null, 10,
-	//@			TextField.NUMERIC | TextField.NON_PREDICTIVE,
-	//@			UITextField.FORMAT_LOWER_CASE);
-	//@
-	//@	private String sessionId = "";
-	//@
+	//@	
+	//@		// used to know the steps of the Bluendo registration
+	//@		// -1 not started, 0 started
+	//@		private int regStatus = -1;
+	//@	
+	//@		private BluendoXMLRPC blrpc = null;
+	//@	
+	//@		private UILabel captchaLabel = null;
+	//@	
+	//@		private UITextField captchaText = new UITextField("", null, 10,
+	//@				TextField.NUMERIC | TextField.NON_PREDICTIVE,
+	//@				UITextField.FORMAT_LOWER_CASE);
+	//@	
+	//@		private String sessionId = "";
+	//@	
 	// #endif 
 
 	/*
@@ -204,7 +205,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private UIMenu setStatus = new UIMenu("");
 
 	// #mdebug
-	//@	private UIButton cmd_debug = new UIButton("debug");
+//@	private UIButton cmd_debug = new UIButton("debug");
 	// #enddebug
 
 	/** true if we must register a new account */
@@ -342,13 +343,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			logoLabel.setFocusable(false);
 		} catch (Exception e) {
 			// #mdebug
-			//@			e.printStackTrace();
+//@			e.printStackTrace();
 			// #enddebug
 		}
 		logoLayout = UIUtils.easyCenterLayout(logoLabel, logo.getWidth());
 
 		// #debug
-		//@		this.append(cmd_debug);
+//@		this.append(cmd_debug);
 	}
 
 	// #ifndef GLIDER
@@ -491,16 +492,16 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			append(reset_all_data);
 		}
 		// #debug
-		//@		this.append(cmd_debug);
+//@		this.append(cmd_debug);
 		// #ifdef BLUENDO_REG
-		//@		if (regStatus == 0) {
-		//@			removeAll();
-		//@			append(UIUtils.easyCenterLayout(captchaLabel, 150));
-		//@			captchaText.setText("");
-		//@			append(captchaText);
-		//@			append(logLayout);
-		//@			checkLogin();
-		//@		}
+		//@				if (regStatus == 0) {
+		//@					removeAll();
+		//@					append(UIUtils.easyCenterLayout(captchaLabel, 150));
+		//@					captchaText.setText("");
+		//@					append(captchaText);
+		//@					append(logLayout);
+		//@					checkLogin();
+		//@				}
 		// #endif
 		this.setFreezed(false);
 		if (oldSelectedItem != null) this.setSelectedItem(oldSelectedItem);
@@ -550,8 +551,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 					RecordStore.deleteRecordStore(rs);
 				} catch (Exception e) {
 					// #mdebug
-					//@					System.out.println("Error in cleaning recordstores");
-					//@					e.printStackTrace();
+//@					System.out.println("Error in cleaning recordstores");
+//@					e.printStackTrace();
 					// #enddebug
 				}
 			}
@@ -602,24 +603,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		new Thread() {
 			public void run() {
 				// #ifdef BLUENDO_REG
-				//@				String server = getServer(tf_jid_name.getText());
-				//@				if (register && server.compareTo(Config.DEFAULT_SERVER) == 0) {
-				//@					if (regStatus == -1) {
-				//@						try {
-				//@							UICanvas.lock();
-				//@							bluendoReg();
-				//@						} catch (Exception e) {
+				//@								String server = getServer(tf_jid_name.getText());
+				//@								if (register && server.compareTo(Config.DEFAULT_SERVER) == 0) {
+				//@									if (regStatus == -1) {
+				//@										try {
+				//@											UICanvas.lock();
+				//@											bluendoReg();
+				//@										} catch (Exception e) {
 				// #mdebug
-				//@							Logger.log("In Bluendorreg :" + e.getClass());
-				//@							e.printStackTrace();
+				//@											Logger.log("In Bluendorreg :" + e.getClass());
+				//@											e.printStackTrace();
 				// #enddebug
-				//@						} finally {
-				//@							UICanvas.unlock();
-				//@						}
-				//@					}
-				//@				} else {
-				//@					xmppLogin(register, goOnline);
-				//@				}
+				//@										} finally {
+				//@											UICanvas.unlock();
+				//@										}
+				//@									}
+				//@								} else {
+				//@									xmppLogin(register, goOnline);
+				//@								}
 				// #endif
 // #ifndef BLUENDO_REG
 				xmppLogin(register, goOnline);
@@ -629,177 +630,177 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	}
 
 	// #ifdef BLUENDO_REG
-	//@	private void bluendoReg() {
-	//@		Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
-	//@		req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
-	//@		Element method = req.addElement(null, "method");
-	//@		method.setAttribute("name", "start_register");
-	//@		Element params = req.addElement(null, "params");
-	//@
-	//@		sessionId = this.tf_jid_name.getText() + System.currentTimeMillis();
-	//@		Element uidParam = params.addElement(null, "param");
-	//@		uidParam.setAttribute("name", "session_id");
-	//@		uidParam.setAttribute("type", "string");
-	//@		uidParam.addText(sessionId);
-	//@
-	//@		String bluendoRegServer = null;
+	//@		private void bluendoReg() {
+	//@			Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
+	//@			req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
+	//@			Element method = req.addElement(null, "method");
+	//@			method.setAttribute("name", "start_register");
+	//@			Element params = req.addElement(null, "params");
+	//@	
+	//@			sessionId = this.tf_jid_name.getText() + System.currentTimeMillis();
+	//@			Element uidParam = params.addElement(null, "param");
+	//@			uidParam.setAttribute("name", "session_id");
+	//@			uidParam.setAttribute("type", "string");
+	//@			uidParam.addText(sessionId);
+	//@	
+	//@			String bluendoRegServer = null;
 	// #ifdef DEBUG
-	//@		bluendoRegServer = Config.DEFAULT_SERVER + ":5221";
+	//@			bluendoRegServer = Config.DEFAULT_SERVER + ":5221";
 	// #endif
 // #ifndef DEBUG
 	//@	bluendoRegServer = Config.DEFAULT_SERVER+":5221";
 	// #endif
-	//@		blrpc = new BluendoXMLRPC("socket://" + bluendoRegServer);
-	//@
-	//@		Element res = null;
-	//@		try {
-	//@			blrpc.open();
-	//@			blrpc.write(req);
-	//@			blrpc.flush();
-	//@			res = blrpc.read();
-	//@		} catch (Exception e) {
-	//@			handleError(null);
+	//@			blrpc = new BluendoXMLRPC("socket://" + bluendoRegServer);
+	//@	
+	//@			Element res = null;
+	//@			try {
+	//@				blrpc.open();
+	//@				blrpc.write(req);
+	//@				blrpc.flush();
+	//@				res = blrpc.read();
+	//@			} catch (Exception e) {
+	//@				handleError(null);
 	// #mdebug
-	//@			e.printStackTrace();
+	//@				e.printStackTrace();
 	// #enddebug
-	//@			return;
-	//@		}
-	//@
-	//@		String status = res.getAttribute("status");
-	//@		if (status.compareTo("200") != 0) {
-	//@			Element elError = res.getChildByName(null, Iq.T_ERROR);
-	//@			if (status.compareTo("500") == 0) handleError(null);
-	//@			else if (elError != null) handleError(elError.getText());
-	//@			return;
-	//@		}
-	//@		Element result = res.getChildByName(null, "result");
-	//@		if (result.getAttribute("enable_captcha").equals("True")) {
-	//@			String resString = result.getText();
-	//@			byte[] imgBytes = Base64.decode(resString);
-	//@			Image img = Image.createImage(imgBytes, 0, imgBytes.length);
-	//@			captchaLabel = new UILabel(img);
-	//@			regStatus = 0;
-	//@			progress_gauge.cancel();
-	//@			placeItems();
-	//@		} else {
-	//@			// if i am not asking captcha it means i have to do 
-	//@			// the login now in case of success
-	//@			if (bluendoEndReg("0000") == false) {
-	//@				regStatus = -1;
+	//@				return;
+	//@			}
+	//@	
+	//@			String status = res.getAttribute("status");
+	//@			if (status.compareTo("200") != 0) {
+	//@				Element elError = res.getChildByName(null, Iq.T_ERROR);
+	//@				if (status.compareTo("500") == 0) handleError(null);
+	//@				else if (elError != null) handleError(elError.getText());
+	//@				return;
+	//@			}
+	//@			Element result = res.getChildByName(null, "result");
+	//@			if (result.getAttribute("enable_captcha").equals("True")) {
+	//@				String resString = result.getText();
+	//@				byte[] imgBytes = Base64.decode(resString);
+	//@				Image img = Image.createImage(imgBytes, 0, imgBytes.length);
+	//@				captchaLabel = new UILabel(img);
+	//@				regStatus = 0;
+	//@				progress_gauge.cancel();
+	//@				placeItems();
 	//@			} else {
-	//@				regStatus = 1;
-	//@				login(true);
+	//@				// if i am not asking captcha it means i have to do 
+	//@				// the login now in case of success
+	//@				if (bluendoEndReg("0000") == false) {
+	//@					regStatus = -1;
+	//@				} else {
+	//@					regStatus = 1;
+	//@					login(true);
+	//@				}
 	//@			}
 	//@		}
-	//@	}
-	//@
-	//@	/*
-	//@	 * Returns true when the registration is successeful
-	//@	 */
-	//@	private boolean bluendoEndReg(String captcha) {
-	//@		Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
-	//@		req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
-	//@		Element method = req.addElement(null, "method");
-	//@		method.setAttribute("name", "register");
-	//@		Element params = req.addElement(null, "params");
-	//@
-	//@		Element uidParam = params.addElement(null, "param");
-	//@		uidParam.setAttribute("name", "session_id");
-	//@		uidParam.setAttribute("type", "string");
-	//@		uidParam.addText(sessionId);
-	//@
-	//@		uidParam = params.addElement(null, "param");
-	//@		uidParam.setAttribute("name", "jid");
-	//@		uidParam.setAttribute("type", "string");
-	//@		uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
-	//@				.getBytesUtf8(this.tf_jid_name.getText()))));
-	//@
-	//@		uidParam = params.addElement(null, "param");
-	//@		uidParam.setAttribute("name", "password");
-	//@		uidParam.setAttribute("type", "string");
-	//@		uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
-	//@				.getBytesUtf8(this.tf_pwd.getText()))));
-	//@
-	//@		uidParam = params.addElement(null, "param");
-	//@		uidParam.setAttribute("name", "email");
-	//@		uidParam.setAttribute("type", "string");
-	//@		String email = null;
+	//@	
+	//@		/*
+	//@		 * Returns true when the registration is successeful
+	//@		 */
+	//@		private boolean bluendoEndReg(String captcha) {
+	//@			Element req = new Element(XMPPClient.BLUENDO_XMLRPC, "req");
+	//@			req.setAttribute("target", XMPPClient.BLUENDO_REGISTER);
+	//@			Element method = req.addElement(null, "method");
+	//@			method.setAttribute("name", "register");
+	//@			Element params = req.addElement(null, "params");
+	//@	
+	//@			Element uidParam = params.addElement(null, "param");
+	//@			uidParam.setAttribute("name", "session_id");
+	//@			uidParam.setAttribute("type", "string");
+	//@			uidParam.addText(sessionId);
+	//@	
+	//@			uidParam = params.addElement(null, "param");
+	//@			uidParam.setAttribute("name", "jid");
+	//@			uidParam.setAttribute("type", "string");
+	//@			uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
+	//@					.getBytesUtf8(this.tf_jid_name.getText()))));
+	//@	
+	//@			uidParam = params.addElement(null, "param");
+	//@			uidParam.setAttribute("name", "password");
+	//@			uidParam.setAttribute("type", "string");
+	//@			uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
+	//@					.getBytesUtf8(this.tf_pwd.getText()))));
+	//@	
+	//@			uidParam = params.addElement(null, "param");
+	//@			uidParam.setAttribute("name", "email");
+	//@			uidParam.setAttribute("type", "string");
+	//@			String email = null;
 	// #ifndef GLIDER
-	//@		this.tf_email.getText();
+	//@			this.tf_email.getText();
 	// #endif
-	//@		email = email != null ? email : "";
-	//@		uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
-	//@				.getBytesUtf8(email))));
-	//@
-	//@		uidParam = params.addElement(null, "param");
-	//@		uidParam.setAttribute("name", "captcha");
-	//@		uidParam.setAttribute("type", "string");
-	//@		uidParam.addText(captcha);
-	//@
-	//@		Element res = null;
-	//@		try {
-	//@			blrpc.write(req);
-	//@			blrpc.flush();
-	//@			res = blrpc.read();
-	//@		} catch (Exception e) {
-	//@			handleError(null);
+	//@			email = email != null ? email : "";
+	//@			uidParam.addText(Utils.getStringUTF8(Base64.encode(Utils
+	//@					.getBytesUtf8(email))));
+	//@	
+	//@			uidParam = params.addElement(null, "param");
+	//@			uidParam.setAttribute("name", "captcha");
+	//@			uidParam.setAttribute("type", "string");
+	//@			uidParam.addText(captcha);
+	//@	
+	//@			Element res = null;
+	//@			try {
+	//@				blrpc.write(req);
+	//@				blrpc.flush();
+	//@				res = blrpc.read();
+	//@			} catch (Exception e) {
+	//@				handleError(null);
 	// #mdebug
-	//@			e.printStackTrace();
+	//@				e.printStackTrace();
 	// #enddebug
-	//@			return false;
-	//@		}
-	//@
-	//@		String status = res.getAttribute("status");
-	//@		if (status.compareTo("200") != 0) {
-	//@			Element elError = res.getChildByName(null, Iq.T_ERROR);
-	//@			if (status.compareTo("500") == 0) handleError(null);
-	//@			else if (elError != null) handleError(elError.getText());
-	//@			return false;
-	//@		}
-	//@		Element result = res.getChildByName(null, "result");
-	//@		String resString = result.getText();
-	//@		if (resString.equals("ok")) {
-	//@			regStatus = 1;
+	//@				return false;
+	//@			}
+	//@	
+	//@			String status = res.getAttribute("status");
+	//@			if (status.compareTo("200") != 0) {
+	//@				Element elError = res.getChildByName(null, Iq.T_ERROR);
+	//@				if (status.compareTo("500") == 0) handleError(null);
+	//@				else if (elError != null) handleError(elError.getText());
+	//@				return false;
+	//@			}
+	//@			Element result = res.getChildByName(null, "result");
+	//@			String resString = result.getText();
+	//@			if (resString.equals("ok")) {
+	//@				regStatus = 1;
 	// #ifndef GLIDER
-	//@			grp_new_account.setChecked(false);
+	//@				grp_new_account.setChecked(false);
 	// #endif
-	//@			register = false;
-	//@			//placeItems();
-	//@		} else {
-	//@			handleError(resString);
-	//@			return false;
-	//@		}
-	//@		try {
-	//@			blrpc.close();
-	//@		} catch (IOException e) {
+	//@				register = false;
+	//@				//placeItems();
+	//@			} else {
+	//@				handleError(resString);
+	//@				return false;
+	//@			}
+	//@			try {
+	//@				blrpc.close();
+	//@			} catch (IOException e) {
 	// #mdebug
-	//@			e.printStackTrace();
+	//@				e.printStackTrace();
 	// #enddebug
+	//@			}
+	//@			return true;
 	//@		}
-	//@		return true;
-	//@	}
-	//@
-	//@	private void handleError(String errorString) {
-	//@		UICanvas.showAlert(AlertType.ERROR, rm
-	//@				.getString(ResourceIDs.STR_REGFAIL_TITLE),
-	//@				errorString != null ? errorString : rm
-	//@						.getString(ResourceIDs.STR_REGFAIL_DESC));
-	//@		try {
-	//@			this.blrpc.flush();
-	//@			this.blrpc.close();
-	//@		} catch (Exception e) {
+	//@	
+	//@		private void handleError(String errorString) {
+	//@			UICanvas.showAlert(AlertType.ERROR, rm
+	//@					.getString(ResourceIDs.STR_REGFAIL_TITLE),
+	//@					errorString != null ? errorString : rm
+	//@							.getString(ResourceIDs.STR_REGFAIL_DESC));
+	//@			try {
+	//@				this.blrpc.flush();
+	//@				this.blrpc.close();
+	//@			} catch (Exception e) {
 	// #mdebug
-	//@			System.out.println("Error in bluendo registration");
-	//@			e.printStackTrace();
+	//@				System.out.println("Error in bluendo registration");
+	//@				e.printStackTrace();
 	// #enddebug
+	//@			}
+	//@			regStatus = -1;
+	//@			progress_gauge.setOffset(0);
+	//@			ul.setText(rm.getString(ResourceIDs.STR_LOGGING_IN));
+	//@			progress_gauge.cancel();
+	//@			placeItems();
 	//@		}
-	//@		regStatus = -1;
-	//@		progress_gauge.setOffset(0);
-	//@		ul.setText(rm.getString(ResourceIDs.STR_LOGGING_IN));
-	//@		progress_gauge.cancel();
-	//@		placeItems();
-	//@	}
-	//@
+	//@	
 	// #endif
 
 	private void xmppLogin(boolean newUser, boolean goOnline) {
@@ -844,11 +845,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 
 		// #mdebug
-		//@		//		Logger.log("user:" + cfg.getProperty(Config.USER) + " server:"
-		//@		//				+ cfg.getProperty(Config.SERVER) + " password:"
-		//@		//				+ cfg.getProperty(Config.PASSWORD) + " email:"
-		//@		//				+ cfg.getProperty(Config.EMAIL) + " connecting-server:"
-		//@		//				+ cfg.getProperty(Config.CONNECTING_SERVER));
+//@		//		Logger.log("user:" + cfg.getProperty(Config.USER) + " server:"
+//@		//				+ cfg.getProperty(Config.SERVER) + " password:"
+//@		//				+ cfg.getProperty(Config.PASSWORD) + " email:"
+//@		//				+ cfg.getProperty(Config.EMAIL) + " connecting-server:"
+//@		//				+ cfg.getProperty(Config.CONNECTING_SERVER));
 		// #enddebug
 		cfg.saveToStorage();
 
@@ -918,7 +919,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 					client.closeStream();
 				} catch (Exception e) {
 					// #mdebug
-					//@					System.out.println(e);
+//@					System.out.println(e);
 					// #enddebug
 				}
 
@@ -965,8 +966,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			}
 		} catch (Exception e) {
 			// #mdebug
-			//@			Logger.log("In Registerscreen event handling:" + e.getClass());
-			//@			e.printStackTrace();
+//@			Logger.log("In Registerscreen event handling:" + e.getClass());
+//@			e.printStackTrace();
 			// #enddebug
 		} finally {
 			UICanvas.unlock();
@@ -1002,9 +1003,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			placeItems();
 			// #endif
 			// #mdebug
-			//@		} else if (item == cmd_debug) {
-			//@			DebugScreen debugScreen = new DebugScreen();
-			//@			UICanvas.getInstance().open(debugScreen, true);
+//@		} else if (item == cmd_debug) {
+//@			DebugScreen debugScreen = new DebugScreen();
+//@			UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 		} else if (item == but_cancel) {
 			progress_gauge.cancel();
@@ -1014,11 +1015,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				// during closing connection
 				// exceptions from the transport can be generated
 				//#mdebug
-				//@				System.out.println(e);
+//@				System.out.println(e);
 				// #enddebug     
 			}
 			// #ifdef BLUENDO_REG
-			//@			regStatus = -1;
+			//@						regStatus = -1;
 			// #endif
 			placeItems();
 		} else if (item == grp_server) {
@@ -1070,14 +1071,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			placeItems();
 		} else if (item == btn_login) {
 			// #ifdef BLUENDO_REG
-			//@			if (regStatus == 0) {
-			//@				if (bluendoEndReg(this.captchaText.getText()) == false) {
-			//@					regStatus = -1;
-			//@				} else {
-			//@					regStatus = 1;
-			//@					login(true);
-			//@				}
-			//@			} else
+			//@						if (regStatus == 0) {
+			//@							if (bluendoEndReg(this.captchaText.getText()) == false) {
+			//@								regStatus = -1;
+			//@							} else {
+			//@								regStatus = 1;
+			//@								login(true);
+			//@							}
+			//@						} else
 			// #endif
 			login(true);
 			return;
@@ -1145,24 +1146,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			this.btn_login.setText(loginString);
 		} else {
 			// #ifdef BLUENDO_REG 
-			//@			String regString = rm.getString(ResourceIDs.STR_REGISTER);
-			//@			String captchaString = rm.getString(ResourceIDs.STR_CAPTCHA);
-			//@			if (getServer(tf_jid_name.getText()).compareTo(
-			//@					Config.DEFAULT_SERVER) != 0) {
-			//@				this.btn_login.setText(regString);
-			//@				loginLabel.setText(regString.toUpperCase());
-			//@			} else {
-			//@				if (this.regStatus == -1) {
-			//@					this.btn_login.setText(regString);
-			//@					loginLabel.setText(regString.toUpperCase());
-			//@				} else if (this.regStatus == 0) {
-			//@					this.btn_login.setText(captchaString);
-			//@					loginLabel.setText(captchaString.toUpperCase());
-			//@				} else if (this.regStatus == 1) {
-			//@					this.btn_login.setText(loginString);
-			//@					loginLabel.setText(loginString.toUpperCase());
-			//@				}
-			//@			}
+			//@						String regString = rm.getString(ResourceIDs.STR_REGISTER);
+			//@						String captchaString = rm.getString(ResourceIDs.STR_CAPTCHA);
+			//@						if (getServer(tf_jid_name.getText()).compareTo(
+			//@								Config.DEFAULT_SERVER) != 0) {
+			//@							this.btn_login.setText(regString);
+			//@							loginLabel.setText(regString.toUpperCase());
+			//@						} else {
+			//@							if (this.regStatus == -1) {
+			//@								this.btn_login.setText(regString);
+			//@								loginLabel.setText(regString.toUpperCase());
+			//@							} else if (this.regStatus == 0) {
+			//@								this.btn_login.setText(captchaString);
+			//@								loginLabel.setText(captchaString.toUpperCase());
+			//@							} else if (this.regStatus == 1) {
+			//@								this.btn_login.setText(loginString);
+			//@								loginLabel.setText(loginString.toUpperCase());
+			//@							}
+			//@						}
 			// #endif
 // #ifndef BLUENDO_REG
 			this.btn_login.setText(rm.getString(ResourceIDs.STR_REGISTER));

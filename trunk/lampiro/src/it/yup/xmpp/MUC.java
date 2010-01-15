@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUC.java 1770 2009-09-16 20:40:01Z luca $
+ * $Id: MUC.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.xmpp;
@@ -28,7 +28,7 @@ public class MUC extends Contact {
 
 	public MUC(String jid, String name,String nick,String pwd) {
 		// auto assign a group with value MUCS
-		super(jid, name, "both", new String []{GROUP_CHATS});
+		super(jid, name, Contact.SUB_BOTH, new String []{GROUP_CHATS});
 		this.nick=nick;
 		this.pwd=pwd;
 		

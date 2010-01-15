@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1932 2010-01-05 19:25:29Z luca $
+ * $Id: RosterScreen.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package lampiro.screens;
@@ -630,7 +630,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		private void queriedItem(Element e) {
 			String type = null;
 			String name = "";
-			String from = e.getAttribute("from");
+			String from = e.getAttribute(Stanza.ATT_FROM);
 
 			Element q = e.getChildByName(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
 
@@ -2550,8 +2550,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 				// if I have a previous presence check to remove it and create a new one!		
 				if (action.compareTo("add") == 0) {
 					if (c == null
-							|| !(c.subscription.equals("both") || c.subscription
-									.equals("to"))) {
+							|| !(c.subscription.equals(Contact.SUB_BOTH) || c.subscription
+									.equals(Contact.SUB_TO))) {
 						if (c != null) {
 							xmppClient.getRoster().contacts.remove(c);
 							this._removeContact(c);
@@ -3017,7 +3017,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			String jid = (String) ithContact[0];
 			String name = (String) ithContact[1];
 			Contact c = roster.getContactByJid(jid);
-			if (c == null || !"both".equals(c.subscription)) {
+			if (c == null || !Contact.SUB_BOTH.equals(c.subscription)) {
 				c = new Contact(jid, name, null, null);
 				subscribeContact(c, false);
 			}

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 1907 2009-11-12 17:11:10Z luca $
+ * $Id: Roster.java 1950 2010-01-15 10:28:48Z luca $
 */
 
 package it.yup.xmpp;
@@ -88,7 +88,7 @@ public class Roster implements PacketListener {
 		private void updateGateway(Element e) {
 			String type = null;
 			String name = "";
-			String from = e.getAttribute("from");
+			String from = e.getAttribute(Stanza.ATT_FROM);
 
 			Element identity = e.getPath(new String[] {
 					XMPPClient.NS_IQ_DISCO_INFO, XMPPClient.NS_IQ_DISCO_INFO },
@@ -522,7 +522,7 @@ public class Roster implements PacketListener {
 			Element serverEl = new Element("", "serverEl");
 			serverEl.setAttributes(new String[] { Iq.ATT_TO, "jid", "name",
 					"subscription" }, new String[] { me.my_jid, myDomain,
-					"Jabber Server", "both" });
+					"Jabber Server", Contact.SUB_BOTH });
 			updateRosterItem(serverEl);
 			/// create a a fictitious presence
 			Presence p = new Presence(me.my_jid, Presence.T_SUBSCRIBED,
@@ -619,7 +619,7 @@ public class Roster implements PacketListener {
 			try {
 				for (int i = 0; i < children.length; i++) {
 					Element ithElem = children[i];
-					String ithFrom = ithElem.getChildByName(null, "from")
+					String ithFrom = ithElem.getChildByName(null, Stanza.ATT_FROM)
 							.getText();
 					String ithType = ithElem.getChildByName(null, "type")
 							.getText();
@@ -653,7 +653,7 @@ public class Roster implements PacketListener {
 			String ithType = data[0];
 			String ithName = data[1];
 			Element gw = el.addElement(null, "gw");
-			gw.addElement(null, "from").addText(ithFrom);
+			gw.addElement(null, Stanza.ATT_FROM).addText(ithFrom);
 			gw.addElement(null, "type").addText(ithType);
 			gw.addElement(null, "name").addText(ithName);
 		}
