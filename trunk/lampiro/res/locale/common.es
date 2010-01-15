@@ -57,7 +57,6 @@
 57	Nombre
 58	Nickname
 59	¿Tiene ya una cuenta de Jabber (GTalk, jabber.org, ...)?
-60	Introducir el código
 61	Estado de transferencia de archivos
 62	Completo
 63	Procesando
@@ -76,6 +75,17 @@
 76	Noticias
 77	Servicios
 78	Enviar código
+79	Update
+80	se ha actualizado a la versión SOFTWARE_VERSION. Intentar restablecer la configuración en caso de mal funcionamiento.
+81	E-mail 
+82	Suscripción
+83	Recursos
+84	JID
+85	both
+86	to
+87	from
+88	unknown
+89	none
 100	Escribir mensaje
 101	Chatear con
 102	Vaciar chat
@@ -156,6 +166,7 @@
 265	El comando ha sido cancelado correctamente.
 266	Comando terminado.
 267	Se produjo un error mientras se ejecutava el comando.
+268	Tipo server
 300	Enviar mensaje
 500	Complete el form
 700	Enviar mensaje
@@ -175,7 +186,6 @@
 714	Imagen
 715	Contactos
 716	Nombre de archivo
-717	Inicio
 718	quiere enviarte un archivo:
 719	Transferencia de archivos
 720	Audio Record
@@ -228,11 +238,7 @@
 903	Aceptar todas las
 904	Aceptar Siempre
 905	Solicituda de suscripción a la presencia de
-906	no ha aceptado:
-907	aceptados:
 908	enviado
-909	non
-910	Receptor
 911	Guardé un archivo para te:
 912	Rechaza
 1001	Elije un comando

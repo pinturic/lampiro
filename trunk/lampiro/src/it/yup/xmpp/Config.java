@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: Config.java 1954 2010-01-15 15:14:09Z luca $
 */
 
 package it.yup.xmpp;
@@ -13,10 +13,10 @@ package it.yup.xmpp;
 // #enddebug
 
 import it.yup.util.RMSIndex;
+import it.yup.util.Utils;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
 import it.yup.xmpp.packets.Presence;
-import it.yup.util.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -53,13 +53,15 @@ public class Config {
 	private static String version = "10.1.1";
 
 	// #if LANG = "en"
-	public static String lang = "en";
+			public static String lang = "en";
 	// #elif LANG = "it"
-	//@	public static String lang = "it";
+//@			public static String lang = "it";
 	// #elif LANG = "es"
 	//@	public static String lang = "es";
+	// #elif LANG = "ru"
+//@	public static String lang = "ru";
 	// #else 
-	//@			public static String lang = "en";
+	//@				public static String lang = "en";
 	// #endif
 
 	// #ifdef ATOM
@@ -364,9 +366,9 @@ public class Config {
 						}
 					} catch (Exception e) {
 						// #mdebug
-						//@						e.printStackTrace();
-						//@						System.out.println("In config resetting"
-						//@								+ e.getMessage() + e.getClass());
+//@						e.printStackTrace();
+//@						System.out.println("In config resetting"
+//@								+ e.getMessage() + e.getClass());
 						// #enddebug
 					}
 				}
@@ -486,9 +488,9 @@ public class Config {
 			this.rms.close();
 		} catch (Exception e) {
 			// #mdebug
-			//@			Logger.log("Error in saving to storage: " + e.getMessage(),
-			//@					Logger.DEBUG);
-			//@
+//@			Logger.log("Error in saving to storage: " + e.getMessage(),
+//@					Logger.DEBUG);
+//@
 			// #enddebug
 			XMPPClient.getInstance().showAlert(AlertType.ERROR,
 					Config.ALERT_DATA, Config.ALERT_DATA, e.getMessage());
@@ -554,8 +556,8 @@ public class Config {
 			}
 		} catch (IOException e) {
 			// #mdebug
-			//@			Logger.log("Error in getting capabilities: received packet: "
-			//@					+ e.getClass(), Logger.DEBUG);
+//@			Logger.log("Error in getting capabilities: received packet: "
+//@					+ e.getClass(), Logger.DEBUG);
 			// #enddebug
 			// reset the capabilities 
 			this.setData(KNOWN_CAPS.getBytes(), "".getBytes());
@@ -564,7 +566,7 @@ public class Config {
 		// save the new cap
 		String newCapKey = CAPS_PREFIX + capCount;
 		// #mdebug
-		//@
+//@
 		// #enddebug
 		byte[] newCapData = BProcessor.toBinary(query);
 		this.setData(newCapKey.getBytes(), newCapData);
@@ -579,8 +581,8 @@ public class Config {
 		} catch (IOException e) {
 			// should not ever appear
 			// #mdebug
-			//@			Logger.log("Error in saving new capability" + e.getClass(),
-			//@					Logger.DEBUG);
+//@			Logger.log("Error in saving new capability" + e.getClass(),
+//@					Logger.DEBUG);
 			// #enddebug
 		}
 		this.setData(KNOWN_CAPS.getBytes(), baos.toByteArray());
@@ -614,8 +616,8 @@ public class Config {
 			}
 		} catch (IOException e) {
 			// #mdebug
-			//@			Logger.log("Error in getting capabilities: received packet: "
-			//@					+ e.getClass(), Logger.DEBUG);
+//@			Logger.log("Error in getting capabilities: received packet: "
+//@					+ e.getClass(), Logger.DEBUG);
 			// #enddebug
 			return null;
 		}
