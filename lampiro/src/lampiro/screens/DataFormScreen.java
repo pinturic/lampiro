@@ -9,9 +9,6 @@
  */
 package lampiro.screens;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -38,21 +35,26 @@ import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.DataForm.Field;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+
 import javax.microedition.io.Connector;
 import javax.microedition.io.ContentConnection;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
-import org.bouncycastle.util.encoders.Base64;
+
 import lampiro.screens.RosterScreen.WaitScreen;
+
+import org.bouncycastle.util.encoders.Base64;
 
 // #mdebug
 //@
 //@import it.yup.util.Logger;
 //@
 // #enddebug
-
 
 /**
  * <p>
@@ -166,7 +168,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 
 		public void handleError(Element e) {
 			// #mdebug
-//@			Logger.log("In retrieving cid");
+			//@			Logger.log("In retrieving cid");
 			// #enddebug
 		}
 
@@ -180,9 +182,9 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				showMedia(fld, decodedData, mediaType, this.label);
 			} catch (Exception ex) {
 				// #mdebug
-//@				Logger.log("In retrieving media2");
-//@				System.out.println(ex.getMessage());
-//@				ex.printStackTrace();
+				//@				Logger.log("In retrieving media2");
+				//@				System.out.println(ex.getMessage());
+				//@				ex.printStackTrace();
 				// #enddebug
 			} finally {
 				UICanvas.unlock();
@@ -456,9 +458,9 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In retrieving media2");
-//@			System.out.println(e.getMessage());
-//@			e.printStackTrace();
+			//@			Logger.log("In retrieving media2");
+			//@			System.out.println(e.getMessage());
+			//@			e.printStackTrace();
 			// #enddebug
 		} finally {
 			try {
@@ -466,9 +468,9 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				if (c != null) c.close();
 			} catch (Exception e) {
 				// #mdebug
-//@				Logger.log("In retrieving media2");
-//@				System.out.println(e.getMessage());
-//@				e.printStackTrace();
+				//@				Logger.log("In retrieving media2");
+				//@				System.out.println(e.getMessage());
+				//@				e.printStackTrace();
 				// #enddebug
 			}
 		}
@@ -614,7 +616,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		}
 		// if the dataform will have an answer, e.g. an IQ contained dataform
 		// #ifndef BLUENDO_SECURE
-				setWaiting &= dfl.execute(comm);
+		setWaiting &= dfl.execute(comm);
 		// #endif
 		RosterScreen.getInstance()._handleTask(dfl);
 		// #ifdef UI
@@ -692,9 +694,15 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 			// if need check and field is required and the field
 			// is empty then the form is not completely filled
 			if (checkRequired && fld.required) {
-				UITextField tf = (UITextField) items[i];
-				String text = tf.getText();
-				if (text == null || text.length() == 0) missingField = i;
+				if (items[i] instanceof UITextField) {
+					UITextField tf = (UITextField) items[i];
+					String text = tf.getText();
+					if (text == null || text.length() == 0) missingField = i;
+				} else if (items[i] instanceof UICombobox) {
+					UICombobox cf = (UICombobox) items[i];
+					int selIndex = cf.getSelectedIndex();
+					if (selIndex < 0) missingField = i;
+				}
 			}
 
 			if (fld.type == DataForm.FLT_BOOLEAN) {
