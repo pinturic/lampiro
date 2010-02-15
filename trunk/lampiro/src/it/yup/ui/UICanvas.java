@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 1902 2009-11-06 15:57:39Z luca $
+ * $Id: UICanvas.java 1961 2010-01-26 15:23:12Z luca $
  */
 
 /**
@@ -646,6 +646,7 @@ public class UICanvas extends GameCanvas {
 				if (up) {
 					this._keyRepeated(UICanvas.KEY_STAR);
 				}
+				return false;
 			}
 			if (foundItem.isFocusable() == false) return false;
 
@@ -708,8 +709,8 @@ public class UICanvas extends GameCanvas {
 
 			if (x > originalX && x < originalX + w && y > originalY
 					&& y <= originalY + h) {
-				if (foundContainer == null
-						|| ithItem.getContainer() == foundContainer) {
+				if ((foundContainer == null || ithItem.getContainer() == foundContainer)
+						&& ithItem.isFocusable()) {
 					foundItem = ithItem;
 					break;
 				}

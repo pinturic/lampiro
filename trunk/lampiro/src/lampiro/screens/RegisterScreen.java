@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: RegisterScreen.java 1954 2010-01-15 15:14:09Z luca $
  */
 
 package lampiro.screens;
@@ -144,13 +144,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private boolean enableRoll = true;
 
 	// #ifdef COMPRESSION
-	//@		private UICheckbox cb_compression = new UICheckbox(rm
-	//@				.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
+//@			private UICheckbox cb_compression = new UICheckbox(rm
+//@					.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
 	// #endif
 
 	// #ifdef TLS
-	//@		private UICheckbox cb_TLS = new UICheckbox(rm
-	//@				.getString(ResourceIDs.STR_ENABLE_TLS));
+//@			private UICheckbox cb_TLS = new UICheckbox(rm
+//@					.getString(ResourceIDs.STR_ENABLE_TLS));
 	// #endif
 
 	private UICombobox grp_server = new UICombobox(rm
@@ -317,14 +317,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			tf_server.setText(savedServer);
 			if (savedServer.length() == 0) grp_server.setSelectedIndex(0);
 			//#ifdef COMPRESSION
-			//@						boolean enable_compression = Short.parseShort(cfg.getProperty(
-			//@								Config.COMPRESSION, "1")) == 1;
-			//@						cb_compression.setChecked(enable_compression);
+//@									boolean enable_compression = Short.parseShort(cfg.getProperty(
+//@											Config.COMPRESSION, "1")) == 1;
+//@									cb_compression.setChecked(enable_compression);
 			//#endif
 			//#ifdef TLS
-			//@						boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
-			//@								"0")) == 1;
-			//@						cb_TLS.setChecked(enable_TLS);
+//@									boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
+//@											"0")) == 1;
+//@									cb_TLS.setChecked(enable_TLS);
 			//#endif
 			// append(btn_login);
 		}
@@ -472,10 +472,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 		if (grp_advanced.isChecked()) {
 			//#ifdef COMPRESSION
-			//@ append(this.cb_compression);
+//@			 append(this.cb_compression);
 			//#endif
 			//#ifdef TLS
-			//@	append(this.cb_TLS);
+//@				append(this.cb_TLS);
 			//#endif
 
 			append(resource);
@@ -824,14 +824,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		cfg.setProperty(Config.EMAIL, tf_email.getText());
 		// #endif
 		// #ifdef COMPRESSION
-		//@				String enableCompression = "0";
-		//@				enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
-		//@				cfg.setProperty(Config.COMPRESSION, enableCompression);
+//@						String enableCompression = "0";
+//@						enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
+//@						cfg.setProperty(Config.COMPRESSION, enableCompression);
 		// #endif
 		// #ifdef TLS
-		//@				String enableTlS = "0";
-		//@				enableTlS = (cb_TLS.isChecked() ? 1 : 0) + "";
-		//@				cfg.setProperty(Config.TLS, enableTlS);
+//@						String enableTlS = "0";
+//@						enableTlS = (cb_TLS.isChecked() ? 1 : 0) + "";
+//@						cfg.setProperty(Config.TLS, enableTlS);
 		// #endif
 
 		if (grp_server.getSelectedIndex() == 0) {
@@ -857,10 +857,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		XMPPClient xmpp = XMPPClient.getInstance();
 		xmpp.setMUCGroup(rm.getString(ResourceIDs.STR_GROUP_CHAT));
 		//#ifdef COMPRESSION
-		//@				xmpp.addCompression = cb_compression.isChecked();
+//@						xmpp.addCompression = cb_compression.isChecked();
 		//#endif
 		//#ifdef TLS
-		//@				xmpp.addTLS = cb_TLS.isChecked();
+//@						xmpp.addTLS = cb_TLS.isChecked();
 		//#endif
 
 		// this rosterListener must be set before the Roster starts 
@@ -1171,10 +1171,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 		// #endif
 		// #ifdef COMPRESSION
-		//@				cb_compression.setSubmenu(tempSubmenu);
+//@						cb_compression.setSubmenu(tempSubmenu);
 		// #endif
 		// #ifdef TLS
-		//@				cb_TLS.setSubmenu(tempSubmenu);
+//@						cb_TLS.setSubmenu(tempSubmenu);
 		// #endif
 	}
 

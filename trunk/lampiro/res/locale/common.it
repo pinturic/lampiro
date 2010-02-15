@@ -24,7 +24,7 @@
 24	Indietro
 25	Avanti
 26	Registra
-27	Aggiorna
+27	E' necessario completare il form prima di continuare
 28	Jabber ID
 29	Informazioni
 30	Attenzione
@@ -77,7 +77,7 @@
 78	Invia codice
 79	Update
 80	è stato aggiornato alla versione SOFTWARE_VERSION. In caso di malfunzionamenti provare a resettare la configurazione.
-81	E-mail 
+81	E-mail
 82	Sottoscrizione
 83	Risorse
 84	JID
@@ -121,7 +121,7 @@
 220	registrazione non permessa.
 221	utente già esistente.
 222	Abilita compressione
-223	Lampiro necessita di una connessione dati. Se richiesto, è necessario autorizzare Lampiro per utilizzare la connessione dati. Alcuni server possono non supportare compressione o TLS. In caso di problemi di connessione disabilitare queste opzioni. 
+223	Lampiro necessita di una connessione dati. Se richiesto, è necessario autorizzare Lampiro per utilizzare la connessione dati. Alcuni server possono non supportare compressione o TLS. In caso di problemi di connessione disabilitare queste opzioni.
 224	Note
 225	Abilita TLS
 226	Stop login
@@ -162,7 +162,7 @@
 261	Dati
 262	Connessione
 263	Dati inviati: in attesa di risposta dal server
-264	Comando cancellato: in attesa di risposta dal server 
+264	Comando cancellato: in attesa di risposta dal server
 265	Comando annullato con successo
 266	Comando terminato
 267	Errore durante l'esecuzione del task
@@ -194,10 +194,10 @@
 723	Play
 724	Album multimediale
 725	Salva nell'album multimediale
-727	impossibile accettare il trasferimento del file: 
+727	impossibile accettare il trasferimento del file:
 728	impossibile riconoscere il tipo del file:
 729	Invia file
-730	Aggiorna lista contatti 
+730	Aggiorna lista contatti
 731	Invia immagine
 732	Invia audio
 733	Non raggruppati
@@ -222,8 +222,8 @@
 753	Il tuo album è vuoto. Prima devi salvare immagini o file.
 754	Impostazioni
 755	Eliminare una chat di gruppo la rimuoverà definitivamente e tutti gli utenti verranno disconnessi; questa operazione non può essere annullata.
-756	Reti di messaging  
-757	Log on / Log off  
+756	Reti di messaging
+757	Log on / Log off
 758	Deregistrare network
 759	Sessioni attive
 760	Cambia nome gruppo
@@ -249,7 +249,7 @@
 1101	Errore durante il processamento del comando
 1200	Impostazioni
 1201	Quando si ricevono nuovi messaggi
-1202	Vibra se Lampiro è 
+1202	Vibra se Lampiro è
 1203	nascosto
 1204	attivo
 1205	Emetti suono se Lampiro è

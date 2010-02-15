@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: SplashScreen.java 1954 2010-01-15 15:14:09Z luca $
 */
 
 package lampiro.screens;
@@ -16,6 +16,7 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 import it.yup.ui.UIVLayout;
+import it.yup.util.Logger;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
@@ -77,9 +78,9 @@ public class SplashScreen extends UIScreen {
 
 			setTitle(Config.CLIENT_NAME);
 // #ifndef GLIDER
-									
-							Image logo = Image.createImage("/icons/lampiro_icon.png");
-							UILabel ul = new UILabel("Loading Lampiro...");
+												
+										Image logo = Image.createImage("/icons/lampiro_icon.png");
+										UILabel ul = new UILabel("Loading Lampiro...");
 			// #endif
 			UILabel up = new UILabel(logo);
 			up.setAnchorPoint(Graphics.HCENTER | Graphics.VCENTER);
@@ -103,6 +104,11 @@ public class SplashScreen extends UIScreen {
 				try {
 					UICanvas.lock();
 					checkKeys();
+				} catch (Exception e) {
+					// #mdebug
+//@					Logger.log("In splash screen:" + e.getClass());
+//@					e.printStackTrace();
+					// #enddebug
 				} finally {
 					UICanvas.unlock();
 				}
@@ -146,7 +152,7 @@ public class SplashScreen extends UIScreen {
 			UICanvas.setMenuKeys(l, r);
 			UIScreen sc = null;
 // #ifndef GLIDER
-									sc=RegisterScreen.getInstance();
+												sc=RegisterScreen.getInstance();
 			// #endif 
 			UICanvas.getInstance().open(sc, true);
 			UICanvas.getInstance().close(SplashScreen.this);

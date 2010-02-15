@@ -24,7 +24,7 @@
 24	Prev
 25	Next
 26	Register
-27	Update
+27	A required field must be filled in before continuing
 28	Jabber ID
 29	About
 30	Warning
@@ -77,7 +77,7 @@
 78	Send code
 79	Update
 80	has been updated to version SOFTWARE_VERSION. Try resetting the configuration in case of malfunction.
-81	E-mail 
+81	E-mail
 82	Subscription
 83	Resources
 84	JID
@@ -121,7 +121,7 @@
 220	registration not allowed.
 221	username already exists.
 222	Enable compression
-223	Lampiro requires an air connection. If prompted, you must authorize Lampiro to use air connection. Some servers may not support compression or TLS. If you experience login problems please try disabling these features. 
+223	Lampiro requires an air connection. If prompted, you must authorize Lampiro to use air connection. Some servers may not support compression or TLS. If you experience login problems please try disabling these features.
 224	Note
 225	Enable TLS
 226	Stop login
@@ -194,10 +194,10 @@
 723	Play
 724	Multimedia album
 725	Save in multimedia album
-727	cannot accept the transfer of file: 
+727	cannot accept the transfer of file:
 728	Cannot handle the file:
 729	Send file
-730	Refresh roster 
+730	Refresh roster
 731	Send image
 732	Send audio
 733	Ungrouped
@@ -217,13 +217,13 @@
 747	Send group message
 748	Size
 749	Press <FIRE> to capture
-751	Resend authorization 
-752	Re-request authorization 
-753	Your album screen is empty. First you need to capture audio or images.  
-754	Manage group chat  
+751	Resend authorization
+752	Re-request authorization
+753	Your album screen is empty. First you need to capture audio or images.
+754	Manage group chat
 755	Deleting a group chat will definitely remove it and all users will be disconnected; this operation cannot be undone.
 756	IM Networks
-757	Log on / Log off  
+757	Log on / Log off
 758	Unregister network
 759	Active sessions
 760	Change group name
@@ -245,7 +245,7 @@
 1002	Execute
 1003	Task History
 1004	No commands available.
-1005	Available commands for: 
+1005	Available commands for:
 1101	An error occurred while processing command
 1200	Setup options
 1201	When receiving new messages

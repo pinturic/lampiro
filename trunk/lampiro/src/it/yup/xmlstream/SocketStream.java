@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketStream.java 1918 2009-12-15 12:47:25Z luca $
+ * $Id: SocketStream.java 1976 2010-02-12 16:59:23Z luca $
 */
 
 package it.yup.xmlstream;
@@ -78,10 +78,19 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 	protected void tryToSend() {
 		// simply pass the packets to the channel
 		synchronized (this.sendQueue) {
-			for (int i = 0; i < this.sendQueue.size(); i++)
-				this.channel
-						.sendContent(((Element) this.sendQueue.elementAt(i))
-								.toXml());
+			for (int i = 0; i < this.sendQueue.size(); i++) {
+				byte[] ithPacket = null;
+				try {
+					ithPacket = ((Element) this.sendQueue.elementAt(i)).toXml();
+				} catch (RuntimeException e) {
+					// packet is not well formed
+					// #mdebug		
+//@					Logger.log("Connection established");
+					// #enddebug
+					continue;
+				}
+				this.channel.sendContent(ithPacket);
+			}
 			this.sendQueue.removeAllElements();
 		}
 	}
@@ -183,9 +192,9 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 	//	 #endif
 
 	// #ifdef COMPRESSION
-//@		protected void startCompression() {
-//@			channel.startCompression();
-//@		}
+//@	protected void startCompression() {
+//@		channel.startCompression();
+//@	}
 	// #endif
 
 }

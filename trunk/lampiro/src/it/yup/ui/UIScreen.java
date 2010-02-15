@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIScreen.java 1913 2009-12-02 14:21:24Z luca $
+ * $Id: UIScreen.java 1975 2010-02-08 15:56:20Z luca $
 */
 
 package it.yup.ui;
@@ -97,6 +97,9 @@ public class UIScreen extends UIMenu implements UIIContainer {
 	 */
 	public UIScreen() {
 		super("Screen");
+		this.footerLeft.setFocusable(true);
+		this.footerRight.setFocusable(true);
+		this.titleLabel.setFocusable(true);
 		borderSize = 0;
 		int imgHeight = la.getHeight();
 		this.headerLayout = new UIVLayout(2, imgHeight);
@@ -431,7 +434,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 							else if (contMenu.getItems().size() == 1) menuAction(
 									contMenu, (UIItem) contMenu.getItems()
 											.elementAt(0));
-						} else if (menu!=null){
+						} else if (menu != null) {
 							// second items of normal menu has been asked
 							int menuSize = menu.getItems().size();
 							if (menuSize == 2) {
@@ -439,7 +442,7 @@ public class UIScreen extends UIMenu implements UIIContainer {
 										.elementAt(1));
 							}
 						}
-					} else if (menu!=null){
+					} else if (menu != null) {
 						// second items of normal menu has been asked
 						int menuSize = menu.getItems().size();
 						if (menuSize == 2) {
@@ -641,9 +644,12 @@ public class UIScreen extends UIMenu implements UIIContainer {
 					// because if a menu has been added meanwhile (for example in
 					// response
 					// to a keypression) it is removed suddenly !!!
-					for (int i = 0; i < oldPopups.length; i++) {
-						this.removePopup((UIMenu) oldPopups[i]);
-					}
+					//					for (int i = 0; i < oldPopups.length; i++) {
+					//						this.removePopup((UIMenu) oldPopups[i]);
+					//					}
+
+					// I want to close only the last visible menu
+					this.removePopup(openMenu);
 				}
 				this.askRepaint();
 			}

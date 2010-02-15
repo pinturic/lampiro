@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUCScreen.java 1873 2009-10-21 16:41:20Z luca $
+ * $Id: MUCScreen.java 1975 2010-02-08 15:56:20Z luca $
 */
 
 package lampiro.screens;
@@ -187,10 +187,10 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			String jid = Contact.userhost(this.user.jid);
 			HandleMucScreen cms = new HandleMucScreen(jid, Contact
 					.domain(this.user.jid), HMC_CONSTANTS.CHANGE_NICK
-					| HMC_CONSTANTS.JOIN_NOW, this);
+					| HMC_CONSTANTS.JOIN_NOW);
 			cms.infoLabel.setText(rm.getString(ResourceIDs.STR_CHANGE_NICK));
 			cms.muc_name_field.setText(Contact.user(jid));
-			UICanvas.getInstance().open(cms, true);
+			UICanvas.getInstance().open(cms, true, this);
 		} else if (c == cmd_add_bookmarks) {
 			XMPPClient.getInstance().getRoster().saveMUC((MUC) this.user, true,
 					false, false);

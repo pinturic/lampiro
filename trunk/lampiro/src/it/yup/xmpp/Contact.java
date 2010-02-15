@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: Contact.java 1978 2010-02-15 14:49:45Z luca $
 */
 
 package it.yup.xmpp;
@@ -216,14 +216,13 @@ public class Contact extends IQResultListener {
 			}
 		}
 		// muc can have a delay child that modifies the from 
-		Element delay = msg.getChildByName(null, XMPPClient.DELAY);
-		if (delay != null) {
-			String delayFrom = delay.getAttribute(Message.ATT_FROM);
-			if (delayFrom != null) {
-				from = Contact.userhost(from) + "/" + Contact.user(delayFrom);
-			}
-
-		}
+//		Element delay = msg.getChildByName(null, XMPPClient.DELAY);
+//		if (delay != null) {
+//			String delayFrom = delay.getAttribute(Message.ATT_FROM);
+//			if (delayFrom != null) {
+//				from = Contact.userhost(from) + "/" + Contact.user(delayFrom);
+//			}
+//		}
 		Element subjectEl = msg.getChildByName(null, "subject");
 		String subject = null;
 		if (subjectEl != null) subject = subjectEl.getText();

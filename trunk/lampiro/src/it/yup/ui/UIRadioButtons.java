@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIRadioButtons.java 1625 2009-07-31 09:45:41Z luca $
+ * $Id: UIRadioButtons.java 1958 2010-01-19 11:47:22Z luca $
 */
 
 package it.yup.ui;
@@ -67,7 +67,7 @@ public class UIRadioButtons extends UIVLayout {
 		this.height = itemHeight * this.layoutItems.length;
 		return this.height;
 	}
-	
+
 	public boolean isFocusable() {
 		return super.isFocusable() && focusable;
 	}
@@ -134,9 +134,5 @@ public class UIRadioButtons extends UIVLayout {
 		layoutItems[i].setSelected(false);
 		setDirty(true);
 		askRepaint();
-	}
-
-	public int getSelectedIndex() {
-		return selectedIndex;
 	}
 }

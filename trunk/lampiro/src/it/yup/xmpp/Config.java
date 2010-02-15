@@ -13,10 +13,10 @@ package it.yup.xmpp;
 // #enddebug
 
 import it.yup.util.RMSIndex;
-import it.yup.util.Utils;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
 import it.yup.xmpp.packets.Presence;
+import it.yup.util.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -35,40 +35,30 @@ import javax.microedition.rms.RecordStore;
 public class Config {
 
 	public static String CLIENT_NAME =
-	// #ifdef GLIDER
-	//@	"Glider"
-	// #else
-	"Lampiro"
-	// #endif
+		"Lampiro"
 	;
 
 	public static String CLIENT_ADDRESS =
-	// #ifdef GLIDER
-	//@	"http://users.ooros.com "
-	// #else
-	"http://lampiro.bluendo.com "
+		"http://lampiro.bluendo.com "
+	;
+
+	private static String version = "10.2";
+
+	public static String lang =
+	// #if LANG = "en"
+	"en"
+	// #elif LANG = "it"
+	//@		 "it"
+	// #elif LANG = "es"
+	//@	"es"
+	// #elif LANG = "ru"
+	//@	"ru"
+	// #else 
+	//@	 lang = "en"
 	// #endif
 	;
 
-	private static String version = "10.1.1";
 
-	// #if LANG = "en"
-			public static String lang = "en";
-	// #elif LANG = "it"
-//@			public static String lang = "it";
-	// #elif LANG = "es"
-	//@	public static String lang = "es";
-	// #elif LANG = "ru"
-//@	public static String lang = "ru";
-	// #else 
-	//@				public static String lang = "en";
-	// #endif
-
-	// #ifdef ATOM
-	//@	public static final String ATOM = "atom";
-	//@	public static final String ATOM_JID = "rss.ooros.com";
-	//@	public static final short NEWS_COUNT = 0x0033;
-	// #endif
 
 	public static final String RMS_NAME = CLIENT_NAME + "rms";
 
@@ -99,18 +89,10 @@ public class Config {
 
 	/** path of the GPRS/HTTP gateway */
 	public static final String SRV_QUERY_PATH =
-	// #ifdef GLIDER
-	//@	"http://services.ooros.com/srv/?domain=";
-	// #else
-	"http://services.bluendo.com/srv/?domain=";
-	// #endif
+		"http://services.bluendo.com/srv/?domain=";
 
 	public static final String DEFAULT_SERVER =
-	// #ifndef GLIDER
-	"jabber.bluendo.com";
-	// #else
-	//@	"ooros.com";
-	// #endif
+		"jabber.bluendo.com";
 
 	/**
 	 * time the server should wait before sending a response if no data is
@@ -137,10 +119,7 @@ public class Config {
 	public static String CONFIG = "config";
 
 	public static String VCARDS = "vcards";
-	// #ifdef GLIDER
-	//@	public static String GLIDER_COMMANDS = "GLIDER_COMMANDS";
-	//@	public static String DISCO_CACHE = "disco_cache";
-	// #endif
+
 
 	/*
 	 * The db of all the known capabilities
@@ -206,11 +185,7 @@ public class Config {
 	/** Has a qwerty keyboard */
 	public static short QWERTY = 0x0022;
 
-	// #ifdef BLUENDO_SECURE
-	//@
-	//@	public static final String SECURE_STORE = "secure";
-	//@
-	// #endif 
+
 
 	/**
 	 * Using bit masks
@@ -278,12 +253,8 @@ public class Config {
 
 	/** the bluendo assistent */
 	public static final String LAMPIRO_AGENT =
-	// #ifndef GLIDER
-	"lampiro@golem.jabber.bluendo.com";
-	// #else
-	//@	// "golem.ooros.com";
-	//@	"lampiro@golem.jabber.bluendo.com";
-	// #endif
+		"lampiro@golem.jabber.bluendo.com";
+
 
 	/** maximum wait time for a packet (should we let configure this ) */
 	public static final int TIMEOUT = -1;
@@ -421,11 +392,7 @@ public class Config {
 		setDefault(Config.LAST_STATUS_MESSAGE, Config.CLIENT_NAME + " ("
 				+ Config.CLIENT_ADDRESS + ")");
 		setDefault(Config.LAST_PRESENCE_SHOW, Presence.SHOW_ONLINE);
-		// #ifdef GLIDER
-		//@		setDefault(Config.COLOR, "3");
-		// #else 
-		setDefault(Config.COLOR, "0");
-		// #endif
+					setDefault(Config.COLOR, "0");
 		saveToStorage();
 	}
 

@@ -150,8 +150,8 @@ class ForwardScreen extends UIScreen {
 				}
 			} catch (Exception e) {
 				// #mdebug 
-//@				e.printStackTrace();
-//@				Logger.log(e.getClass().getName());
+//@								e.printStackTrace();
+//@								Logger.log(e.getClass().getName());
 				// #enddebug
 			}
 		}
@@ -265,8 +265,8 @@ class ForwardScreen extends UIScreen {
 			}
 		} catch (Exception e) {
 			// #mdebug 
-//@			e.printStackTrace();
-//@			Logger.log(e.getClass().getName());
+//@						e.printStackTrace();
+//@						Logger.log(e.getClass().getName());
 			// #enddebug
 		}
 	}
@@ -291,13 +291,19 @@ class ForwardScreen extends UIScreen {
 							.getAttribute(Message.ATT_FROM) : to);
 				}
 				msg = new Message(to, msgType);
-				msg.setBody(ChatScreen.rm
-						.getString(ResourceIDs.STR_FORWARDED_TEXT)
-						+ " "
-						+ fromContact
-						+ ": \""
-						+ this.messageToForward
-						+ "\"");
+				String tempText = null;
+				if (fromContact != null) {
+					tempText = ChatScreen.rm
+							.getString(ResourceIDs.STR_FORWARDED_TEXT)
+							+ " "
+							+ fromContact
+							+ ": \""
+							+ this.messageToForward + "\"";
+				} else {
+					tempText = this.messageToForward;
+				}
+				msg.setBody(tempText);
+
 				XMPPClient.getInstance().sendPacket(msg);
 
 				if (user != null) {

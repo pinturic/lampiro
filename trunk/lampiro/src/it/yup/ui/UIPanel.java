@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIPanel.java 1909 2009-11-25 12:38:37Z luca $
+ * $Id: UIPanel.java 1977 2010-02-12 18:05:38Z luca $
 */
 
 package it.yup.ui;
@@ -595,7 +595,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	public int removeItem(UIItem it) {
 		this.dirty = true;
 		it.setDirty(true);
-		int iIndex = items.indexOf(it);
+		int iIndex = indexOf(it);
 		this.removeItemAt(iIndex);
 		return iIndex;
 	}
@@ -725,7 +725,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	}
 
 	public void setSelectedItem(UIItem item) {
-		int index = this.items.indexOf(item);
+		int index = indexOf(item);
 		if (index != selectedIdx) this.setSelectedIndex(index);
 		if (this.getContainer() != null) {
 			this.getContainer().setSelectedItem(this);
@@ -768,5 +768,10 @@ public class UIPanel extends UIItem implements UIIContainer {
 
 	public boolean isListMode() {
 		return listMode;
+	}
+
+	public int indexOf(UIItem item) {
+		// TODO Auto-generated method stub
+		return this.items.indexOf(item);
 	}
 }

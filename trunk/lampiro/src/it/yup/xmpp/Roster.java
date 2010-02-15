@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: Roster.java 1975 2010-02-08 15:56:20Z luca $
 */
 
 package it.yup.xmpp;
@@ -289,7 +289,7 @@ public class Roster implements PacketListener {
 			if (rosterData != null) {
 				Element rosterEl = BProcessor.parse(rosterData);
 				rosterVersion = rosterEl.getAttribute("ver");
-				if (rosterVersion == null) rosterVersion = "0";
+				if (rosterVersion == null) rosterVersion = "null";
 				Element[] children = rosterEl.getChildrenByName(null, "group");
 				for (int i = 0; i < children.length; i++) {
 					Element ithChild = children[i];
@@ -330,7 +330,7 @@ public class Roster implements PacketListener {
 		try {
 			rosterStore.open();
 			Element rosterEl = new Element(XMPPClient.NS_IQ_ROSTER, "roster");
-			if (rosterVersion == null) rosterVersion = "0";
+			if (rosterVersion == null) rosterVersion = "null";
 			rosterEl.setAttribute("ver", this.rosterVersion);
 			Hashtable groups = Group.getGroups();
 			Enumeration en = groups.elements();
@@ -619,8 +619,8 @@ public class Roster implements PacketListener {
 			try {
 				for (int i = 0; i < children.length; i++) {
 					Element ithElem = children[i];
-					String ithFrom = ithElem.getChildByName(null, Stanza.ATT_FROM)
-							.getText();
+					String ithFrom = ithElem.getChildByName(null,
+							Stanza.ATT_FROM).getText();
 					String ithType = ithElem.getChildByName(null, "type")
 							.getText();
 					String ithName = ithElem.getChildByName(null, "name")
