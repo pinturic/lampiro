@@ -6,6 +6,16 @@ When updates are available this page will describe the improvements or additions
 
 = Details =
 
+Lampiro 10.2:
+
+
+ * *Improved*:  File transfer with jingle
+ * *Fixed*:     Minor fixes in chat screens and dataform screens
+ * *Fixed*:     Fixed a bug when adding an already present contact in roster
+ * *Fixed*:     Fixed a bug in touch screen management
+
+
+
 Lampiro 10.1:
 
 
