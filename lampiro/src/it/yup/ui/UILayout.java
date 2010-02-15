@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILayout.java 1858 2009-10-16 22:42:29Z luca $
+ * $Id: UILayout.java 1958 2010-01-19 11:47:22Z luca $
 */
 
 package it.yup.ui;
@@ -232,6 +232,10 @@ public abstract class UILayout extends UIItem implements UIIContainer {
 		} else {
 			return this;
 		}
+	}
+
+	public int getSelectedIndex() {
+		return selectedIndex;
 	}
 
 	public void setSelectedIndex(int index) {

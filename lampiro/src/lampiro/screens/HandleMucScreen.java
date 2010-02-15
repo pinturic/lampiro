@@ -1,9 +1,7 @@
 package lampiro.screens;
 
 import java.util.Hashtable;
-
 import javax.microedition.lcdui.TextField;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -159,23 +157,16 @@ public class HandleMucScreen extends UIScreen {
 	private boolean changeNick = false;
 
 	/*
-	 * The screen to be shown after this
-	 */
-	private UIScreen nextScreen;
-
-	/*
 	 * @param creator
 	 * 			if myContact is the creator 
 	 */
-	public HandleMucScreen(String jid, String host, int constants,
-			UIScreen nextScreen) {
+	public HandleMucScreen(String jid, String host, int constants) {
 		super();
 		this.changeNick = (constants & HMC_CONSTANTS.CHANGE_NICK) > 0;
 		this.jid = jid;
 		this.creator = (constants & HMC_CONSTANTS.CREATE) > 0;
 		this.host = host;
 		this.joinNow = (constants & HMC_CONSTANTS.JOIN_NOW) > 0;
-		this.nextScreen = nextScreen;
 
 		String[] items = new String[] {
 				rm.getString(ResourceIDs.STR_AUTOJOIN_NO),
@@ -250,8 +241,6 @@ public class HandleMucScreen extends UIScreen {
 	public void menuAction(UIMenu menu, UIItem item) {
 		if (item == this.cmd_close) {
 			UICanvas.getInstance().close(this);
-			if (this.nextScreen != null) UICanvas.getInstance().open(
-					nextScreen, true);
 		} else if (item == cmd_save) {
 			// muc field text
 			String mf = muc_name_field.getText();
@@ -294,8 +283,8 @@ public class HandleMucScreen extends UIScreen {
 									false, true);
 						} catch (Exception ex) {
 							// #mdebug
-//@														Logger.log("In creating a MUC:");
-//@														ex.printStackTrace();
+//@							Logger.log("In creating a MUC:");
+//@							ex.printStackTrace();
 							// #enddebug
 						} finally {
 							UICanvas.unlock();

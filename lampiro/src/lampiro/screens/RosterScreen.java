@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: RosterScreen.java 1975 2010-02-08 15:56:20Z luca $
 */
 
 package lampiro.screens;
@@ -91,7 +91,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		FTREventHandler, FTSEventHandler, XMPPClient.XmppListener {
 
 	// #ifdef TEST_COMPONENTS 
-//@	private String testServer = "moneiro.biz";
+	//@	private String testServer = "moneiro.biz";
 	// #endif
 	private WaitScreen dataformWaitingScreen = null;
 
@@ -864,8 +864,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 	private RosterScreen() {
 // #ifndef GLIDER
-										defaultContacts.addElement(new Object[] { Config.LAMPIRO_AGENT,
-												"Lampiro Agent" });
+												defaultContacts.addElement(new Object[] { Config.LAMPIRO_AGENT,
+														"Lampiro Agent" });
 		// #endif
 
 		// update the default strings for comboboxes
@@ -1023,6 +1023,11 @@ public class RosterScreen extends UIScreen implements PacketListener,
 					UIContact firstContact = (UIContact) ithGroup.nextElement();
 					if (firstContact.c.unread_msg()) {
 						pimg = UIContact.img_msg;
+					} else if (this.rosterAccordion.getOpenedLabel() != highLightGroup) {
+						UIHLayout con = ((UIHLayout) highLightGroup
+								.getContainer());
+						UILabel imgLabel = ((UILabel) con.getItem(0));
+						imgLabel.setImg(rosterAccordion.closeImage);
 					}
 				}
 			}
@@ -1506,8 +1511,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			this.removePopup(UIContact.optionsMenu);
 		} else if (c == cmd_mucs || c == UIContactGroup.createMUC) {
 			HandleMucScreen cms = new HandleMucScreen(null, this.mucJid,
-					HMC_CONSTANTS.CREATE | HMC_CONSTANTS.JOIN_NOW, this);
-			UICanvas.getInstance().open(cms, true);
+					HMC_CONSTANTS.CREATE | HMC_CONSTANTS.JOIN_NOW);
+			UICanvas.getInstance().open(cms, true, this);
 			this.removePopup(UIContact.optionsMenu);
 		} else if (c == cmd_about) {
 			AboutScreen as = new AboutScreen();
@@ -1647,10 +1652,10 @@ public class RosterScreen extends UIScreen implements PacketListener,
 	public void handleMuc(String actionJid, UIScreen nextScreen) {
 		String jid = Contact.userhost(actionJid);
 		HandleMucScreen cms = new HandleMucScreen(jid, Contact
-				.domain(actionJid), 0, nextScreen);
+				.domain(actionJid), 0);
 		cms.infoLabel.setText(rm.getString(ResourceIDs.STR_MANAGE_GC));
 		cms.muc_name_field.setText(Contact.user(jid));
-		UICanvas.getInstance().open(cms, true);
+		UICanvas.getInstance().open(cms, true, nextScreen);
 	}
 
 	public void enterMuc(String jid) {
@@ -2029,7 +2034,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			boolean highLightRepaint = highLightGroup.updateContact(c, reason);
 			// if the highlightGroup is closed update the message status;
 			if (highlightNewCheck
-					&& this.rosterAccordion.getOpenedLabel() == highLightGroup == false) {
+					&& this.rosterAccordion.getOpenedLabel() != highLightGroup) {
 				UIHLayout con = ((UIHLayout) highLightGroup.getContainer());
 				UILabel imgLabel = ((UILabel) con.getItem(0));
 				if (imgLabel.getImg() != UIContact.img_msg) {
@@ -2267,12 +2272,12 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		try {
 			UICanvas.lock();
 			HandleMucScreen cms = new HandleMucScreen(null, Contact
-					.domain(invitedMuc), HMC_CONSTANTS.JOIN_NOW, this);
+					.domain(invitedMuc), HMC_CONSTANTS.JOIN_NOW);
 			cms.infoLabel.setText(rm
 					.getString(ResourceIDs.STR_GROUP_CHAT_INVITATION)
 					+ " " + printableName + "?");
 			cms.muc_name_field.setText(mucName);
-			UICanvas.getInstance().open(cms, true);
+			UICanvas.getInstance().open(cms, true, this);
 		} catch (Exception ex) {
 			// #mdebug
 //@			ex.printStackTrace();
@@ -2458,7 +2463,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		try {
 			UICanvas.lock();
 // #ifndef GLIDER
-															UICanvas.getInstance().open(this, true);
+																		UICanvas.getInstance().open(this, true);
 			// #endif
 			this.toggleMenus();
 		} catch (Exception ex) {
@@ -2788,8 +2793,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		}
 		this.toggleMenus();
 // #ifndef GLIDER
-										UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
-										this.askRepaint();
+												UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
+												this.askRepaint();
 		// #endif
 		//UICanvas.getInstance().close(this);
 	}
@@ -3028,8 +3033,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			queryDiscoItems(Config.DEFAULT_SERVER, new int[] { 0 });
 		}
 		// #ifdef TEST_COMPONENTS
-//@		// // to test the test component
-//@		queryDiscoItems(testServer, new int[] { 0 });
+		//@		// // to test the test component
+		//@		queryDiscoItems(testServer, new int[] { 0 });
 		//  #endif 
 		try {
 			UICanvas.lock();

@@ -1,4 +1,4 @@
-1) commit the new version remember that the desired antenna switches are: UI=1,LANG_EN=1  
+1) commit the new version remember that the desired antenna switches are: UI=1,LANG="en"  
 2) check the release version and MIDlet-Version in :
 	- manifest.mf 
 	- lampiro.jad

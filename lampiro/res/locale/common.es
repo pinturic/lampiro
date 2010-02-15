@@ -24,7 +24,7 @@
 24	Atrás
 25	Siguiente
 26	Registrar
-27	Actualizar
+27	Un campo obligatorio tiene que ser rellenado antes de continuar
 28	Jabber ID
 29	Informaciones
 30	Atención
@@ -77,7 +77,7 @@
 78	Enviar código
 79	Update
 80	se ha actualizado a la versión SOFTWARE_VERSION. Intentar restablecer la configuración en caso de mal funcionamiento.
-81	E-mail 
+81	E-mail
 82	Suscripción
 83	Recursos
 84	JID
@@ -290,6 +290,6 @@
 1311	Sincronizar todos los canales
 1312	No estás suscrito a los feeds ahora
 1313	Sync y va offline
-1314	Stop sincronización 
+1314	Stop sincronización
 1315	Estado de sincronización
 100000	dummy

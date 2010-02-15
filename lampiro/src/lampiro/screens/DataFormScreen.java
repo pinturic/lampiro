@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 1905 2009-11-11 14:56:07Z luca $
+ * $Id: DataFormScreen.java 1976 2010-02-12 16:59:23Z luca $
 */
 
 /**
@@ -486,6 +486,14 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		// resize media
 		int mWidth = fld.media.width;
 		int mHeight = fld.media.height;
+
+		// resize to fit screen
+		int tempWidth = UICanvas.getInstance().getWidth() - 20;
+		if (img.getWidth() >= tempWidth) {
+			mHeight = (tempWidth * img.getHeight()) / img.getWidth();
+			mWidth = tempWidth;
+		}
+
 		if (mWidth > 0 && mHeight > 0 && mWidth != img.getWidth()
 				&& mHeight != img.getHeight()) {
 			img = UIUtils.imageResize(img, mWidth, mHeight, false);
@@ -556,15 +564,18 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		int comm = -1;
 		boolean setWaiting = false;
+		boolean checkRequired = false;
 
 		if (cmd == cmd_cancel || cmd == menu_cancel) {
 			comm = DataFormListener.CMD_CANCEL;
 		} else if (cmd == cmd_submit) {
 			comm = DataFormListener.CMD_SUBMIT;
 			setWaiting = true;
+			checkRequired = true;
 		} else if (cmd == cmd_next) {
 			comm = DataFormListener.CMD_NEXT;
 			setWaiting = true;
+			checkRequired = true;
 		} else if (cmd == cmd_prev) {
 			comm = DataFormListener.CMD_PREV;
 			setWaiting = true;
@@ -587,10 +598,23 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 			return;
 		}
 
-		fillForm();
+		int missingField = fillForm(checkRequired);
+		if (missingField >= 0) {
+			this.mainPanel.setSelectedIndex(missingField);
+			UILabel label = new UILabel(rm
+					.getString(ResourceIDs.STR_MISSING_FIELD));
+			label.setWrappable(true, UICanvas.getInstance().getWidth() - 60);
+			UIMenu missingMenu = UIUtils.easyMenu(rm
+					.getString(ResourceIDs.STR_WARNING), 30, 30, UICanvas
+					.getInstance().getWidth() - 60, label, rm
+					.getString(ResourceIDs.STR_CANCEL), rm
+					.getString(ResourceIDs.STR_SELECT));
+			this.addPopup(missingMenu);
+			return;
+		}
 		// if the dataform will have an answer, e.g. an IQ contained dataform
 		// #ifndef BLUENDO_SECURE
-		setWaiting &= dfl.execute(comm);
+				setWaiting &= dfl.execute(comm);
 		// #endif
 		RosterScreen.getInstance()._handleTask(dfl);
 		// #ifdef UI
@@ -612,7 +636,13 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	 * 
 	 */
 	public static void openDescription(UIScreen dataScreen, DataForm df) {
-		int index = dataScreen.getSelectedIndex();
+		int index = 0;
+
+		if (dataScreen instanceof DataFormScreen) index = ((DataFormScreen) dataScreen).mainPanel
+				.getSelectedIndex();
+		else if (dataScreen instanceof DataResultScreen) index = ((DataResultScreen) dataScreen).mainPanel
+				.getSelectedIndex();
+
 		String desc = ((DataForm.Field) df.fields.elementAt(index)).desc;
 		UITextField descField = new UITextField("", desc, desc.length(),
 				TextField.UNEDITABLE);
@@ -645,14 +675,26 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 
 	/**
 	 * Called when submit is pressed
+	 * @param checkRequired 
+	 * 	used to indicated that the check for required fields must be accomplished
+	 * @return 
+	 * 	if greater or equal to zero the indicates the index of the empty field
 	 */
-	private void fillForm() {
-
+	private int fillForm(boolean checkRequired) {
+		int missingField = -1;
 		// XXX: here we could verify the required fields
 		for (int i = 0; i < df.fields.size(); i++) {
 			DataForm.Field fld = (DataForm.Field) df.fields.elementAt(i);
 			if (fld.type == DataForm.FLT_HIDDEN) {
 				continue;
+			}
+
+			// if need check and field is required and the field
+			// is empty then the form is not completely filled
+			if (checkRequired && fld.required) {
+				UITextField tf = (UITextField) items[i];
+				String text = tf.getText();
+				if (text == null || text.length() == 0) missingField = i;
 			}
 
 			if (fld.type == DataForm.FLT_BOOLEAN) {
@@ -696,7 +738,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				continue;
 			}
 		}
-
+		return missingField;
 	}
 
 	public void stopWaiting() {

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: TLSInitializer.java 1285 2009-03-16 09:26:32Z luca $
+ * $Id: TLSInitializer.java 1977 2010-02-12 18:05:38Z luca $
 */
 
 // #ifdef TLS
@@ -24,7 +24,7 @@
 //@
 //@		Element starttls = new Element(this.namespace, "starttls");
 //@		EventQuery pq = new EventQuery(EventQuery.ANY_PACKET, null, null);
-//@		stream.addOnetimeEventListener(pq, this);
+//@		BasicXmlStream.addOnetimeEventListener(pq, this);
 //@		stream.send(starttls, -1);
 //@	}
 //@

@@ -73,22 +73,20 @@ public class GatewayScreen extends UIScreen {
 				TextField.ANY, UITextField.FORMAT_LOWER_CASE);
 		this.mainPanel.addItem(txt_myServer);
 
-		this.addServerGateways(txt_myServer, myServer, true);
+		this.addServerGateways(txt_myServer, myServer);
 		if (myServer.equals(Config.DEFAULT_SERVER) == false) {
 			txt_bluendoServer = new UITextField(rm
 					.getString(ResourceIDs.STR_SERVER_EXPLORE),
 					Config.DEFAULT_SERVER, 255, TextField.UNEDITABLE);
 			this.mainPanel.addItem(txt_bluendoServer);
-			this.addServerGateways(txt_bluendoServer, Config.DEFAULT_SERVER,
-					false);
+			this.addServerGateways(txt_bluendoServer, Config.DEFAULT_SERVER);
 		}
 		refresh_container = UIUtils.easyCenterLayout(refresh_gateways, 100);
 		this.mainPanel.addItem(refresh_container);
 		refresh_gateways.setAnchorPoint(Graphics.HCENTER);
 	}
 
-	private void addServerGateways(UITextField txt_server, String serverJid,
-			boolean editable) {
+	private void addServerGateways(UITextField txt_server, String serverJid) {
 
 		Enumeration en = rs.gateways.keys();
 		while (en.hasMoreElements()) {
@@ -97,7 +95,7 @@ public class GatewayScreen extends UIScreen {
 			String name = (String) data[0];
 			Image img = (Image) UIGateway.getGatewayIcons((String) data[1]);
 			String savedServerJid = (String) data[2];
-			if (savedServerJid.equals(serverJid)) {
+			if (serverJid.equals(savedServerJid)) {
 				UILabel ithTransport = new UILabel(img, name);
 				ithTransport.setFocusable(true);
 				ithTransport.setStatus(from);

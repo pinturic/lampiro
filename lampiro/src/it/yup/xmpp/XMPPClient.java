@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1950 2010-01-15 10:28:48Z luca $
+ * $Id: XMPPClient.java 1975 2010-02-08 15:56:20Z luca $
 */
 
 package it.yup.xmpp;
@@ -244,7 +244,7 @@ public class XMPPClient implements StreamEventListener {
 	public static String JABBER_IQ_GATEWAY = "jabber:iq:gateway";
 	public static String NS_IQ_ROSTER = "jabber:iq:roster";
 	public static String IQ_REGISTER = "jabber:iq:register";
-	public static String JINGLE = "urn:xmpp:jingle:0";
+	public static String JINGLE = "urn:xmpp:jingle:1";
 	public static String JINGLE_FILE_TRANSFER = "urn:xmpp:jingle:apps:file-transfer:1";
 	public static String FILE_TRANSFER = "http://jabber.org/protocol/si/profile/file-transfer";
 	public static String JINGLE_IBB_TRANSPORT = "urn:xmpp:jingle:transports:ibb:0";
@@ -264,6 +264,7 @@ public class XMPPClient implements StreamEventListener {
 	public static String CONFERENCE = "conference";
 	public static String SECTION = "section";
 	public static String PUBSUB = "pubsub";
+	public static String PUBLISH = "publish";
 	public static String ITEMS = "items";
 	public static String ITEM = "item";
 	public static String NODE = "node";
@@ -728,7 +729,7 @@ public class XMPPClient implements StreamEventListener {
 	 * 
 	 */
 	public void askRoster() {
-		if (newCredentials || Integer.parseInt(this.roster.rosterVersion) > 0) {
+		if (newCredentials || !"null".equals(this.roster.rosterVersion)) {
 			roster.retrieveRoster(true, false);
 		} else {
 			this.setPresence(-1, null);
@@ -875,8 +876,8 @@ public class XMPPClient implements StreamEventListener {
 					if (type != null
 							&& type.compareTo(Presence.T_UNAVAILABLE) == 0) return;
 					// XXX Guess the subscription
-					u = new Contact(Contact.userhost(from), null, Contact.SUB_UNKNOWN,
-							null);
+					u = new Contact(Contact.userhost(from), null,
+							Contact.SUB_UNKNOWN, null);
 
 					u.updatePresence(new Presence(e));
 					roster.contacts.put(u.jid, u);
@@ -906,7 +907,8 @@ public class XMPPClient implements StreamEventListener {
 			}
 
 			// subscription handling
-			if (Contact.SUB_BOTH.equals(u.subscription) || Contact.SUB_TO.equals(u.subscription)
+			if (Contact.SUB_BOTH.equals(u.subscription)
+					|| Contact.SUB_TO.equals(u.subscription)
 					|| Config.LAMPIRO_AGENT.equals(Contact.userhost(jid))) {
 				// subscribe received: if already granted, I don't ask anything
 				Presence pmsg = new Presence();
@@ -1225,7 +1227,12 @@ public class XMPPClient implements StreamEventListener {
 	 */
 	public void updateTask(Task task) {
 		Contact user = roster.getContactByJid(task.getFrom());
-		if (user == null) return;
+		// I may wish to execute commands even on unknown contacts
+		if (user == null) {
+			user = new Contact(Contact.userhost(task.getFrom()), null, null,
+					null);
+			roster.contacts.put(Contact.userhost(user.jid), user);
+		}
 		user.addTask(task);
 		// #mdebug
 //@		System.out.println("Tsk: " + Integer.toHexString(task.getStatus()));

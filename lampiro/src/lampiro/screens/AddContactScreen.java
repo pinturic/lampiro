@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AddContactScreen.java 1905 2009-11-11 14:56:07Z luca $
+ * $Id: AddContactScreen.java 1975 2010-02-08 15:56:20Z luca $
 */
 
 package lampiro.screens;
@@ -268,7 +268,10 @@ public class AddContactScreen extends UIScreen {
 			if (group != null && group.length() > 0) {
 				groups = new String[] { group };
 			}
-			c = new Contact(jid, name, null, groups);
+			// I may already have the same Contact!!!
+			// do not create it again
+			c = XMPPClient.getInstance().getRoster().getContactByJid(jid);
+			if (c == null) c = new Contact(jid, name, null, groups);
 			RosterScreen.getInstance().subscribeContact(c, false);
 		} else {
 			if (name != null && name.length() > 0) {

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 1858 2009-10-16 22:42:29Z luca $
+ * $Id: DataResultScreen.java 1976 2010-02-12 16:59:23Z luca $
 */
 
 /**
@@ -51,7 +51,7 @@ public class DataResultScreen extends UIScreen {
 
 	private DataFormListener listener;
 
-	private UIHLayout mainLayout = new UIHLayout(3);
+	UIHLayout mainLayout = new UIHLayout(3);
 	UIPanel mainPanel = new UIPanel();
 
 	private UIMenu desc_menu = new UIMenu("");
@@ -68,7 +68,7 @@ public class DataResultScreen extends UIScreen {
 		if (df.instructions != null) {
 			si_instructions.setWrappable(true, 100);
 			si_instructions.setText(df.instructions);
-			pos = -1;
+			//pos = -1;
 		}
 
 		UISeparator separator = new UISeparator(0);
@@ -101,55 +101,57 @@ public class DataResultScreen extends UIScreen {
 
 		mainPanel.removeAllItems();
 
-		if (pos == -1) {
+		if (df.instructions != null) {
 			mainPanel.addItem(new UILabel(rm
 					.getString(ResourceIDs.STR_INSTRUCTIONS)));
 			mainPanel.addItem(si_instructions);
-		} else {
-			Hashtable res = (Hashtable) df.results.elementAt(pos);
+		}
 
-			for (int i = 0; i < df.fields.size(); i++) {
-				DataForm.Field fld = (DataForm.Field) df.fields.elementAt(i);
+		Hashtable res = (Hashtable) df.results.elementAt(pos);
 
-				String val = (String) res.get(fld.varName);
-				if (val == null) {
-					/* ??? error */
-					val = "";
-				}
-				String lbl = (fld.label != null ? fld.label : fld.varName);
+		for (int i = 0; i < df.fields.size(); i++) {
+			DataForm.Field fld = (DataForm.Field) df.fields.elementAt(i);
 
-				if (lbl.indexOf("fixed_") >= 0) {
-					lbl = "";
-				}
+			String val = (String) res.get(fld.varName);
+			if (val == null) {
+				/* ??? error */
+				val = "";
+			}
+			String lbl = (fld.label != null ? fld.label : fld.varName);
 
-				UIItem ithItem = null;
-				if (fld.type == DataForm.FLT_TXTMULTI
-						|| fld.type == DataForm.FLT_FIXED
-						|| fld.type == DataForm.FLT_TXTSINGLE) {
-					UITextField uit = new UITextField(lbl, val, 1024,
-							TextField.UNEDITABLE);
-					mainPanel.addItem(uit);
-					// must be done after append to have a screen for the uit
-					uit.setWrappable(true);
-					ithItem = uit;
-					//uit.setMaxHeight(50);
-				} else if (fld.type != DataForm.FLT_HIDDEN) {
-					if (lbl.length() > 0) {
-						mainPanel.addItem(new UILabel(lbl));
-					}
-					ithItem = new UILabel(val);
-					mainPanel.addItem(ithItem);
+			if (lbl.indexOf("fixed_") >= 0) {
+				lbl = "";
+			}
+
+			UIItem ithItem = null;
+			if (fld.type == DataForm.FLT_TXTMULTI
+					|| fld.type == DataForm.FLT_FIXED
+					|| fld.type == DataForm.FLT_TXTSINGLE) {
+				UITextField uit = new UITextField(lbl, val, 1024,
+						TextField.UNEDITABLE);
+				mainPanel.addItem(uit);
+				// must be done after append to have a screen for the uit
+				uit.setWrappable(true);
+				ithItem = uit;
+				//uit.setMaxHeight(50);
+			} else if (fld.type != DataForm.FLT_HIDDEN) {
+				if (lbl.length() > 0) {
+					mainPanel.addItem(new UILabel(lbl));
 				}
-				if (fld.desc != null && ithItem != null) {
-					ithItem.setSubmenu(desc_menu);
-				}
+				ithItem = new UILabel(val);
+				mainPanel.addItem(ithItem);
+			}
+			if (fld.desc != null && ithItem != null) {
+				ithItem.setSubmenu(desc_menu);
 			}
 		}
+
 		UIMenu menu = getMenu();
 		menu.remove(cmd_prev);
 		menu.remove(cmd_next);
 
-		int start = df.instructions == null ? 0 : -1;
+		//int start = df.instructions == null ? 0 : -1;
+		int start = 0;
 		if (pos > start) {
 			menu.insert(1, cmd_prev);
 		}

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1954 2010-01-15 15:14:09Z luca $
+ * $Id: ResourceIDs.java 1977 2010-02-12 18:05:38Z luca $
 */
 
 /**
@@ -40,6 +40,7 @@ public class ResourceIDs {
 	public static final int STR_PREV = 24;
 	public static final int STR_NEXT = 25;
 	public static final int STR_REGISTER = 26;
+	public static final int STR_MISSING_FIELD = 27;
 	public static final int STR_ABOUT = 29;
 	public static final int STR_WARNING = 30;
 	public static final int STR_HIDE = 31;
@@ -101,7 +102,7 @@ public class ResourceIDs {
 	public static final int STR_SUB_FROM = 87;
 	public static final int STR_SUB_UNKNOWN = 88;
 	public static final int STR_SUB_NONE = 89;
-	
+
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;
 	public static final int STR_CLEAR_HIST = 102;
@@ -175,7 +176,7 @@ public class ResourceIDs {
 	public static final int STR_AUTOJOIN = 257;
 	public static final int STR_INVITATION_SENT = 258;
 	public static final int STR_CHANGE_NICK = 259;
-	
+
 	public static final int STR_COMMAND_INFO = 260;
 	public static final int STR_DATA = 261;
 	public static final int STR_CONNECTION = 262;
@@ -185,7 +186,7 @@ public class ResourceIDs {
 	public static final int STR_TASK_FINISHED = 266;
 	public static final int STR_TASK_ERROR = 267;
 	public static final int STR_SERVER_TYPE = 268;
-	
+
 	public static final int STR_MESSAGE_TO = 300;
 	public static final int STR_FILL_FORM = 500;
 	public static final int STR_SEND_MESSAGE = 700;
@@ -260,8 +261,8 @@ public class ResourceIDs {
 	public static final int STR_ACCEPT_ALL = 903;
 	public static final int STR_ACCEPT_ALWAYS = 904;
 	public static final int STR_SUBSCRIPTION_REQUEST = 905;
-//	public static final int STR_FT_DECLINED = 906;
-//	public static final int STR_FT_ACCEPTED = 907;
+	//	public static final int STR_FT_DECLINED = 906;
+	//	public static final int STR_FT_ACCEPTED = 907;
 	public static final int STR_FT_SENT = 908;
 	// public static final int STR_FT_NOT = 909;
 	// public static final int STR_FT_RECEIVER = 910;
@@ -273,7 +274,7 @@ public class ResourceIDs {
 	public static final int STR_TASKHISTORY_TITLE = 1003;
 	public static final int STR_NO_COMMAND = 1004;
 	public static final int STR_AVAILABLE_COMMANDS = 1005;
-	
+
 	public static final int STR_COMMAND_ERROR = 1101;
 
 	public static final int STR_OPTIONS_SETUP = 1200;
@@ -322,8 +323,7 @@ public class ResourceIDs {
 	public static final int STR_ONLINE_SYNC_ALL = 1313;
 	public static final int STR_STOP_SYNC_ALL = 1314;
 	public static final int STR_SYNC_STATUS = 1315;
-	
-	
+
 
 
 	/* uninstantiable */

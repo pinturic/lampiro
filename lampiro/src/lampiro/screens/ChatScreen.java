@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 1907 2009-11-12 17:11:10Z luca $
+ * $Id: ChatScreen.java 1978 2010-02-15 14:49:45Z luca $
 */
 
 package lampiro.screens;
@@ -493,8 +493,9 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		//		else 
 		//			messages = user.getAllMessageHistory();
 		if (messages == null || messages.size() == 0) { return false; }
-		for (int i = 0; i < messages.size(); i++) {
-			String msg[] = (String[]) messages.elementAt(i);
+		Enumeration en = messages.elements();
+		while (en.hasMoreElements()) {
+			String [] msg = (String []) en.nextElement();
 			ConversationEntry entry = wrapMessage(msg);
 			updateLabel(entry);
 			current_conversation.addElement(entry);

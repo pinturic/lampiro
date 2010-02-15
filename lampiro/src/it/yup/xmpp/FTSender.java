@@ -10,6 +10,7 @@ import it.yup.xmpp.packets.Presence;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
+import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
 
 public class FTSender extends IQResultListener implements PacketListener {
@@ -97,12 +98,12 @@ public class FTSender extends IQResultListener implements PacketListener {
 	/*
 	 * Jingle related file
 	 */
-	public static String OPEN = "open";
+	//public static String OPEN = "open";
 
 	/*
 	 * Jingle related file
 	 */
-	public static String CLOSE = "close";
+	//public static String CLOSE = "close";
 
 	/*
 	 * Jingle related file
@@ -154,13 +155,18 @@ public class FTSender extends IQResultListener implements PacketListener {
 	 */
 	private String transportSid = "";
 
-	/*
-	 * The session must be opened and the client must have sent session acept
-	 * before sending file
-	 */
-	private boolean sessionOpened = false;
+//	/*
+//	 * The session must be opened and the client must have sent session acept
+//	 * before sending file
+//	 */
+//	private boolean sessionOpened = false;
 
 	private FTSEventHandler eh;
+
+	/*
+	 * 
+	 */
+	private EventQueryRegistration terminateReg;
 
 	public static boolean supportFT(String fullJid) {
 		Contact c = XMPPClient.getInstance().getRoster().getContactByJid(
@@ -248,6 +254,10 @@ public class FTSender extends IQResultListener implements PacketListener {
 		PacketListener terminateListener = new PacketListener() {
 			public void packetReceived(Element e) {
 				isAccepted(e);
+				if (terminateReg != null) {
+					BasicXmlStream.removeEventListener(terminateReg);
+					terminateReg = null;
+				}
 			}
 		};
 		//this.encodedData.setLength(fileSize*2);
@@ -258,7 +268,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 				new String[] { XMPPClient.ACTION },
 				new String[] { FTSender.SESSION_TERMINATE });
 		eqChild.child = new EventQuery(FTSender.DECLINE, null, null);
-		BasicXmlStream.addEventListener(eq, terminateListener);
+		terminateReg = BasicXmlStream.addEventListener(eq, terminateListener);
 
 		xmppClient.sendIQ(sessionInitiateIq, this);
 
@@ -275,12 +285,12 @@ public class FTSender extends IQResultListener implements PacketListener {
 
 		BasicXmlStream.addOnetimeEventListener(eq, this);
 
-		Iq initiateInteraction = new Iq(this.to, Iq.T_SET);
-		Element open = initiateInteraction.addElement(XMPPClient.NS_IBB, OPEN);
-		open.setAttribute(SID, transportSid);
-		open.setAttribute(BLOCK_SIZE, chuck_length + "");
-
-		xmppClient.sendIQ(initiateInteraction, this);
+		//		Iq initiateInteraction = new Iq(this.to, Iq.T_SET);
+		//		Element open = initiateInteraction.addElement(XMPPClient.NS_IBB, OPEN);
+		//		open.setAttribute(SID, transportSid);
+		//		open.setAttribute(BLOCK_SIZE, chuck_length + "");
+		//
+		//		xmppClient.sendIQ(initiateInteraction, this);
 	}
 
 	private int fileOffset = 0;
@@ -308,10 +318,10 @@ public class FTSender extends IQResultListener implements PacketListener {
 		eh.chunkSent(fileOffset + chuck_length, encodedData.length(), this);
 	}
 
-	private void sendFooter() {
-		Iq closeInteraction = new Iq(this.to, Iq.T_SET);
-		Element close = closeInteraction.addElement(XMPPClient.NS_IBB, CLOSE);
-		close.setAttribute(SID, transportSid);
+	private void setFooterListener() {
+		//		Iq closeInteraction = new Iq(this.to, Iq.T_SET);
+		//		Element close = closeInteraction.addElement(XMPPClient.NS_IBB, CLOSE);
+		//		close.setAttribute(SID, transportSid);
 
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM,
 				Iq.ATT_TYPE }, new String[] { this.to, Iq.T_SET });
@@ -320,7 +330,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 				FTSender.SESSION_TERMINATE, XMPPClient.JINGLE });
 		BasicXmlStream.addOnetimeEventListener(eq, this);
 
-		xmppClient.sendIQ(closeInteraction, this);
+		//		xmppClient.sendIQ(closeInteraction, this);
 	}
 
 	/**
@@ -388,27 +398,34 @@ public class FTSender extends IQResultListener implements PacketListener {
 				FT_STATE = FT_INITIATED;
 				break;
 
-			case FT_INITIATED:
-				if (sessionOpened) this.sendFile();
-				else
-					this.encodedData = new String(Base64.encode(this.fileData));
-				// this result must have arrived and the packet received below
-				sessionOpened = true;
-				FT_STATE = FT_SENDING;
-				break;
+//			case FT_INITIATED:
+//				if (sessionOpened) this.sendFile();
+//				else
+//					
+//				// this result must have arrived and the packet received below
+//				sessionOpened = true;
+//				FT_STATE = FT_SENDING;
+//				break;
 
 			case FT_SENDING:
-				if (fileOffset < encodedData.length()) {
-					FT_STATE = FT_SENDING;
-					this.sendChunk();
-				} else {
+				//				if (fileOffset < encodedData.length()) {
+				//					FT_STATE = FT_SENDING;
+				//					this.sendChunk();
+				//				} else {
+				//					FT_STATE = FT_WAITING_CLOSE;
+				//					this.sendFooter();
+				//				}
+				FT_STATE = FT_SENDING;
+				if (fileOffset + chuck_length >= encodedData.length()) {
 					FT_STATE = FT_WAITING_CLOSE;
-					this.sendFooter();
+					this.setFooterListener();
 				}
+				this.sendChunk();
+
 				break;
 
 			case FT_WAITING_CLOSE:
-				sessionOpened = false;
+//				sessionOpened = false;
 				eh.fileSent(XMPPClient.getInstance().getRoster()
 						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
 						fileName, true, this);
@@ -433,11 +450,13 @@ public class FTSender extends IQResultListener implements PacketListener {
 						.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
 						fileName, true, this);
 				xmppClient.sendPacket(reply);
-				if (sessionOpened) this.sendFile();
-				else
-					this.encodedData = new String(Base64.encode(this.fileData));
+//				if (sessionOpened) this.sendFile();
+//				else
+//					this.encodedData = new String(Base64.encode(this.fileData));
+				this.encodedData = new String(Base64.encode(this.fileData));
+				this.sendFile();
 				// this iq must have arrived and the packet received below
-				sessionOpened = true;
+//				sessionOpened = true;
 				FT_STATE = FT_SENDING;
 				break;
 
@@ -451,6 +470,5 @@ public class FTSender extends IQResultListener implements PacketListener {
 				FT_STATE = FT_RESET;
 				break;
 		}
-
 	}
 }

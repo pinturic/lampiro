@@ -18,7 +18,8 @@ public class UIServices extends UIContactGroup {
 		updateColors();
 	}
 
-	public static UIContactGroup getGroup(UIAccordion accordion, boolean allocate) {
+	public static UIContactGroup getGroup(UIAccordion accordion,
+			boolean allocate) {
 		return (UIContactGroup) UIGroup.getGroup(rm
 				.getString(ResourceIDs.STR_SERVICES), accordion, allocate);
 	}
@@ -37,5 +38,47 @@ public class UIServices extends UIContactGroup {
 		rs.setFreezed(false);
 		askRepaint();
 		return superMenu;
+	}
+
+	public boolean updateContact(Contact c, int reason) {
+		boolean needRepaint = false;
+		UIContact uic = (UIContact) this.contacts.get(c);
+		RosterScreen rs = RosterScreen.getInstance();
+		// used to know if need rePaint
+		int oldAccordionSize = accordion.getPanelSize(this);
+		boolean needReinsert = (uic == null);
+
+		if (uic != null || c.isVisible() || rs.isShow_offlines()) {
+			// reinsert if it is visible
+			if (showUIContact(c)) {
+				if (needReinsert) {
+					uic = UIContactGroup.createUIContact(c);
+					this.contacts.put(c, uic);
+					needRepaint = true;
+					accordion.insertPanelItem(this, uic, 0);
+				}
+				needRepaint |= uic.updateContactData();
+			}
+		}
+
+		if (showUIContact(c) == false) {
+			// if the contact is not visible remove it
+			if (uic != null) {
+				accordion.removePanelItem(this, uic);
+				needRepaint = true;
+			}
+			this.contacts.remove(c);
+		}
+
+		if (rs.isFiltering() == false
+				&& rs.getAccordion() == rs.searchAccordion) needRepaint |= rs
+				.filterContacts(true);
+		int newAccordionSize = accordion.getPanelSize(this);
+		if (newAccordionSize == 0) {
+			accordion.removeItem(this);
+			uiGroups.remove(this.getText());
+			if (oldAccordionSize != 0) needRepaint = true;
+		}
+		return needRepaint;
 	}
 }
