@@ -1,9 +1,14 @@
 package it.yup.xmpp;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Vector;
 
 import org.bouncycastle.util.encoders.Base64;
 
+
+
+import it.yup.util.Logger;
 import it.yup.util.Utils;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Presence;
@@ -133,7 +138,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 	/*
 	 * the chunk length
 	 */
-	private int chuck_length = 4096;
+	private int chunk_length = 4096;
 
 	/*
 	 * The receiver of the file
@@ -245,7 +250,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 				.addText(this.desc);
 		Element transport = content.addElement(XMPPClient.JINGLE_IBB_TRANSPORT,
 				TRANSPORT);
-		transport.setAttribute(FTSender.BLOCK_SIZE, this.chuck_length + "");
+		transport.setAttribute(FTSender.BLOCK_SIZE, this.chunk_length + "");
 		encodedSid = Utils.hexDigest((System.currentTimeMillis() + 1) + "",
 				"sha1");
 		transportSid = new String(encodedSid);
@@ -294,7 +299,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 	}
 
 	private int fileOffset = 0;
-	private String encodedData = "";
+	//private String encodedData = "";
 	private int seq = 0;
 
 	private void sendFile() {
@@ -310,27 +315,21 @@ public class FTSender extends IQResultListener implements PacketListener {
 		seq++;
 		if (seq == 65536) seq = 0;
 		int endIndex = Math
-				.min(fileOffset + chuck_length, encodedData.length());
-		String substr = this.encodedData.substring(fileOffset, endIndex);
-		fileOffset += chuck_length;
-		data.addText(substr);
+				.min(fileOffset + chunk_length, fileData.length);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		try {
+			Base64.encode(this.fileData,fileOffset,endIndex-fileOffset,baos);
+		} catch (IOException e) {
+			// #mdebug 
+//@			Logger.log("error in sending file");
+//@			e.printStackTrace();
+			// #enddebug
+		}
+		String encodedData = new String(baos.toByteArray());
+		fileOffset += chunk_length;
+		data.addText(encodedData);
 		xmppClient.sendIQ(chunkIq, this);
-		eh.chunkSent(fileOffset + chuck_length, encodedData.length(), this);
-	}
-
-	private void setFooterListener() {
-		//		Iq closeInteraction = new Iq(this.to, Iq.T_SET);
-		//		Element close = closeInteraction.addElement(XMPPClient.NS_IBB, CLOSE);
-		//		close.setAttribute(SID, transportSid);
-
-		EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM,
-				Iq.ATT_TYPE }, new String[] { this.to, Iq.T_SET });
-		eq.child = new EventQuery(FTSender.JINGLE, new String[] {
-				XMPPClient.ACTION, "xmlns" }, new String[] {
-				FTSender.SESSION_TERMINATE, XMPPClient.JINGLE });
-		BasicXmlStream.addOnetimeEventListener(eq, this);
-
-		//		xmppClient.sendIQ(closeInteraction, this);
+		eh.chunkSent(fileOffset, fileData.length, this);
 	}
 
 	/**
@@ -416,12 +415,26 @@ public class FTSender extends IQResultListener implements PacketListener {
 				//					this.sendFooter();
 				//				}
 				FT_STATE = FT_SENDING;
-				if (fileOffset + chuck_length >= encodedData.length()) {
-					FT_STATE = FT_WAITING_CLOSE;
-					this.setFooterListener();
+				if (fileOffset< fileData.length) {
+					this.sendChunk();
 				}
-				this.sendChunk();
-
+				else
+				{
+					Iq closeSession = new Iq(e.getAttribute(Iq.ATT_FROM),
+							Iq.T_SET);
+					Element jingleClose = closeSession.addElement(
+							XMPPClient.JINGLE, FTSender.JINGLE);
+					jingleClose.setAttribute(XMPPClient.ACTION,
+							FTSender.SESSION_TERMINATE);
+					jingleClose.setAttribute(FTSender.SID, jingleSid);
+					jingleClose.addElement(null, "reason").addElement(null,
+							"success");
+					xmppClient.sendPacket(closeSession);
+					eh.fileSent(XMPPClient.getInstance().getRoster()
+							.getContactByJid(e.getAttribute(Iq.ATT_FROM)),
+							fileName, true, this);
+					FT_STATE = FT_RESET;
+				}
 				break;
 
 			case FT_WAITING_CLOSE:
@@ -453,7 +466,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 //				if (sessionOpened) this.sendFile();
 //				else
 //					this.encodedData = new String(Base64.encode(this.fileData));
-				this.encodedData = new String(Base64.encode(this.fileData));
+				//this.encodedData = new String(Base64.encode(this.fileData));
 				this.sendFile();
 				// this iq must have arrived and the packet received below
 //				sessionOpened = true;

@@ -42,7 +42,7 @@ public class Config {
 		"http://lampiro.bluendo.com "
 	;
 
-	private static String version = "10.2";
+	private static String version = "10.2.1";
 
 	public static String lang =
 	// #if LANG = "en"

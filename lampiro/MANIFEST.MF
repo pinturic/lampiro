@@ -5,7 +5,7 @@ Built-By: luca
 MIDlet-1: Lampiro,/icons/lampiro_icon.png,lampiro.LampiroMidlet
 MIDlet-Name: Lampiro
 MIDlet-Vendor: Bluendo
-MIDlet-Version: 10.2
+MIDlet-Version: 10.2.1
 MIDlet-Icon: /icons/lampiro_icon.png
 Lampiro-BOSH-Host: bosh.bluendo.com
 Lampiro-BOSH-Path: /httpb
