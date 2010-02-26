@@ -3,8 +3,13 @@
 
 When updates are available this page will describe the improvements or additions with respect to the previous version
 
+Lampiro 10.2.1:
 
-= Details =
+
+ * *Fixed*:     Compatibility issues in file transfer
+ * *Fixed*:     A bug in compression of large streams
+
+
 
 Lampiro 10.2:
 
