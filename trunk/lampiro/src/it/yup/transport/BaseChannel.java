@@ -1,7 +1,7 @@
 /* Copyright (c) 2008 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BaseChannel.java 1907 2009-11-12 17:11:10Z luca $
+ * $Id: BaseChannel.java 1984 2010-02-24 14:14:55Z luca $
 */
 
 package it.yup.transport;
@@ -39,14 +39,14 @@ public abstract class BaseChannel {
 	/** The sender thread */
 	protected Sender sender = null;
 
-//	/*
-//	 * The number of sent bytes over the socket
-//	 */
-//	public static int bytes_sent = 0;
-//	/*
-//	 * The number of received bytes over the socket
-//	 */
-//	public static int bytes_received = 0;
+	//	/*
+	//	 * The number of sent bytes over the socket
+	//	 */
+	//	public static int bytes_sent = 0;
+	//	/*
+	//	 * The number of received bytes over the socket
+	//	 */
+	//	public static int bytes_received = 0;
 
 	/*
 	 * A flag used to enable or disable compression
@@ -113,13 +113,15 @@ public abstract class BaseChannel {
 					// #debug
 //@					Logger.log("[SEND] " + new String(pkt));
 
-					// #ifndef BXMPP					
+					// #ifndef BXMPP
 					channel.outputStream.write(pkt);
 					channel.outputStream.flush();
 					// #endif
 				} catch (Exception e) {
-					// #debug
-//@					Logger.log("[SEND] IOException:" + e.getMessage());
+					// #mdebug
+//@					Logger.log("[SEND] IOException: " + new String(pkt));
+//@					e.printStackTrace();
+					// #enddebug
 					try {
 						close();
 					} catch (Exception e1) {

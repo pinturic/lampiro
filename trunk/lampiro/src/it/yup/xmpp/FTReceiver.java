@@ -1,5 +1,7 @@
 package it.yup.xmpp;
 
+import java.io.ByteArrayOutputStream;
+
 import org.bouncycastle.util.encoders.Base64;
 
 //#mdebug
@@ -45,8 +47,8 @@ public class FTReceiver implements PacketListener {
 
 		private int block_size = 4096;
 		//private StringBuffer encodedData= new StringBuffer(block_size);
-		private StringBuffer encodedData = new StringBuffer();
 		private byte[] decodedData;
+		private int offset = 0;
 
 		private EventQueryRegistration dataListenerEq;
 
@@ -76,53 +78,79 @@ public class FTReceiver implements PacketListener {
 		}
 
 		public void packetReceived(Element e) {
+			Iq replIq = Utils.easyReply(e);
+			xmppClient.sendPacket(replIq);
+			
+			Element child = e.getChildByName(null, FTSender.JINGLE);
+			if (child != null) {
+				handleClose(e);
+				return;
+			}
 
-			//this.encodedData.setLength(fileSize*2);
-
-			Element child = e.getChildByName(null, XMPPClient.DATA);
+			child = e.getChildByName(null, XMPPClient.DATA);
 			if (child != null) {
 				handleData(e);
 				return;
 			}
 
-//			child = e.getChildByName(null, FTSender.CLOSE);
-//			if (child != null) {
-//				handleClose(e);
-//				return;
-//			}
+			//			child = e.getChildByName(null, FTSender.CLOSE);
+			//			if (child != null) {
+			//				handleClose(e);
+			//				return;
+			//			}
 
-//			child = e.getChildByName(null, FTSender.OPEN);
-//			if (child != null) {
-//				handleOpen(e);
-//				return;
-//			}
+			//			child = e.getChildByName(null, FTSender.OPEN);
+			//			if (child != null) {
+			//				handleOpen(e);
+			//				return;
+			//			}
 		}
 
-//		private void handleOpen(Element e) {
-//			EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM,
-//					Iq.ATT_TYPE }, new String[] { e.getAttribute(Iq.ATT_FROM),
-//					Iq.T_SET });
-//			Element openElement = e.getChildByName(null, FTSender.OPEN);
-//			eq.child = new EventQuery(XMPPClient.DATA, new String[] {
-//					FTSender.SID, "xmlns" }, new String[] {
-//					openElement.getAttribute(FTSender.SID), XMPPClient.NS_IBB });
-//			this.dataListenerEq = BasicXmlStream.addEventListener(eq, this);
-//
-//			eq = new EventQuery(Iq.IQ,
-//					new String[] { Iq.ATT_FROM, Iq.ATT_TYPE }, new String[] {
-//							e.getAttribute(Iq.ATT_FROM), Iq.T_SET });
-//			eq.child = new EventQuery(FTSender.CLOSE, new String[] {
-//					FTSender.SID, "xmlns" }, new String[] {
-//					openElement.getAttribute(FTSender.SID), XMPPClient.NS_IBB });
-//			BasicXmlStream.addOnetimeEventListener(eq, this);
-//
-//			block_size = Integer.parseInt(openElement
-//					.getAttribute(FTSender.BLOCK_SIZE));
-//
-//			Stanza reply = new Iq(e.getAttribute(Iq.ATT_FROM), Iq.T_RESULT);
-//			reply.setAttribute(Iq.ATT_ID, e.getAttribute(Iq.ATT_ID));
-//			xmppClient.sendPacket(reply);
-//		}
+		//		private void handleOpen(Element e) {
+		//			EventQuery eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM,
+		//					Iq.ATT_TYPE }, new String[] { e.getAttribute(Iq.ATT_FROM),
+		//					Iq.T_SET });
+		//			Element openElement = e.getChildByName(null, FTSender.OPEN);
+		//			eq.child = new EventQuery(XMPPClient.DATA, new String[] {
+		//					FTSender.SID, "xmlns" }, new String[] {
+		//					openElement.getAttribute(FTSender.SID), XMPPClient.NS_IBB });
+		//			this.dataListenerEq = BasicXmlStream.addEventListener(eq, this);
+		//
+		//			eq = new EventQuery(Iq.IQ,
+		//					new String[] { Iq.ATT_FROM, Iq.ATT_TYPE }, new String[] {
+		//							e.getAttribute(Iq.ATT_FROM), Iq.T_SET });
+		//			eq.child = new EventQuery(FTSender.CLOSE, new String[] {
+		//					FTSender.SID, "xmlns" }, new String[] {
+		//					openElement.getAttribute(FTSender.SID), XMPPClient.NS_IBB });
+		//			BasicXmlStream.addOnetimeEventListener(eq, this);
+		//
+		//			block_size = Integer.parseInt(openElement
+		//					.getAttribute(FTSender.BLOCK_SIZE));
+		//
+		//			Stanza reply = new Iq(e.getAttribute(Iq.ATT_FROM), Iq.T_RESULT);
+		//			reply.setAttribute(Iq.ATT_ID, e.getAttribute(Iq.ATT_ID));
+		//			xmppClient.sendPacket(reply);
+		//		}
+
+		private void handleClose(Element e) {
+			try {
+				// when finishing file transfer 
+				// the registration is removed by myself
+				BasicXmlStream.removeEventListener(dataListenerEq);
+				// #mdebug 
+//@				Logger.log("File received kb: " + decodedData.length);
+//@				// System.out.println(decString);
+				// #enddebug
+				eh.dataReceived(decodedData, fileName, fileDesc,
+						OpenListener.this);
+			} catch (Exception ex) {
+				// #mdebug
+//@				ex.printStackTrace();
+//@				Logger.log("In closing session" + ex.getClass().getName()
+//@						+ "\n" + ex.getMessage());
+				// #enddebug
+			}
+		}
 
 		/**
 		 * @param e
@@ -131,46 +159,13 @@ public class FTReceiver implements PacketListener {
 			try {
 				String chunkData = e.getChildByName(null, XMPPClient.DATA)
 						.getText();
-				Iq replIq = new Iq(e.getAttribute(Iq.ATT_FROM), Iq.T_RESULT);
-				replIq.setAttribute(Iq.ATT_ID, e.getAttribute(Iq.ATT_ID));
-				xmppClient.sendPacket(replIq);
-				encodedData.append(chunkData);
-				// the data is base64 encoded 
-				eh.chunkReceived((encodedData.length() * 3) / 4, fileSize,
-						OpenListener.this);
-				
-				// finished receiving 
-				if ((encodedData.length() * 3) / 4 >=fileSize){
-					try {
-						// when finishing file transfer 
-						// the registration is removed by myself
-						BasicXmlStream.removeEventListener(dataListenerEq);
-						Iq closeSession = new Iq(e.getAttribute(Iq.ATT_FROM), Iq.T_SET);
-						Element jingleClose = closeSession.addElement(
-								XMPPClient.JINGLE, FTSender.JINGLE);
-						jingleClose.setAttribute(XMPPClient.ACTION,
-								FTSender.SESSION_TERMINATE);
-						jingleClose.setAttribute(FTSender.SID, e_jingle.getChildByName(
-								null, FTSender.JINGLE).getAttribute(FTSender.SID));
-						jingleClose.addElement(null, "reason").addElement(null,
-								"success");
-						xmppClient.sendPacket(closeSession);
-						String decString = encodedData.toString();
-						decodedData = Base64.decode(decString);
-						// #mdebug 
-//@						Logger.log("File received kb: " + decodedData.length);
-//@						// System.out.println(decString);
-						// #enddebug
-						eh.dataReceived(decodedData, fileName, fileDesc,
-								OpenListener.this);
-					} catch (Exception ex) {
-						// #mdebug
-//@						ex.printStackTrace();
-//@						Logger.log("In closing session" + ex.getClass().getName()
-//@								+ "\n" + ex.getMessage());
-						// #enddebug
-					}
-				}
+				byte tempData[] = Base64.decode(chunkData);
+				System.arraycopy(tempData, 0, decodedData, offset,
+						tempData.length);
+				// the data is base64 encoded
+				offset += tempData.length;
+				eh.chunkReceived(offset, fileSize, OpenListener.this);
+
 			} catch (Exception ex) {
 				// #mdebug
 //@				ex.printStackTrace();
@@ -180,40 +175,40 @@ public class FTReceiver implements PacketListener {
 			}
 		}
 
-//		/**
-//		 * @param e
-//		 */
-//		private void handleClose(Element e) {
-//			try {
-//				BasicXmlStream.removeEventListener(dataListenerEq);
-//				Iq reply = Utils.easyReply(e);
-//				xmppClient.sendPacket(reply);
-//				Iq closeSession = new Iq(e.getAttribute(Iq.ATT_FROM), Iq.T_SET);
-//				Element jingleClose = closeSession.addElement(
-//						XMPPClient.JINGLE, FTSender.JINGLE);
-//				jingleClose.setAttribute(XMPPClient.ACTION,
-//						FTSender.SESSION_TERMINATE);
-//				jingleClose.setAttribute(FTSender.SID, e_jingle.getChildByName(
-//						null, FTSender.JINGLE).getAttribute(FTSender.SID));
-//				jingleClose.addElement(null, "reason").addElement(null,
-//						"success");
-//				xmppClient.sendPacket(closeSession);
-//				String decString = encodedData.toString();
-//				decodedData = Base64.decode(decString);
-//				// #mdebug 
-//				Logger.log("File received kb: " + decodedData.length);
-//				// System.out.println(decString);
-//				// #enddebug
-//				eh.dataReceived(decodedData, fileName, fileDesc,
-//						OpenListener.this);
-//			} catch (Exception ex) {
-//				// #mdebug
-//				ex.printStackTrace();
-//				Logger.log("In closing session" + ex.getClass().getName()
-//						+ "\n" + ex.getMessage());
-//				// #enddebug
-//			}
-//		}
+		//		/**
+		//		 * @param e
+		//		 */
+		//		private void handleClose(Element e) {
+		//			try {
+		//				BasicXmlStream.removeEventListener(dataListenerEq);
+		//				Iq reply = Utils.easyReply(e);
+		//				xmppClient.sendPacket(reply);
+		//				Iq closeSession = new Iq(e.getAttribute(Iq.ATT_FROM), Iq.T_SET);
+		//				Element jingleClose = closeSession.addElement(
+		//						XMPPClient.JINGLE, FTSender.JINGLE);
+		//				jingleClose.setAttribute(XMPPClient.ACTION,
+		//						FTSender.SESSION_TERMINATE);
+		//				jingleClose.setAttribute(FTSender.SID, e_jingle.getChildByName(
+		//						null, FTSender.JINGLE).getAttribute(FTSender.SID));
+		//				jingleClose.addElement(null, "reason").addElement(null,
+		//						"success");
+		//				xmppClient.sendPacket(closeSession);
+		//				String decString = encodedData.toString();
+		//				decodedData = Base64.decode(decString);
+		//				// #mdebug 
+		//				Logger.log("File received kb: " + decodedData.length);
+		//				// System.out.println(decString);
+		//				// #enddebug
+		//				eh.dataReceived(decodedData, fileName, fileDesc,
+		//						OpenListener.this);
+		//			} catch (Exception ex) {
+		//				// #mdebug
+		//				ex.printStackTrace();
+		//				Logger.log("In closing session" + ex.getClass().getName()
+		//						+ "\n" + ex.getMessage());
+		//				// #enddebug
+		//			}
+		//		}
 
 		private void acceptSession() {
 
@@ -247,6 +242,7 @@ public class FTReceiver implements PacketListener {
 				FTSender.DESCRIPTION, FTSender.OFFER, FTSender.FILE });
 
 		ftrp.fileSize = Integer.parseInt(fileNode.getAttribute(FTSender.SIZE));
+		ftrp.decodedData = new byte[ftrp.fileSize];
 		ftrp.fileName = fileNode.getAttribute(FTSender.NAME);
 		Element desc = fileNode.getChildByName(null, FTSender.DESC);
 		if (desc != null) ftrp.fileDesc = desc.getText();
@@ -262,7 +258,7 @@ public class FTReceiver implements PacketListener {
 
 		int block_size = Integer.parseInt(transport
 				.getAttribute(FTSender.BLOCK_SIZE));
-		
+
 		ftrp.block_size = block_size;
 
 		eq.child = new EventQuery(XMPPClient.DATA,
@@ -270,7 +266,14 @@ public class FTReceiver implements PacketListener {
 						.getAttribute(FTSender.SID) });
 		EventQueryRegistration eqr = BasicXmlStream.addEventListener(eq, ftrp);
 		ftrp.dataListenerEq = eqr;
-		
+
+		eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM, Iq.ATT_TYPE },
+				new String[] { e.getAttribute(Iq.ATT_FROM), Iq.T_SET });
+		eq.child = new EventQuery(FTSender.JINGLE, new String[] {
+				XMPPClient.ACTION, "xmlns" }, new String[] {
+				FTSender.SESSION_TERMINATE, XMPPClient.JINGLE });
+		BasicXmlStream.addOnetimeEventListener(eq, ftrp);
+
 		// file transfer acceptance
 		eh.reqFT(e.getAttribute(Iq.ATT_FROM), ftrp);
 	}
