@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: TestMidlet.java 1305 2009-03-20 16:02:30Z luca $
+ * $Id: TestMidlet.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.tests;

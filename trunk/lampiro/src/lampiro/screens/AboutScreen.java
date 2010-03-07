@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AboutScreen.java 1552 2009-05-28 14:46:49Z luca $
+ * $Id: AboutScreen.java 2004 2010-03-06 19:23:40Z luca $
 */
 
 package lampiro.screens;
@@ -25,8 +25,10 @@ public class AboutScreen extends UIScreen {
 			"Mobile Messaging",
 			"",
 // #ifndef GLIDER
-					"(c) 2007-2009 Bluendo srl",
-					"http://www.bluendo.com",
+			"(c) 2007-2010 Bluendo srl",
+			"http://www.bluendo.com",
+			"Source code is available at",
+			"http://code.google.com/p/lampiro/",
 			// #endif
 			"",
 			Config.getInstance().getProperty(Config.VERSION),
@@ -40,7 +42,7 @@ public class AboutScreen extends UIScreen {
 		setTitle("ABOUT");
 		try {
 // #ifndef GLIDER
-						logo = Image.createImage("/icons/lampiro_icon.png");
+			logo = Image.createImage("/icons/lampiro_icon.png");
 			// #endif
 		} catch (Exception ex) {
 		}

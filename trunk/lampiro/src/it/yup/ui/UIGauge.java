@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIGauge.java 1897 2009-11-05 09:19:30Z luca $
+ * $Id: UIGauge.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**

@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataForm.java 1890 2009-11-03 09:47:59Z luca $
+ * $Id: DataForm.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**
@@ -13,7 +13,6 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import it.yup.xml.Element;
-import it.yup.xmpp.Config;
 import it.yup.xmpp.XMPPClient;
 
 /**
@@ -223,38 +222,6 @@ public class DataForm {
 		}
 
 		return el;
-	}
-
-	/**
-	 * A media data type
-	 */
-	public class Media {
-		public Object[] urisTypes;
-		public int width = -1;
-		public int height = -1;
-
-		public Media(Element f) {
-			Element[] uriEls = f.getChildrenByName(null, XMPPClient.URI);
-			urisTypes = new Object[uriEls.length];
-			String tempWidth = f.getAttribute("width");
-			String tempHeight = f.getAttribute("height");
-			if (tempWidth != null && tempHeight != null) {
-				this.width = Integer.parseInt(tempWidth);
-				this.height = Integer.parseInt(tempHeight);
-			}
-			for (int i = 0; i < uriEls.length; i++) {
-				Element uriEl = uriEls[i];
-				String type = uriEl.getAttribute(Stanza.ATT_TYPE);
-				String uri = uriEl.getText();
-				int mediaType;
-				if (type.indexOf("audio") == 0) mediaType = Config.AUDIO_TYPE;
-				else if (type.indexOf("video") == 0) mediaType = Config.VIDEO_TYPE;
-				else if (type.indexOf("image") == 0) mediaType = Config.IMG_TYPE;
-				else
-					mediaType = Config.IMG_TYPE;
-				urisTypes[i] = new Object[] { uri, new Integer(mediaType) };
-			}
-		}
 	}
 
 	/**

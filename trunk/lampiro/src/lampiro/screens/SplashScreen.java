@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 1954 2010-01-15 15:14:09Z luca $
+ * $Id: SplashScreen.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package lampiro.screens;
@@ -16,7 +16,11 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 import it.yup.ui.UIVLayout;
-import it.yup.util.Logger;
+//#mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+//#enddebug
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;

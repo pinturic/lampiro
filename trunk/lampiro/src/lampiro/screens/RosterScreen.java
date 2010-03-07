@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 1975 2010-02-08 15:56:20Z luca $
+ * $Id: RosterScreen.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package lampiro.screens;
@@ -751,7 +751,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 			Iq iq = new Iq(ithJid, Iq.T_GET);
 			iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-			xmppClient.sendIQ(iq, de);
+			xmppClient.sendIQ(iq, de,240000);
 		}
 
 		public DiscoExplorer(int type, final String serverAddress,
@@ -1432,7 +1432,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		} else if (c == UIContactGroup.chgGroupName) {
 			UIContactGroup group = getSelectedUIGroup();
 			if (group == null) return;
-			ChgGrooupNameScreen scr = new ChgGrooupNameScreen(group);
+			ChgGroupNameScreen scr = new ChgGroupNameScreen(group);
 			UICanvas.getInstance().open(scr, true, this);
 			this.removePopup(UIContact.optionsMenu);
 		} else if (c == gateways_discovery) {
@@ -1701,13 +1701,13 @@ public class RosterScreen extends UIScreen implements PacketListener,
 	/*
 	 * Query the server for the instant  messaging transports
 	 */
-	void queryDiscoItems(String serverAddress, int[] queriedGateways) {
+	void queryDiscoItems(String serverAddress, int[] queriedGateways, int duration) {
 		DiscoExplorer de = new DiscoExplorer(DiscoExplorer.ITEMS,
 				serverAddress, queriedGateways);
 
 		Iq iq = new Iq(serverAddress, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
-		xmppClient.sendIQ(iq, de);
+		xmppClient.sendIQ(iq, de,duration);
 	}
 
 	private void addGateway(Hashtable gws, String name, String from,
@@ -2900,7 +2900,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 	// Update the data pertaining the contact
 	// and decides if showing a screen is needed
-	void _handleTask(Object obj) {
+	public void _handleTask(Object obj) {
 		Task task = null;
 		task = (Task) obj;
 		Contact user = xmppClient.getRoster().getContactByJid(task.getFrom());
@@ -3006,6 +3006,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 				int index = 0;
 				while (en2.hasMoreElements()) {
 					if (Utils.compareTo((Contact) en2.nextElement(), c)) index++;
+					else
+						break;
 				}
 				tempOrderedContacts.insertElementAt(c, index);
 			}
@@ -3028,9 +3030,9 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			}
 		}
 		String localServer = Contact.domain(xmppClient.my_jid);
-		queryDiscoItems(localServer, new int[] { 0 });
+		queryDiscoItems(localServer, new int[] { 0 },240000);
 		if (localServer.equals(Config.DEFAULT_SERVER) == false) {
-			queryDiscoItems(Config.DEFAULT_SERVER, new int[] { 0 });
+			queryDiscoItems(Config.DEFAULT_SERVER, new int[] { 0 },240000);
 		}
 		// #ifdef TEST_COMPONENTS
 		//@		// // to test the test component

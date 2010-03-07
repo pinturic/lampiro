@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIVLayout.java 1639 2009-08-05 21:29:12Z luca $
+ * $Id: UIVLayout.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**

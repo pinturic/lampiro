@@ -583,10 +583,10 @@ public class Element {
 
 // the old code of Element (kept only a bit as a reference!!!)
 
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Element.java 1769 2009-09-16 07:27:11Z luca $
+ * $Id: Element.java 2002 2010-03-06 19:02:12Z luca $
 */
 //
 //package it.yup.xml;

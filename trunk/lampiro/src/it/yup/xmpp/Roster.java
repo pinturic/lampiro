@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 1975 2010-02-08 15:56:20Z luca $
+ * $Id: Roster.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.xmpp;
@@ -386,7 +386,7 @@ public class Roster implements PacketListener {
 		RosterIqListener rosterListener = new RosterIqListener(
 				RosterIqListener.ROSTER);
 		rosterListener.go_online = go_online;
-		client.sendIQ(iq_roster, rosterListener);
+		client.sendIQ(iq_roster, rosterListener,240000);
 	}
 
 	public void retrieveBookmarks() {
@@ -397,7 +397,7 @@ public class Roster implements PacketListener {
 		query.addElement(XMPPClient.NS_STORAGE_LAMPIRO, XMPPClient.STORAGE);
 		IQResultListener bookmarkListener = new RosterIqListener(
 				RosterIqListener.BOOKMARK);
-		client.sendIQ(iq_bookMarks, bookmarkListener);
+		client.sendIQ(iq_bookMarks, bookmarkListener,240000);
 	}
 
 	/**
@@ -686,7 +686,7 @@ public class Roster implements PacketListener {
 
 		Iq iq = new Iq(c.jid, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-		XMPPClient.getInstance().sendIQ(iq, gw);
+		XMPPClient.getInstance().sendIQ(iq, gw,240000);
 	}
 
 	public Contact getContactByJid(String jid) {
@@ -804,7 +804,7 @@ public class Roster implements PacketListener {
 		if (serverStorage == true) {
 			Iq iq = new Iq(null, Iq.T_SET);
 			iq.addElement(privateStorage);
-			XMPPClient.getInstance().sendIQ(iq, null);
+			XMPPClient.getInstance().sendIQ(iq, null,240000);
 		}
 
 	}

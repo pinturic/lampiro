@@ -1,6 +1,9 @@
-/**
- * 
- */
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
+ * See about.html for details about license.
+ *
+ * $Id: ChgGroupNameScreen.java 1858 2009-10-16 22:42:29Z luca $
+*/
+
 package lampiro.screens;
 
 import java.util.Enumeration;
@@ -30,7 +33,7 @@ import it.yup.xmpp.packets.Iq;
  * @author luca
  *
  */
-public class ChgGrooupNameScreen extends UIScreen {
+public class ChgGroupNameScreen extends UIScreen {
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -47,7 +50,7 @@ public class ChgGrooupNameScreen extends UIScreen {
 	 * @param group 
 	 * 
 	 */
-	public ChgGrooupNameScreen(UIContactGroup group) {
+	public ChgGroupNameScreen(UIContactGroup group) {
 		super();
 		this.setTitle(rm.getString(ResourceIDs.STR_CHG_GROUP_NAME));
 		groupPanel.setMaxHeight(-1);

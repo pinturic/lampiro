@@ -1,6 +1,9 @@
-/**
- * 
- */
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
+ * See about.html for details about license.
+ *
+ * $Id: IqManager.java 1858 2009-10-16 22:42:29Z luca $
+*/
+
 package it.yup.xmpp;
 
 import it.yup.xml.Element;
@@ -28,8 +31,8 @@ class IqManager extends IQResultListener {
 	}
 
 	private Hashtable iqs = new Hashtable();
-	
-	public void streamInitialized(){
+
+	public void streamInitialized() {
 		// prepare the Iq listener
 		EventQuery eq = new EventQuery("iq", new String[] { "type" },
 				new String[] { Iq.T_ERROR });
@@ -78,8 +81,8 @@ class IqManager extends IQResultListener {
 			while (en.hasMoreElements()) {
 				Object key = (Object) en.nextElement();
 				IQResultListener listener = (IQResultListener) iqs.get(key);
-				if (listener.registerTime + Config.MAX_PERM_TIME < System
-						.currentTimeMillis()) keysToRemove.addElement(key);
+				if (listener.expireTime < System.currentTimeMillis()) keysToRemove
+						.addElement(key);
 			}
 			en = keysToRemove.elements();
 			while (en.hasMoreElements()) {
@@ -92,9 +95,17 @@ class IqManager extends IQResultListener {
 		}
 	}
 
-	public void addRegistration(Iq iq, IQResultListener listener) {
+	/**
+	 * Adds the registration.
+	 * 
+	 * @param iq the iq
+	 * @param listener the listener
+	 * @param duration the duration before expire in milliseconds
+	 */
+	public void addRegistration(Iq iq, IQResultListener listener, int duration) {
 		synchronized (iqs) {
-			listener.registerTime = System.currentTimeMillis();
+			if (duration < 0) duration = Config.MAX_PERM_TIME;
+			listener.expireTime = System.currentTimeMillis() + duration;
 			iqs.put(iq.getAttribute(Iq.ATT_ID), listener);
 			// #mdebug
 //@			System.out.println("IQM Added: " + iq.getAttribute(Iq.ATT_ID));

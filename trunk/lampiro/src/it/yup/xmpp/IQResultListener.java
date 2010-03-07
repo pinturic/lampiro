@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: IQResultListener.java 1317 2009-03-26 10:08:43Z luca $
+ * $Id: IQResultListener.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.xmpp;
@@ -13,7 +13,7 @@ import it.yup.xmpp.packets.Stanza;
 
 public abstract class IQResultListener implements PacketListener {
 
-	public long registerTime=-1;
+	public long expireTime=-1;
 
 	public void packetReceived(Element e) {
 		String type = e.getAttribute(Stanza.ATT_TYPE);

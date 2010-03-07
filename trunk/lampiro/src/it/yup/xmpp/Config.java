@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 1954 2010-01-15 15:14:09Z luca $
+ * $Id: Config.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.xmpp;
@@ -13,10 +13,10 @@ package it.yup.xmpp;
 // #enddebug
 
 import it.yup.util.RMSIndex;
+import it.yup.util.Utils;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
 import it.yup.xmpp.packets.Presence;
-import it.yup.util.Utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -34,15 +34,11 @@ import javax.microedition.rms.RecordStore;
  */
 public class Config {
 
-	public static String CLIENT_NAME =
-		"Lampiro"
-	;
+	public static String CLIENT_NAME = "Lampiro";
 
-	public static String CLIENT_ADDRESS =
-		"http://lampiro.bluendo.com "
-	;
+	public static String CLIENT_ADDRESS = "http://lampiro.bluendo.com ";
 
-	private static String version = "10.2.1";
+	private static String version = "10.3";
 
 	public static String lang =
 	// #if LANG = "en"
@@ -57,8 +53,6 @@ public class Config {
 	//@	 lang = "en"
 	// #endif
 	;
-
-
 
 	public static final String RMS_NAME = CLIENT_NAME + "rms";
 
@@ -88,11 +82,9 @@ public class Config {
 	public static final String HTTP_GW_PATH = "/httpb";
 
 	/** path of the GPRS/HTTP gateway */
-	public static final String SRV_QUERY_PATH =
-		"http://services.bluendo.com/srv/?domain=";
+	public static final String SRV_QUERY_PATH = "http://services.bluendo.com/srv/?domain=";
 
-	public static final String DEFAULT_SERVER =
-		"jabber.bluendo.com";
+	public static final String DEFAULT_SERVER = "jabber.bluendo.com";
 
 	/**
 	 * time the server should wait before sending a response if no data is
@@ -103,7 +95,7 @@ public class Config {
 	/**
 	 * The time after which iq answer not arrived are considered as expired and remov ed
 	 */
-	public static int MAX_PERM_TIME = 60000;
+	public static int MAX_PERM_TIME = 120000;
 
 	// /** default value keepalive of the plain socket */
 	// XXX We may keep this but the transport should not read it from Config
@@ -119,7 +111,6 @@ public class Config {
 	public static String CONFIG = "config";
 
 	public static String VCARDS = "vcards";
-
 
 	/*
 	 * The db of all the known capabilities
@@ -184,8 +175,6 @@ public class Config {
 	public static short YUP_RESOURCE = 0x0021;
 	/** Has a qwerty keyboard */
 	public static short QWERTY = 0x0022;
-
-
 
 	/**
 	 * Using bit masks
@@ -252,9 +241,7 @@ public class Config {
 	public static final short CAMERA_RESOLUTION = 0x0026;
 
 	/** the bluendo assistent */
-	public static final String LAMPIRO_AGENT =
-		"lampiro@golem.jabber.bluendo.com";
-
+	public static final String LAMPIRO_AGENT = "lampiro@golem.jabber.bluendo.com";
 
 	/** maximum wait time for a packet (should we let configure this ) */
 	public static final int TIMEOUT = -1;
@@ -337,9 +324,9 @@ public class Config {
 						}
 					} catch (Exception e) {
 						// #mdebug
-//@						e.printStackTrace();
-//@						System.out.println("In config resetting"
-//@								+ e.getMessage() + e.getClass());
+						//@						e.printStackTrace();
+						//@						System.out.println("In config resetting"
+						//@								+ e.getMessage() + e.getClass());
 						// #enddebug
 					}
 				}
@@ -392,7 +379,7 @@ public class Config {
 		setDefault(Config.LAST_STATUS_MESSAGE, Config.CLIENT_NAME + " ("
 				+ Config.CLIENT_ADDRESS + ")");
 		setDefault(Config.LAST_PRESENCE_SHOW, Presence.SHOW_ONLINE);
-					setDefault(Config.COLOR, "0");
+		setDefault(Config.COLOR, "0");
 		saveToStorage();
 	}
 
@@ -455,9 +442,9 @@ public class Config {
 			this.rms.close();
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("Error in saving to storage: " + e.getMessage(),
-//@					Logger.DEBUG);
-//@
+			//@			Logger.log("Error in saving to storage: " + e.getMessage(),
+			//@					Logger.DEBUG);
+			//@
 			// #enddebug
 			XMPPClient.getInstance().showAlert(AlertType.ERROR,
 					Config.ALERT_DATA, Config.ALERT_DATA, e.getMessage());
@@ -523,8 +510,8 @@ public class Config {
 			}
 		} catch (IOException e) {
 			// #mdebug
-//@			Logger.log("Error in getting capabilities: received packet: "
-//@					+ e.getClass(), Logger.DEBUG);
+			//@			Logger.log("Error in getting capabilities: received packet: "
+			//@					+ e.getClass(), Logger.DEBUG);
 			// #enddebug
 			// reset the capabilities 
 			this.setData(KNOWN_CAPS.getBytes(), "".getBytes());
@@ -533,7 +520,7 @@ public class Config {
 		// save the new cap
 		String newCapKey = CAPS_PREFIX + capCount;
 		// #mdebug
-//@
+		//@
 		// #enddebug
 		byte[] newCapData = BProcessor.toBinary(query);
 		this.setData(newCapKey.getBytes(), newCapData);
@@ -548,8 +535,8 @@ public class Config {
 		} catch (IOException e) {
 			// should not ever appear
 			// #mdebug
-//@			Logger.log("Error in saving new capability" + e.getClass(),
-//@					Logger.DEBUG);
+			//@			Logger.log("Error in saving new capability" + e.getClass(),
+			//@					Logger.DEBUG);
 			// #enddebug
 		}
 		this.setData(KNOWN_CAPS.getBytes(), baos.toByteArray());
@@ -583,8 +570,8 @@ public class Config {
 			}
 		} catch (IOException e) {
 			// #mdebug
-//@			Logger.log("Error in getting capabilities: received packet: "
-//@					+ e.getClass(), Logger.DEBUG);
+			//@			Logger.log("Error in getting capabilities: received packet: "
+			//@					+ e.getClass(), Logger.DEBUG);
 			// #enddebug
 			return null;
 		}

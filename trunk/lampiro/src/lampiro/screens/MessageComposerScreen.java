@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MessageComposerScreen.java 1770 2009-09-16 20:40:01Z luca $
+ * $Id: MessageComposerScreen.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package lampiro.screens;
@@ -30,8 +30,8 @@ public class MessageComposerScreen extends UIScreen {
 	private Contact user = null;
     private int mtype;
 	protected UICombobox cg_type = new UICombobox("Type", false);
-	protected UITextField tf_subject = new UITextField("Subject", "", 100, TextField.ANY);
-	protected UITextField tf_body = new UITextField("Message", "", 1000, TextField.ANY);
+	public UITextField tf_subject = new UITextField("Subject", "", 100, TextField.ANY);
+	public UITextField tf_body = new UITextField("Message", "", 1000, TextField.ANY);
 	private UIButton btn_send = new UIButton("Send"); 
 	
 	protected UILabel cmd_send = new UILabel(rm.getString(ResourceIDs.STR_SEND).toUpperCase());

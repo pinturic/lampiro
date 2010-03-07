@@ -1,3 +1,8 @@
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
+ * See about.html for details about license.
+ *
+ * $Id: GatewayScreen.java 1858 2009-10-16 22:42:29Z luca $
+*/
 package lampiro.screens;
 
 import java.util.Enumeration;
@@ -117,11 +122,11 @@ public class GatewayScreen extends UIScreen {
 			rs.gateways.clear();
 			rs.gatewaysServer = this.txt_myServer.getText();
 			myServerGateways[0] = Integer.MAX_VALUE;
-			rs.queryDiscoItems(rs.gatewaysServer, myServerGateways);
+			rs.queryDiscoItems(rs.gatewaysServer, myServerGateways,60000);
 			// serverGateways could be null if not authenticated yet
 			String localServer = Config.DEFAULT_SERVER;
 			if (rs.gatewaysServer.equals(localServer) == false) {
-				rs.queryDiscoItems(localServer, defaultServerGateways);
+				rs.queryDiscoItems(localServer, defaultServerGateways,60000);
 			}
 			this.mainPanel.removeItem(refresh_container);
 			progressGauge = new UIGauge(rm.getString(ResourceIDs.STR_WAIT),

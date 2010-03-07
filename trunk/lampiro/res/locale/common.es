@@ -57,6 +57,7 @@
 57	Nombre
 58	Nickname
 59	¿Tiene ya una cuenta de Jabber (GTalk, jabber.org, ...)?
+60	Nuevo contacto
 61	Estado de transferencia de archivos
 62	Completo
 63	Procesando

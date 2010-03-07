@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AccountRegistration.java 1625 2009-07-31 09:45:41Z luca $
+ * $Id: AccountRegistration.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.xmlstream;

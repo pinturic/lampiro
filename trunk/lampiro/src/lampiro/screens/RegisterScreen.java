@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 1954 2010-01-15 15:14:09Z luca $
+ * $Id: RegisterScreen.java 2002 2010-03-06 19:02:12Z luca $
  */
 
 package lampiro.screens;
@@ -70,77 +70,121 @@ import javax.microedition.rms.RecordStore;
 
 import lampiro.LampiroMidlet;
 
+// TODO: Auto-generated Javadoc
 // #endif
 
+/**
+ * The Class RegisterScreen.
+ */
 public class RegisterScreen extends UIScreen implements StreamEventListener {
+	
+	/*
+	 * A flag used to know if the connection has been initiated; that means
+	 * that the server has been found at least once;
+	 */
+	private boolean streamConnected=false;
 
+	/** The logo label. */
 	private UILabel logoLabel;
 
+	/** The logo layout. */
 	private UIHLayout logoLayout;
 
+	/** The rm. */
 	private static ResourceManager rm = ResourceManager.getManager();
 
 	/* 
 	 * The login info label
 	 */
+	/** The ul. */
 	private UILabel ul = new UILabel(rm.getString(ResourceIDs.STR_LOGGING_IN));
 
+	/** The tf_jid_label. */
 	private UILabel tf_jid_label = new UILabel(rm
 			.getString(ResourceIDs.STR_JABBER_ID)
 			+ " (?)");
 
+	/** The key_configuration. */
 	private UILabel key_configuration = new UILabel(rm
 			.getString(ResourceIDs.STR_KEY_CONFIGURATION));
+	
+	/** The conf layout. */
 	private UIHLayout confLayout = new UIHLayout(2);
 
+	/** The tf_jid_name. */
 	UITextField tf_jid_name = new UITextField("", null, 128, TextField.ANY
 			| TextField.NON_PREDICTIVE, UITextField.FORMAT_LOWER_CASE);
 
+	/** The tf_pwd. */
 	private UITextField tf_pwd = new UITextField(rm
 			.getString(ResourceIDs.STR_PASSWORD), null, 32, TextField.ANY
 			| TextField.PASSWORD);
 
+	/** The but_cancel. */
 	private UIButton but_cancel = new UIButton(rm
 			.getString(ResourceIDs.STR_STOP_LOGIN));
 
 	// #ifndef GLIDER
+	/** The tf_email. */
 	private UITextField tf_email = new UITextField(rm
 			.getString(ResourceIDs.STR_EMAIL_ADDRESS), null, 128,
 			TextField.EMAILADDR);
+	
+	/** The grp_new_account. */
 	private UICheckbox grp_new_account = new UICheckbox(rm
 			.getString(ResourceIDs.STR_NEW_USER));
+	
+	/** The wrong pwd. */
 	private UIMenu wrongPwd;
+	
+	/** The tf_pwd_confirm. */
 	private UITextField tf_pwd_confirm = new UITextField(rm
 			.getString(ResourceIDs.STR_CONFIRM)
 			+ " " + rm.getString(ResourceIDs.STR_PASSWORD).toLowerCase(), null,
 			32, TextField.ANY | TextField.PASSWORD);
+	
+	/** The button layout. */
 	private UIHLayout buttonLayout;
+	
+	/** The wizard text. */
 	private UITextField wizardText;
+	
+	/** The wizard text gateways. */
 	private UITextField wizardTextGateways;
+	
+	/** The wizard shown. */
 	private static boolean wizardShown = false;
 	// #endif
 
+	/** The tf_server. */
 	private UITextField tf_server = new UITextField(rm
 			.getString(ResourceIDs.STR_SERVER_NAME), null, 50, TextField.ANY
 			| TextField.NON_PREDICTIVE);
 
+	/** The grp_advanced. */
 	private UICheckbox grp_advanced = new UICheckbox(rm
 			.getString(ResourceIDs.STR_ADVANCED_OPTIONS));
 
+	/** The reset_config. */
 	private UICheckbox reset_config = new UICheckbox(rm
 			.getString(ResourceIDs.STR_RESET_CONFIG));
 
+	/** The reset_all_data. */
 	private UICheckbox reset_all_data = new UICheckbox(rm
 			.getString(ResourceIDs.STR_RESET_DATA));
 
+	/** The resource. */
 	private UITextField resource = null;
 
+	/** The login label. */
 	private UILabel loginLabel;
 
+	/** The login menu. */
 	private UIMenu loginMenu;
 
 	//private UIMenu scaryGmail;
 
+	/** The enable roll. */
 	private boolean enableRoll = true;
 
 	// #ifdef COMPRESSION
@@ -153,32 +197,42 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 //@					.getString(ResourceIDs.STR_ENABLE_TLS));
 	// #endif
 
+	/** The grp_server. */
 	private UICombobox grp_server = new UICombobox(rm
 			.getString(ResourceIDs.STR_SERVER_TYPE), false);
 
-	/** Progress bar during login */
+	/** Progress bar during login. */
 	private UIGauge progress_gauge = new UIGauge(rm
 			.getString(ResourceIDs.STR_WAIT), false, Gauge.INDEFINITE,
 			Gauge.CONTINUOUS_RUNNING);
 
+	/** The btn_login. */
 	private UIButton btn_login = new UIButton(rm
 			.getString(ResourceIDs.STR_LOGIN));
 
+	/** The log layout. */
 	protected UIHLayout logLayout;
 
 // #ifndef GLIDER
+	/** The cmd_exit. */
 	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT)
 			.toUpperCase());
 	// #endif
 
+	/** The cmd_state. */
 	private UILabel cmd_state = new UILabel(rm.getString(
 			ResourceIDs.STR_CHANGE_STATUS).toUpperCase());
 
+	/** The last_status. */
 	private UITextField last_status = null;
 
+	/** The button yes. */
 	private UIButton buttonYes;
+	
+	/** The button no. */
 	private UIButton buttonNo;
 
+	/** The instructions sub menu. */
 	private UIMenu instructionsSubMenu;
 
 	// #ifdef BLUENDO_REG
@@ -202,34 +256,46 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	/*
 	 * The subMenu deputed to open the status screen
 	 */
+	/** The set status. */
 	private UIMenu setStatus = new UIMenu("");
 
 	// #mdebug
 //@	private UIButton cmd_debug = new UIButton("debug");
 	// #enddebug
 
-	/** true if we must register a new account */
+	/** true if we must register a new account. */
 	private boolean register = false;
 
+	/** The reg. */
 	private EventQueryRegistration reg;
 
+	/** The cfg. */
 	private Config cfg = Config.getInstance();
 
-	/** local copy of the jid server (for detecting changes) */
+	/** local copy of the jid server (for detecting changes). */
 	private String jid_server = "";
 
+	/** The hint. */
 	private UITextField hint = new UITextField(rm
 			.getString(ResourceIDs.STR_NOTE), rm
 			.getString(ResourceIDs.STR_LOGIN_HINT), 5000, TextField.UNEDITABLE);
 
+	/** The _register screen. */
 	private static RegisterScreen _registerScreen = null;
 
+	/** The instruction label. */
 	private UILabel instructionLabel = new UILabel(rm.getString(
 			ResourceIDs.STR_INSTRUCTIONS).toUpperCase());
 
+	/** The ex username. */
 	private String exUsername = "<username>";
+	
+	/** The ex server. */
 	private String exServer = "<example.org>";
 
+	/* (non-Javadoc)
+	 * @see it.yup.ui.UIScreen#keyPressed(int)
+	 */
 	public boolean keyPressed(int key) {
 		// trick to remove the "exUsername" in the username textField
 		int ka = UICanvas.getInstance().getGameAction(key);
@@ -254,6 +320,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		return false;
 	}
 
+	/**
+	 * Instantiates a new register screen.
+	 */
 	private RegisterScreen() {
 		progress_gauge.cancel();
 		resource = new UITextField(rm.getString(ResourceIDs.STR_RESOURCE), cfg
@@ -353,6 +422,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	}
 
 	// #ifndef GLIDER
+	/**
+	 * Place wizard.
+	 */
 	private void placeWizard() {
 		removeAll();
 
@@ -387,7 +459,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	// #endif
 
-	/** Called to notify that the {@link UIScreen} has become visible */
+	/**
+	 * Called to notify that the {@link UIScreen} has become visible.
+	 */
 	public void showNotify() {
 		setStatusLabel();
 		// #ifndef GLIDER
@@ -407,6 +481,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 	}
 
+	/**
+	 * Sets the status label.
+	 */
 	public void setStatusLabel() {
 		String show = cfg.getProperty(Config.LAST_PRESENCE_SHOW, "");
 		String msg = cfg.getProperty(Config.LAST_STATUS_MESSAGE, "");
@@ -424,6 +501,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 	}
 
+	/**
+	 * Gets the single instance of RegisterScreen.
+	 * 
+	 * @return single instance of RegisterScreen
+	 */
 	public static RegisterScreen getInstance() {
 		// first delete all the references to the old instance
 		if (_registerScreen == null) {
@@ -445,6 +527,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	 * depending on user choices, system settings, stream error event
 	 * or compile flags.
 	 * It should be synch because it is called in many places by different threads.  
+	 */
+	/**
+	 * Place items.
 	 */
 	private void placeItems() {
 		UIItem oldSelectedItem = this.getSelectedIndex() > 0 ? (UIItem) this
@@ -508,6 +593,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		this.askRepaint();
 	}
 
+	/* (non-Javadoc)
+	 * @see it.yup.ui.UIScreen#menuAction(it.yup.ui.UIMenu, it.yup.ui.UIItem)
+	 */
 	public void menuAction(UIMenu menu, UIItem c) {
 		if (c == cmd_exit) {
 // #ifndef GLIDER
@@ -533,6 +621,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	}
 
+	/**
+	 * Login.
+	 * 
+	 * @param goOnline the go online
+	 */
 	void login(final boolean goOnline) {
 		enableRoll = false;
 		String resourceString = this.resource.getText();
@@ -803,6 +896,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	//@	
 	// #endif
 
+	/**
+	 * Xmpp login.
+	 * 
+	 * @param newUser the new user
+	 * @param goOnline the go online
+	 */
 	private void xmppLogin(boolean newUser, boolean goOnline) {
 		String user = getUser(tf_jid_name.getText());
 		String server = getServer(tf_jid_name.getText());
@@ -878,11 +977,15 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		xmpp.openStream(goOnline);
 	}
 
+	/* (non-Javadoc)
+	 * @see it.yup.xmlstream.StreamEventListener#gotStreamEvent(java.lang.String, java.lang.Object)
+	 */
 	public void gotStreamEvent(String event, Object source) {
 		try {
 			UICanvas.lock();
 			XMPPClient client = XMPPClient.getInstance();
 			if (BasicXmlStream.STREAM_CONNECTED.equals(event)) {
+				streamConnected=true;
 				ul.setText(rm.getString(ResourceIDs.STR_CONNECTED));
 				progress_gauge.setOffset(30);
 				this.askRepaint();
@@ -913,7 +1016,6 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 					|| BasicXmlStream.REGISTRATION_FAILED.equals(event)
 					|| BasicXmlStream.NOT_AUTHORIZED.equals(event)
 					|| BasicXmlStream.CONNECTION_LOST.equals(event)) {
-
 				reg.remove();
 				try {
 					client.closeStream();
@@ -925,6 +1027,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 				String description = null;
 				if (BasicXmlStream.CONNECTION_FAILED.equals(event)) {
+					if (streamConnected == false){
+						cfg.setProperty(Config.CLIENT_INITIALIZED, Config.FALSE);
+						grp_server.setSelectedIndex(0);
+					}
 					description = rm
 							.getString(ResourceIDs.STR_CONNECTION_FAILED);
 				} else if (BasicXmlStream.CONNECTION_LOST.equals(event)) {
@@ -974,6 +1080,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see it.yup.ui.UIScreen#itemAction(it.yup.ui.UIItem)
+	 */
 	public void itemAction(UIItem item) {
 		if (item == key_configuration) {
 			KeyScreen ks = new KeyScreen();
@@ -1091,7 +1200,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	}
 
 	/**
-	 * check if we must enable the login
+	 * check if we must enable the login.
 	 */
 	private void checkLogin() {
 		String items[] = new String[3];
@@ -1178,6 +1287,11 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		// #endif
 	}
 
+	/**
+	 * Srv query.
+	 * 
+	 * @return the string
+	 */
 	private String srvQuery() {
 
 		String host = getServer(RegisterScreen.this.tf_jid_name.getText());
@@ -1204,6 +1318,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	}
 
+	/**
+	 * Gets the server.
+	 * 
+	 * @param jid the jid
+	 * @return the server
+	 */
 	private String getServer(String jid) {
 		int server_idx = jid.indexOf("@");
 		if (server_idx >= 0) {
@@ -1213,6 +1333,12 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 	}
 
+	/**
+	 * Gets the user.
+	 * 
+	 * @param jid the jid
+	 * @return the user
+	 */
 	private String getUser(String jid) {
 		int server_idx = jid.indexOf("@");
 		if (server_idx >= 0) {
