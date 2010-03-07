@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 1961 2010-01-26 15:23:12Z luca $
+ * $Id: UICanvas.java 2002 2010-03-06 19:02:12Z luca $
  */
 
 /**

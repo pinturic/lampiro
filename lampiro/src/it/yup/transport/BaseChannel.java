@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BaseChannel.java 1984 2010-02-24 14:14:55Z luca $
+ * $Id: BaseChannel.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.transport;

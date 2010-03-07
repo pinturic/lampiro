@@ -1,3 +1,8 @@
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
+ * See about.html for details about license.
+ *
+ * $Id: DataFormListener.java 1858 2009-10-16 22:42:29Z luca $
+*/
 package it.yup.xmpp;
 
 /**

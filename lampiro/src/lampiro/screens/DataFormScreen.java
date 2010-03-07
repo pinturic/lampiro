@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 1976 2010-02-12 16:59:23Z luca $
+ * $Id: DataFormScreen.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**
@@ -9,6 +9,8 @@
  */
 package lampiro.screens;
 
+import java.util.Enumeration;
+import java.util.Vector;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -16,6 +18,7 @@ import it.yup.ui.UICombobox;
 import it.yup.ui.UIGauge;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
+import it.yup.ui.UIJidCombo;
 import it.yup.ui.UILabel;
 import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
@@ -27,34 +30,17 @@ import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xml.Element;
-import it.yup.xmpp.Config;
+import it.yup.xmpp.Contact;
 import it.yup.xmpp.DataFormListener;
-import it.yup.xmpp.IQResultListener;
-import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.MediaRetriever;
 import it.yup.xmpp.packets.DataForm;
-import it.yup.xmpp.packets.Iq;
-import it.yup.xmpp.packets.DataForm.Field;
-
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-
-import javax.microedition.io.Connector;
-import javax.microedition.io.ContentConnection;
 import javax.microedition.lcdui.Gauge;
 import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
 
+import lampiro.screens.MediaRetrieveListener;
 import lampiro.screens.RosterScreen.WaitScreen;
 
-import org.bouncycastle.util.encoders.Base64;
-
-// #mdebug
-//@
-//@import it.yup.util.Logger;
-//@
-// #enddebug
 
 /**
  * <p>
@@ -153,46 +139,6 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 
 	private UIHLayout mainLayout = new UIHLayout(3);
 	UIPanel mainPanel = new UIPanel(true, false);
-
-	public class CidListener extends IQResultListener {
-
-		private int mediaType;
-		private UILabel label;
-		private Field fld;
-
-		public CidListener(Field fld, int mediaType, UILabel label) {
-			this.mediaType = mediaType;
-			this.label = label;
-			this.fld = fld;
-		}
-
-		public void handleError(Element e) {
-			// #mdebug
-			//@			Logger.log("In retrieving cid");
-			// #enddebug
-		}
-
-		public void handleResult(Element e) {
-			Element data = e.getChildByName(null, XMPPClient.DATA);
-			String text = data.getText();
-			byte[] decodedData = Base64.decode(text);
-
-			UICanvas.lock();
-			try {
-				showMedia(fld, decodedData, mediaType, this.label);
-			} catch (Exception ex) {
-				// #mdebug
-				//@				Logger.log("In retrieving media2");
-				//@				System.out.println(ex.getMessage());
-				//@				ex.printStackTrace();
-				// #enddebug
-			} finally {
-				UICanvas.unlock();
-			}
-
-		}
-
-	}
 
 	public DataFormScreen(DataForm df, DataFormListener dfl, int cmds) {
 		setTitle(rm.getString(ResourceIDs.STR_FILL_FORM));
@@ -304,9 +250,32 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 			}
 
 			if (fld.type == DataForm.FLT_JIDSINGLE
-					|| fld.type == DataForm.FLT_TXTPRIV
+					|| fld.type == DataForm.FLT_JIDMULTI) {
+				String title = (fld.label == null ? ""/* fld.varName */
+				: fld.label);
+				UIJidCombo combo = new UIJidCombo(title,
+						fld.type != DataForm.FLT_JIDSINGLE, rm
+								.getString(ResourceIDs.STR_NEW_CONTACT));
+				if (fld.dValue != null && fld.dValue.length() > 0) {
+					Vector tokens = Utils.tokenize(fld.dValue, '\n');
+					Enumeration en = tokens.elements();
+					while (en.hasMoreElements()) {
+						combo.append((String) en.nextElement());
+					}
+				}
+				Vector contacts = RosterScreen.getOrderedContacts(true);
+				Enumeration en = contacts.elements();
+				while (en.hasMoreElements()) {
+					Contact c = (Contact) en.nextElement();
+					if (c.isVisible()) {
+						combo.append(c.jid);
+					}
+				}
+				mainPanel.addItem(combo);
+				items[i] = combo;
+			}
+			if (fld.type == DataForm.FLT_TXTPRIV
 					|| fld.type == DataForm.FLT_TXTSINGLE
-					|| fld.type == DataForm.FLT_JIDMULTI
 					|| fld.type == DataForm.FLT_TXTMULTI
 					|| fld.type == DataForm.FLT_FIXED) {
 				String title = (fld.label == null ? ""/* fld.varName */
@@ -314,9 +283,6 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				int flags = TextField.ANY;
 				if (fld.type == DataForm.FLT_TXTPRIV) {
 					flags |= TextField.PASSWORD;
-				}
-				if (fld.type == DataForm.FLT_JIDSINGLE) {
-					flags |= TextField.EMAILADDR;
 				}
 				if (fld.type == DataForm.FLT_FIXED) {
 					flags |= TextField.UNEDITABLE;
@@ -338,12 +304,15 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				// get the images for media types
 				if (fld.media != null) {
 					UILabel objLabel = new UILabel(UICanvas
-							.getUIImage("/icons/warning.png"));
+							.getUIImage("/icons/loading.png"));
 					objLabel.setAnchorPoint(Graphics.HCENTER);
 					mainPanel.addItem(objLabel);
-					this.retrieveMedia(fld, objLabel);
+					MediaRetrieveListener mrl = new MediaRetrieveListener(this,
+							objLabel);
+					MediaRetriever mr = new MediaRetriever(this.dfl.getFrom(),
+							fld.media, mrl);
+					mr.retrieveMedia();
 				}
-
 				continue;
 			}
 		}
@@ -398,110 +367,6 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 
 		//this.setSelectedIndex(0);
 		this.setFreezed(false);
-		this.askRepaint();
-	}
-
-	private void retrieveMedia(Field fld, UILabel label) {
-		// get the img data
-		int mediaType = Config.IMG_TYPE;
-		String cidUri = null;
-		String httpUri = null;
-
-		for (int i = 0; i < fld.media.urisTypes.length; i++) {
-			Object[] uriType = (Object[]) fld.media.urisTypes[i];
-			String uri = (String) uriType[0];
-			if (uri.indexOf("cid:") == 0) {
-				cidUri = uri;
-				mediaType = ((Integer) uriType[1]).intValue();
-				break;
-			} else if (uri.indexOf("http://") == 0
-					|| uri.indexOf("https://") == 0) {
-				httpUri = uri;
-				mediaType = ((Integer) uriType[1]).intValue();
-			}
-		}
-
-		if (cidUri != null) cidRetrieve(fld, cidUri, mediaType, label);
-		else if (httpUri != null) httpRetrieve(fld, httpUri, mediaType, label);
-	}
-
-	private void cidRetrieve(Field fld, String cidUri, int mediaType,
-			UILabel label) {
-		Iq iq = new Iq(this.dfl.getFrom(), Iq.T_GET);
-		Element data = new Element(XMPPClient.NS_BOB, XMPPClient.DATA);
-		iq.addElement(data);
-		String uri = Utils.replace(cidUri, "cid:", "");
-		data.setAttribute("cid", uri);
-		CidListener cid = new CidListener(fld, mediaType, label);
-		XMPPClient.getInstance().sendIQ(iq, cid);
-	}
-
-	private void httpRetrieve(Field fld, String httpUri, int mediaType,
-			UILabel label) {
-		ContentConnection c = null;
-		DataInputStream dis = null;
-		byte[] data = null;
-		try {
-			c = (ContentConnection) Connector.open(httpUri);
-			int len = (int) c.getLength();
-			dis = c.openDataInputStream();
-			if (len > 0) {
-				data = new byte[len];
-				dis.readFully(data);
-			} else {
-				int ch;
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				while ((ch = dis.read()) != -1) {
-					bos.write(ch);
-				}
-				data = bos.toByteArray();
-			}
-		} catch (Exception e) {
-			// #mdebug
-			//@			Logger.log("In retrieving media2");
-			//@			System.out.println(e.getMessage());
-			//@			e.printStackTrace();
-			// #enddebug
-		} finally {
-			try {
-				if (dis != null) dis.close();
-				if (c != null) c.close();
-			} catch (Exception e) {
-				// #mdebug
-				//@				Logger.log("In retrieving media2");
-				//@				System.out.println(e.getMessage());
-				//@				e.printStackTrace();
-				// #enddebug
-			}
-		}
-		if (data != null) showMedia(fld, data, mediaType, label);
-	}
-
-	private void showMedia(Field fld, byte[] data, int mediaType, UILabel label) {
-		Image img = null;
-		if (mediaType == Config.IMG_TYPE) {
-			img = Image.createImage(data, 0, data.length);
-		} else if (mediaType == Config.AUDIO_TYPE) {
-			img = UICanvas.getUIImage("/icons/mic.png");
-		}
-
-		// resize media
-		int mWidth = fld.media.width;
-		int mHeight = fld.media.height;
-
-		// resize to fit screen
-		int tempWidth = UICanvas.getInstance().getWidth() - 20;
-		if (img.getWidth() >= tempWidth) {
-			mHeight = (tempWidth * img.getHeight()) / img.getWidth();
-			mWidth = tempWidth;
-		}
-
-		if (mWidth > 0 && mHeight > 0 && mWidth != img.getWidth()
-				&& mHeight != img.getHeight()) {
-			img = UIUtils.imageResize(img, mWidth, mHeight, false);
-		}
-
-		label.setImg(img);
 		this.askRepaint();
 	}
 
@@ -616,7 +481,7 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 		}
 		// if the dataform will have an answer, e.g. an IQ contained dataform
 		// #ifndef BLUENDO_SECURE
-		setWaiting &= dfl.execute(comm);
+						setWaiting &= dfl.execute(comm);
 		// #endif
 		RosterScreen.getInstance()._handleTask(dfl);
 		// #ifdef UI
@@ -684,7 +549,6 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 	 */
 	private int fillForm(boolean checkRequired) {
 		int missingField = -1;
-		// XXX: here we could verify the required fields
 		for (int i = 0; i < df.fields.size(); i++) {
 			DataForm.Field fld = (DataForm.Field) df.fields.elementAt(i);
 			if (fld.type == DataForm.FLT_HIDDEN) {
@@ -712,7 +576,9 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 			}
 
 			if (fld.type == DataForm.FLT_LISTMULTI
-					|| fld.type == DataForm.FLT_LISTSINGLE) {
+					|| fld.type == DataForm.FLT_LISTSINGLE
+					|| fld.type == DataForm.FLT_JIDSINGLE
+					|| fld.type == DataForm.FLT_JIDMULTI) {
 				UICombobox cmb = (UICombobox) items[i];
 				boolean[] flags = cmb.getSelectedFlags();
 				StringBuffer dtext = new StringBuffer();
@@ -720,11 +586,20 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				for (int j = 0; j < flags.length; j++) {
 					if (flags[j]) {
 						scount++;
-						String[] opt = (String[]) fld.options.elementAt(j);
+						String stringVal = "";
+						if (fld.type == DataForm.FLT_LISTMULTI
+								|| fld.type == DataForm.FLT_LISTSINGLE) {
+							String[] opt = (String[]) fld.options.elementAt(j);
+							stringVal = opt[0];
+						} else if (fld.type == DataForm.FLT_JIDMULTI) {
+							stringVal = cmb.getSelectedStrings()[scount - 1];
+						} else if (fld.type == DataForm.FLT_JIDSINGLE) {
+							stringVal = cmb.getSelectedString();
+						}
 						if (scount > 1) {
 							dtext.append("\n");
 						}
-						dtext.append(opt[0]);
+						dtext.append(stringVal);
 					}
 				}
 				if (scount == 0) {
@@ -735,10 +610,8 @@ public class DataFormScreen extends UIScreen implements WaitScreen {
 				continue;
 			}
 
-			if (fld.type == DataForm.FLT_JIDSINGLE
-					|| fld.type == DataForm.FLT_TXTPRIV
+			if (fld.type == DataForm.FLT_TXTPRIV
 					|| fld.type == DataForm.FLT_TXTSINGLE
-					|| fld.type == DataForm.FLT_JIDMULTI
 					|| fld.type == DataForm.FLT_TXTMULTI
 					|| fld.type == DataForm.FLT_FIXED) {
 				UITextField tf = (UITextField) items[i];

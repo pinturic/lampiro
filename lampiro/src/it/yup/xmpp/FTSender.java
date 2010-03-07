@@ -1,3 +1,8 @@
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
+ * See about.html for details about license.
+ *
+ * $Id: FTSender.java 1858 2009-10-16 22:42:29Z luca $
+*/
 package it.yup.xmpp;
 
 import java.io.ByteArrayOutputStream;
@@ -6,9 +11,6 @@ import java.util.Vector;
 
 import org.bouncycastle.util.encoders.Base64;
 
-
-
-import it.yup.util.Logger;
 import it.yup.util.Utils;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Presence;
@@ -18,6 +20,11 @@ import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
 
+// #mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+// #enddebug
 public class FTSender extends IQResultListener implements PacketListener {
 
 	/*

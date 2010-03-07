@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIButton.java 1768 2009-09-15 14:18:34Z luca $
+ * $Id: UIButton.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**

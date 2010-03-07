@@ -1,4 +1,4 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
  * $Id: SimpleWaitScreen.java 1770 2009-09-16 20:40:01Z luca $

@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandListScreen.java 1905 2009-11-11 14:56:07Z luca $
+ * $Id: CommandListScreen.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package lampiro.screens;

@@ -1,7 +1,15 @@
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
+ * See about.html for details about license.
+ *
+ * $Id: HandleMucScreen.java 1858 2009-10-16 22:42:29Z luca $
+*/
+
 package lampiro.screens;
 
 import java.util.Hashtable;
+
 import javax.microedition.lcdui.TextField;
+
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -105,7 +113,7 @@ public class HandleMucScreen extends UIScreen {
 		}
 	}
 
-	static class HMC_CONSTANTS {
+	public static class HMC_CONSTANTS {
 		public static int NEVER = 0;
 		public static int ALWAYS = 1;
 		public static int LAMPIRO_ONLY = 2;
@@ -129,7 +137,7 @@ public class HandleMucScreen extends UIScreen {
 	private UILabel cmd_close = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
 			.toUpperCase());
 
-	private UIButton cmd_save = new UIButton(rm.getString(ResourceIDs.STR_SAVE)
+	public UIButton cmd_save = new UIButton(rm.getString(ResourceIDs.STR_SAVE)
 			.toUpperCase());
 
 	private UILabel lbl_autojoin = new UILabel(rm
@@ -283,8 +291,8 @@ public class HandleMucScreen extends UIScreen {
 									false, true);
 						} catch (Exception ex) {
 							// #mdebug
-//@							Logger.log("In creating a MUC:");
-//@							ex.printStackTrace();
+//@																					Logger.log("In creating a MUC:");
+//@																					ex.printStackTrace();
 							// #enddebug
 						} finally {
 							UICanvas.unlock();

@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 1976 2010-02-12 16:59:23Z luca $
+ * $Id: DataResultScreen.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**
@@ -22,11 +22,15 @@ import it.yup.ui.UITextField;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xmpp.DataFormListener;
+import it.yup.xmpp.MediaRetriever;
 import it.yup.xmpp.packets.DataForm;
 
 import java.util.Hashtable;
 
+import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
+
+import lampiro.screens.MediaRetrieveListener;
 
 /**
  * Class that shows the results in a data form.
@@ -132,6 +136,20 @@ public class DataResultScreen extends UIScreen {
 				mainPanel.addItem(uit);
 				// must be done after append to have a screen for the uit
 				uit.setWrappable(true);
+
+				// get the images for media types
+				if (fld.media != null) {
+					UILabel objLabel = new UILabel(UICanvas
+							.getUIImage("/icons/loading.png"));
+					objLabel.setAnchorPoint(Graphics.HCENTER);
+					mainPanel.addItem(objLabel);
+					MediaRetrieveListener mrl = new MediaRetrieveListener(this,
+							objLabel);
+					MediaRetriever mr = new MediaRetriever(this.listener
+							.getFrom(), fld.media, mrl);
+					mr.retrieveMedia();
+				}
+
 				ithItem = uit;
 				//uit.setMaxHeight(50);
 			} else if (fld.type != DataForm.FLT_HIDDEN) {

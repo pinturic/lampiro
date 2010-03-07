@@ -1,15 +1,18 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITextField.java 1902 2009-11-06 15:57:39Z luca $
+ * $Id: UITextField.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.ui;
 
-import it.yup.util.Logger;
+//#mdebug
+//@
+//@import it.yup.util.Logger;
+//@
+// #enddebug
 
 import java.util.Vector;
-
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
@@ -421,8 +424,8 @@ public class UITextField extends UIItem implements CommandListener {
 			this.askRepaint();
 		} catch (Exception e) {
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log("In tex field command action: " + e.getClass());
+//@						e.printStackTrace();
+//@						Logger.log("In text field command action: " + e.getClass());
 			// #enddebug
 		} finally {
 			UICanvas.unlock();

@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Stanza.java 1220 2009-02-27 09:41:06Z luca $
+ * $Id: Stanza.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.xmpp.packets;

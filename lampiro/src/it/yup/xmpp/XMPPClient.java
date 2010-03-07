@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 1975 2010-02-08 15:56:20Z luca $
+ * $Id: XMPPClient.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 package it.yup.xmpp;
@@ -457,8 +457,19 @@ public class XMPPClient implements StreamEventListener {
 	 *            (may be null)
 	 */
 	public void sendIQ(Iq iq, IQResultListener listener) {
+		sendIQ(iq, listener, -1);
+	}
+
+	/**
+	 * Send an Iq packet and register the packet listener for the answer
+	 * 
+	 * @param iq the iq
+	 * @param listener the listener
+	 * @param duration the duration before expire in milliseconds
+	 */
+	public void sendIQ(Iq iq, IQResultListener listener, int duration) {
 		if (listener != null) {
-			IqManager.getInstance().addRegistration(iq, listener);
+			IqManager.getInstance().addRegistration(iq, listener, duration);
 		}
 		sendPacket(iq);
 	}
@@ -766,7 +777,7 @@ public class XMPPClient implements StreamEventListener {
 
 			IQResultListener resultListener = new XmppIqListener(
 					XmppIqListener.UUID);
-			this.sendIQ(UUIDReq, resultListener);
+			this.sendIQ(UUIDReq, resultListener,240000);
 		}
 	}
 
@@ -782,7 +793,7 @@ public class XMPPClient implements StreamEventListener {
 		XmppIqListener resultListener = new XmppIqListener(
 				XmppIqListener.TRUSTED_SERVICES);
 
-		this.sendIQ(systemConfigIq, resultListener);
+		this.sendIQ(systemConfigIq, resultListener,240000);
 	}
 
 	private String getCapVer() {

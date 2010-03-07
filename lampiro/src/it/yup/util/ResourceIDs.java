@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 1977 2010-02-12 18:05:38Z luca $
+ * $Id: ResourceIDs.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**
@@ -72,7 +72,7 @@ public class ResourceIDs {
 	public static final int STR_NAME = 57;
 	public static final int STR_NICK_NAME = 58;
 	public static final int STR_WIZARD_TEXT = 59;
-	//public static final int STR_INSERT_CODE = 60;
+	public static final int STR_NEW_CONTACT = 60;
 	public static final int STR_FT_STATUS = 61;
 	public static final int STR_FINISHED = 62;
 	public static final int STR_ONGOING = 63;

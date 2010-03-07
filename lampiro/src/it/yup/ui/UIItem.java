@@ -1,7 +1,7 @@
-/* Copyright (c) 2008 Bluendo S.r.L.
+/* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIItem.java 1702 2009-08-28 10:29:19Z luca $
+ * $Id: UIItem.java 2002 2010-03-06 19:02:12Z luca $
 */
 
 /**
