@@ -3,6 +3,18 @@
 
 When updates are available this page will describe the improvements or additions with respect to the previous version
 
+Lampiro 10.3:
+
+
+ * *Added*:     Jid combobox to enter jabber id values in dataforms
+ * *Fixed*:     Refactored combobox to simplify insertion and retrieval of data
+ * *Fixed*:     Improved multimedia items retrieval
+ * *Fixed*:     Improved IQ timeouts mechanism
+ * *Added*:     Xmpp-uris management
+ * *Fixed*:     Server selection in login/register screen in case of wrong auto-selection
+
+
+
 Lampiro 10.2.1:
 
 
