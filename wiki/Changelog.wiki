@@ -3,6 +3,14 @@
 
 When updates are available this page will describe the improvements or additions with respect to the previous version
 
+Lampiro 10.4:
+
+ * *Improved*:  Event dispatching for streams and user interface.
+ * *Improved*:  Text management and painting in UITextLabel and UILabel
+ * *Improved*:  Command execution flow 
+ * *Improved*:  Waiting screens management 
+ * *Improved*:  Long text painting in chat screens
+
 Lampiro 10.3:
 
 
