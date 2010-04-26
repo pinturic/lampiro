@@ -100,6 +100,9 @@
 110	Mensajes reenviados desde
 111	Participantes
 112	Nombre mostrado
+113	Automàtico
+114	Manual
+115	OK
 200	Jabber ID
 202	Dirección de correo electrónico (opcional)
 203	Crear una nueva cuenta

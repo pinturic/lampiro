@@ -36,10 +36,10 @@ class IqManager extends IQResultListener {
 		// prepare the Iq listener
 		EventQuery eq = new EventQuery("iq", new String[] { "type" },
 				new String[] { Iq.T_ERROR });
-		BasicXmlStream.addEventListener(eq, _instance);
+		BasicXmlStream.addPacketListener(eq, _instance);
 		eq = new EventQuery("iq", new String[] { "type" },
 				new String[] { "result" });
-		BasicXmlStream.addEventListener(eq, _instance);
+		BasicXmlStream.addPacketListener(eq, _instance);
 	}
 
 	public static IqManager getInstance() {

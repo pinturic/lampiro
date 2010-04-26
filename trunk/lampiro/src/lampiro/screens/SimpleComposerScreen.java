@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleComposerScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: SimpleComposerScreen.java 2032 2010-03-25 17:30:11Z luca $
 */
 
 package lampiro.screens;
@@ -78,6 +78,7 @@ public class SimpleComposerScreen extends TextBox implements CommandListener {
 			Message msg = sendMessage(preferredResource, Message.CHAT);
 
 			user.addMessageToHistory(preferredResource, msg);
+			parentScreen.updateConversation();
 			// the screen must be changed after the message is added to the screen!
 			try {
 				UICanvas.lock();

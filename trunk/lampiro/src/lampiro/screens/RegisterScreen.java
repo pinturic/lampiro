@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: RegisterScreen.java 2039 2010-03-31 07:29:31Z luca $
  */
 
 package lampiro.screens;
@@ -21,13 +21,13 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
+import it.yup.util.EventDispatcher;
+import it.yup.util.EventListener;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
-import it.yup.xmlstream.StreamEventListener;
 
 // #ifdef BLUENDO_REG
 //@
@@ -76,13 +76,13 @@ import lampiro.LampiroMidlet;
 /**
  * The Class RegisterScreen.
  */
-public class RegisterScreen extends UIScreen implements StreamEventListener {
-	
+public class RegisterScreen extends UIScreen implements EventListener {
+
 	/*
 	 * A flag used to know if the connection has been initiated; that means
 	 * that the server has been found at least once;
 	 */
-	private boolean streamConnected=false;
+	private boolean streamConnected = false;
 
 	/** The logo label. */
 	private UILabel logoLabel;
@@ -107,7 +107,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	/** The key_configuration. */
 	private UILabel key_configuration = new UILabel(rm
 			.getString(ResourceIDs.STR_KEY_CONFIGURATION));
-	
+
 	/** The conf layout. */
 	private UIHLayout confLayout = new UIHLayout(2);
 
@@ -125,35 +125,35 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			.getString(ResourceIDs.STR_STOP_LOGIN));
 
 	// #ifndef GLIDER
-	/** The tf_email. */
-	private UITextField tf_email = new UITextField(rm
-			.getString(ResourceIDs.STR_EMAIL_ADDRESS), null, 128,
-			TextField.EMAILADDR);
-	
-	/** The grp_new_account. */
-	private UICheckbox grp_new_account = new UICheckbox(rm
-			.getString(ResourceIDs.STR_NEW_USER));
-	
-	/** The wrong pwd. */
-	private UIMenu wrongPwd;
-	
-	/** The tf_pwd_confirm. */
-	private UITextField tf_pwd_confirm = new UITextField(rm
-			.getString(ResourceIDs.STR_CONFIRM)
-			+ " " + rm.getString(ResourceIDs.STR_PASSWORD).toLowerCase(), null,
-			32, TextField.ANY | TextField.PASSWORD);
-	
-	/** The button layout. */
-	private UIHLayout buttonLayout;
-	
-	/** The wizard text. */
-	private UITextField wizardText;
-	
-	/** The wizard text gateways. */
-	private UITextField wizardTextGateways;
-	
-	/** The wizard shown. */
-	private static boolean wizardShown = false;
+		/** The tf_email. */
+		private UITextField tf_email = new UITextField(rm
+				.getString(ResourceIDs.STR_EMAIL_ADDRESS), null, 128,
+				TextField.EMAILADDR);
+		
+		/** The grp_new_account. */
+		private UICheckbox grp_new_account = new UICheckbox(rm
+				.getString(ResourceIDs.STR_NEW_USER));
+		
+		/** The wrong pwd. */
+		private UIMenu wrongPwd;
+		
+		/** The tf_pwd_confirm. */
+		private UITextField tf_pwd_confirm = new UITextField(rm
+				.getString(ResourceIDs.STR_CONFIRM)
+				+ " " + rm.getString(ResourceIDs.STR_PASSWORD).toLowerCase(), null,
+				32, TextField.ANY | TextField.PASSWORD);
+		
+		/** The button layout. */
+		private UIHLayout buttonLayout;
+		
+		/** The wizard text. */
+		private UITextField wizardText;
+		
+		/** The wizard text gateways. */
+		private UITextField wizardTextGateways;
+		
+		/** The wizard shown. */
+		private static boolean wizardShown = false;
 	// #endif
 
 	/** The tf_server. */
@@ -188,13 +188,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	private boolean enableRoll = true;
 
 	// #ifdef COMPRESSION
-//@			private UICheckbox cb_compression = new UICheckbox(rm
-//@					.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
+//@	private UICheckbox cb_compression = new UICheckbox(rm
+//@			.getString(ResourceIDs.STR_ENABLE_COMPRESSION));
 	// #endif
 
 	// #ifdef TLS
-//@			private UICheckbox cb_TLS = new UICheckbox(rm
-//@					.getString(ResourceIDs.STR_ENABLE_TLS));
+//@				private UICheckbox cb_TLS = new UICheckbox(rm
+//@						.getString(ResourceIDs.STR_ENABLE_TLS));
 	// #endif
 
 	/** The grp_server. */
@@ -214,9 +214,9 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	protected UIHLayout logLayout;
 
 // #ifndef GLIDER
-	/** The cmd_exit. */
-	private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT)
-			.toUpperCase());
+		/** The cmd_exit. */
+		private UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_EXIT)
+				.toUpperCase());
 	// #endif
 
 	/** The cmd_state. */
@@ -228,7 +228,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	/** The button yes. */
 	private UIButton buttonYes;
-	
+
 	/** The button no. */
 	private UIButton buttonNo;
 
@@ -289,7 +289,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 
 	/** The ex username. */
 	private String exUsername = "<username>";
-	
+
 	/** The ex server. */
 	private String exServer = "<example.org>";
 
@@ -362,14 +362,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		tf_jid_name.setFocusable(true);
 		tf_pwd.setFocusable(true);
 		// #ifndef GLIDER
-		tf_pwd_confirm.setFocusable(true);
-		tf_email.setFocusable(true);
+				tf_pwd_confirm.setFocusable(true);
+				tf_email.setFocusable(true);
 		// #endif
 		tf_server.setFocusable(true);
 
 		// Add options to the connecting group
-		grp_server.append("automatic");
-		grp_server.append("manual");
+		grp_server.append(rm.getString(ResourceIDs.STR_AUTOMATIC));
+		grp_server.append(rm.getString(ResourceIDs.STR_MANUAL));
 
 		// set the values from config
 		if (cfg.getProperty(Config.USER) != null) {
@@ -386,14 +386,14 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			tf_server.setText(savedServer);
 			if (savedServer.length() == 0) grp_server.setSelectedIndex(0);
 			//#ifdef COMPRESSION
-//@									boolean enable_compression = Short.parseShort(cfg.getProperty(
-//@											Config.COMPRESSION, "1")) == 1;
-//@									cb_compression.setChecked(enable_compression);
+//@			boolean enable_compression = Short.parseShort(cfg.getProperty(
+//@					Config.COMPRESSION, "1")) == 1;
+//@			cb_compression.setChecked(enable_compression);
 			//#endif
 			//#ifdef TLS
-//@									boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
-//@											"0")) == 1;
-//@									cb_TLS.setChecked(enable_TLS);
+//@												boolean enable_TLS = Short.parseShort(cfg.getProperty(Config.TLS,
+//@														"0")) == 1;
+//@												cb_TLS.setChecked(enable_TLS);
 			//#endif
 			// append(btn_login);
 		}
@@ -405,8 +405,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		Image logo = null;
 		try {
 // #ifndef GLIDER
-			setTitle(rm.getString(ResourceIDs.STR_TITLE));
-			logo = Image.createImage("/icons/lampiro_icon.png");
+						setTitle(rm.getString(ResourceIDs.STR_TITLE));
+						logo = Image.createImage("/icons/lampiro_icon.png");
 			// #endif
 			logoLabel = new UILabel(logo);
 			logoLabel.setFocusable(false);
@@ -422,41 +422,41 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	}
 
 	// #ifndef GLIDER
-	/**
-	 * Place wizard.
-	 */
-	private void placeWizard() {
-		removeAll();
-
-		this.setFreezed(true);
-
-		this.append(logoLayout);
-		this.wizardText = new UITextField("", rm
-				.getString(ResourceIDs.STR_WIZARD_TEXT), 1000,
-				TextField.UNEDITABLE);
-		wizardText.setWrappable(true);
-		this.append(wizardText);
-
-		buttonLayout = new UIHLayout(2);
-		buttonLayout.setGroup(false);
-		buttonYes = new UIButton(rm.getString(ResourceIDs.STR_YES));
-		buttonYes.setAnchorPoint(Graphics.HCENTER);
-		buttonNo = new UIButton(rm.getString(ResourceIDs.STR_NO));
-		buttonNo.setAnchorPoint(Graphics.HCENTER);
-		buttonLayout.insert(buttonYes, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		buttonLayout.insert(buttonNo, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
-		append(buttonLayout);
-
-		this.wizardTextGateways = new UITextField("", rm
-				.getString(ResourceIDs.STR_WIZARD_GATEWAYS)
-				+ " ", 1000, TextField.UNEDITABLE);
-		wizardTextGateways.setWrappable(true);
-		this.append(wizardTextGateways);
-
-		this.setFreezed(false);
-		this.askRepaint();
-	}
-
+		/**
+		 * Place wizard.
+		 */
+		private void placeWizard() {
+			removeAll();
+	
+			this.setFreezed(true);
+	
+			this.append(logoLayout);
+			this.wizardText = new UITextField("", rm
+					.getString(ResourceIDs.STR_WIZARD_TEXT), 1000,
+					TextField.UNEDITABLE);
+			wizardText.setWrappable(true);
+			this.append(wizardText);
+	
+			buttonLayout = new UIHLayout(2);
+			buttonLayout.setGroup(false);
+			buttonYes = new UIButton(rm.getString(ResourceIDs.STR_YES));
+			buttonYes.setAnchorPoint(Graphics.HCENTER);
+			buttonNo = new UIButton(rm.getString(ResourceIDs.STR_NO));
+			buttonNo.setAnchorPoint(Graphics.HCENTER);
+			buttonLayout.insert(buttonYes, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
+			buttonLayout.insert(buttonNo, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
+			append(buttonLayout);
+	
+			this.wizardTextGateways = new UITextField("", rm
+					.getString(ResourceIDs.STR_WIZARD_GATEWAYS)
+					+ " ", 1000, TextField.UNEDITABLE);
+			wizardTextGateways.setWrappable(true);
+			this.append(wizardTextGateways);
+	
+			this.setFreezed(false);
+			this.askRepaint();
+		}
+	
 	// #endif
 
 	/**
@@ -465,13 +465,13 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	public void showNotify() {
 		setStatusLabel();
 		// #ifndef GLIDER
-		String user = cfg.getProperty(Config.USER);
-		// the wizard is shown when the configuration is empty for the user
-		// or if the wizard has already been shown
-		if ((user == null || user.length() == 0) && wizardShown == false) placeWizard();
-		else
-			// #endif
-			placeItems();
+				String user = cfg.getProperty(Config.USER);
+				// the wizard is shown when the configuration is empty for the user
+				// or if the wizard has already been shown
+				if ((user == null || user.length() == 0) && wizardShown == false) placeWizard();
+				else
+		// #endif
+		placeItems();
 
 		// select the login button when shown for the first time
 		if (this.contains(logLayout)) {
@@ -547,20 +547,20 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		append(tf_jid_name);
 		append(tf_pwd);
 		// #ifndef GLIDER
-		if (grp_new_account.isChecked()) {
-			append(tf_pwd_confirm);
-			append(tf_email);
-		}
+				if (grp_new_account.isChecked()) {
+					append(tf_pwd_confirm);
+					append(tf_email);
+				}
 		// #endif
 		append(grp_advanced);
 		checkLogin();
 
 		if (grp_advanced.isChecked()) {
 			//#ifdef COMPRESSION
-//@			 append(this.cb_compression);
+//@			append(this.cb_compression);
 			//#endif
 			//#ifdef TLS
-//@				append(this.cb_TLS);
+//@							append(this.cb_TLS);
 			//#endif
 
 			append(resource);
@@ -571,7 +571,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				append(tf_server);
 			}
 			// #ifndef GLIDER
-			append(grp_new_account);
+						append(grp_new_account);
 			// #endif
 			append(reset_config);
 			append(reset_all_data);
@@ -599,7 +599,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 	public void menuAction(UIMenu menu, UIItem c) {
 		if (c == cmd_exit) {
 // #ifndef GLIDER
-			LampiroMidlet.exit();
+						LampiroMidlet.exit();
 			// #endif
 		} else if (c == instructionLabel) {
 			int labelWidth = UICanvas.getInstance().getWidth() - 20;
@@ -653,24 +653,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		}
 
 		// #ifndef GLIDER
-		// if registering check the pwds coherency
-		if (grp_new_account.isChecked()) {
-			if (wrongPwd != null) {
-				this.removePopup(wrongPwd);
-			}
-			if (tf_pwd.getText().equals(tf_pwd_confirm.getText()) == false) {
-				UILabel gatewayHint = new UILabel(rm
-						.getString(ResourceIDs.STR_WRONG_PWD));
-				int canvasWidth = UICanvas.getInstance().getWidth() - 20;
-				wrongPwd = UIUtils.easyMenu(rm
-						.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 30,
-						canvasWidth, gatewayHint, "", rm.getString(
-								ResourceIDs.STR_CONTINUE).toUpperCase());
-				gatewayHint.setWrappable(true, canvasWidth);
-				this.addPopup(wrongPwd);
-				return;
-			}
-		}
+				// if registering check the pwds coherency
+				if (grp_new_account.isChecked()) {
+					if (wrongPwd != null) {
+						this.removePopup(wrongPwd);
+					}
+					if (tf_pwd.getText().equals(tf_pwd_confirm.getText()) == false) {
+						UILabel gatewayHint = new UILabel(rm
+								.getString(ResourceIDs.STR_WRONG_PWD));
+						int canvasWidth = UICanvas.getInstance().getWidth() - 20;
+						wrongPwd = UIUtils.easyMenu(rm
+								.getString(ResourceIDs.STR_INSTRUCTIONS), 10, 30,
+								canvasWidth, gatewayHint, "", rm.getString(
+										ResourceIDs.STR_CONTINUE).toUpperCase());
+						gatewayHint.setWrappable(true, canvasWidth);
+						this.addPopup(wrongPwd);
+						return;
+					}
+				}
 		// #endif
 		removeAll();
 		ul.setAnchorPoint(Graphics.HCENTER | Graphics.TOP);
@@ -920,17 +920,17 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		cfg.setProperty(Config.SERVER, server);
 		cfg.setProperty(Config.PASSWORD, tf_pwd.getText());
 		// #ifndef GLIDER
-		cfg.setProperty(Config.EMAIL, tf_email.getText());
+				cfg.setProperty(Config.EMAIL, tf_email.getText());
 		// #endif
 		// #ifdef COMPRESSION
-//@						String enableCompression = "0";
-//@						enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
-//@						cfg.setProperty(Config.COMPRESSION, enableCompression);
+//@		String enableCompression = "0";
+//@		enableCompression = (cb_compression.isChecked() ? 1 : 0) + "";
+//@		cfg.setProperty(Config.COMPRESSION, enableCompression);
 		// #endif
 		// #ifdef TLS
-//@						String enableTlS = "0";
-//@						enableTlS = (cb_TLS.isChecked() ? 1 : 0) + "";
-//@						cfg.setProperty(Config.TLS, enableTlS);
+//@								String enableTlS = "0";
+//@								enableTlS = (cb_TLS.isChecked() ? 1 : 0) + "";
+//@								cfg.setProperty(Config.TLS, enableTlS);
 		// #endif
 
 		if (grp_server.getSelectedIndex() == 0) {
@@ -956,10 +956,10 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		XMPPClient xmpp = XMPPClient.getInstance();
 		xmpp.setMUCGroup(rm.getString(ResourceIDs.STR_GROUP_CHAT));
 		//#ifdef COMPRESSION
-//@						xmpp.addCompression = cb_compression.isChecked();
+//@		xmpp.addCompression = cb_compression.isChecked();
 		//#endif
 		//#ifdef TLS
-//@						xmpp.addTLS = cb_TLS.isChecked();
+//@								xmpp.addTLS = cb_TLS.isChecked();
 		//#endif
 
 		// this rosterListener must be set before the Roster starts 
@@ -973,7 +973,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		xmpp.createStream(newUser, newCredentials);
 
 		EventQuery qAuth = new EventQuery(EventQuery.ANY_EVENT, null, null);
-		reg = BasicXmlStream.addEventListener(qAuth, RegisterScreen.this);
+		reg = EventDispatcher.addEventListener(qAuth, RegisterScreen.this);
 		xmpp.openStream(goOnline);
 	}
 
@@ -984,38 +984,38 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		try {
 			UICanvas.lock();
 			XMPPClient client = XMPPClient.getInstance();
-			if (BasicXmlStream.STREAM_CONNECTED.equals(event)) {
-				streamConnected=true;
+			if (EventDispatcher.STREAM_CONNECTED.equals(event)) {
+				streamConnected = true;
 				ul.setText(rm.getString(ResourceIDs.STR_CONNECTED));
 				progress_gauge.setOffset(30);
 				this.askRepaint();
 				return;
-			} else if (BasicXmlStream.TLS_INITIALIZED.equals(event)) {
+			} else if (EventDispatcher.TLS_INITIALIZED.equals(event)) {
 				ul.setText(rm.getString(ResourceIDs.STR_TLS_INITIALIZED));
 				progress_gauge.setOffset(50);
 				this.askRepaint();
 				return;
-			} else if (BasicXmlStream.COMPRESSION_INITIALIZED.equals(event)) {
+			} else if (EventDispatcher.COMPRESSION_INITIALIZED.equals(event)) {
 				ul.setText(rm
 						.getString(ResourceIDs.STR_COMPRESSION_INITIALIZED));
 				progress_gauge.setOffset(60);
 				this.askRepaint();
 				return;
-			} else if (BasicXmlStream.STREAM_AUTHENTICATED.equals(event)) {
+			} else if (EventDispatcher.STREAM_AUTHENTICATED.equals(event)) {
 				ul.setText(rm.getString(ResourceIDs.STR_AUTHENTICATED));
 				progress_gauge.setOffset(70);
 				this.askRepaint();
 				return;
-			} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+			} else if (EventDispatcher.STREAM_INITIALIZED.equals(event)) {
 				ul.setText(rm.getString(ResourceIDs.STR_INITIALIZED));
 				progress_gauge.setOffset(90);
 				this.askRepaint();
 			}
-			if (BasicXmlStream.STREAM_ERROR.equals(event)
-					|| BasicXmlStream.CONNECTION_FAILED.equals(event)
-					|| BasicXmlStream.REGISTRATION_FAILED.equals(event)
-					|| BasicXmlStream.NOT_AUTHORIZED.equals(event)
-					|| BasicXmlStream.CONNECTION_LOST.equals(event)) {
+			if (EventDispatcher.STREAM_ERROR.equals(event)
+					|| EventDispatcher.CONNECTION_FAILED.equals(event)
+					|| EventDispatcher.REGISTRATION_FAILED.equals(event)
+					|| EventDispatcher.NOT_AUTHORIZED.equals(event)
+					|| EventDispatcher.CONNECTION_LOST.equals(event)) {
 				reg.remove();
 				try {
 					client.closeStream();
@@ -1026,18 +1026,20 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				}
 
 				String description = null;
-				if (BasicXmlStream.CONNECTION_FAILED.equals(event)) {
-					if (streamConnected == false){
-						cfg.setProperty(Config.CLIENT_INITIALIZED, Config.FALSE);
+				if (EventDispatcher.CONNECTION_FAILED.equals(event)) {
+					if (streamConnected == false) {
+						cfg
+								.setProperty(Config.CLIENT_INITIALIZED,
+										Config.FALSE);
 						grp_server.setSelectedIndex(0);
 					}
 					description = rm
 							.getString(ResourceIDs.STR_CONNECTION_FAILED);
-				} else if (BasicXmlStream.CONNECTION_LOST.equals(event)) {
+				} else if (EventDispatcher.CONNECTION_LOST.equals(event)) {
 					description = rm.getString(ResourceIDs.STR_CONNECTION_LOST);
-				} else if (BasicXmlStream.REGISTRATION_FAILED.equals(event)) {
+				} else if (EventDispatcher.REGISTRATION_FAILED.equals(event)) {
 					description = rm.getString(ResourceIDs.STR_REG_UNALLOWED);
-				} else if (BasicXmlStream.NOT_AUTHORIZED.equals(event)) {
+				} else if (EventDispatcher.NOT_AUTHORIZED.equals(event)) {
 					description = rm.getString(ResourceIDs.STR_WRONG_USERNAME);
 				} else {
 					description = (String) source;
@@ -1060,7 +1062,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 				this.progress_gauge.cancel();
 				placeItems();
 
-			} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+			} else if (EventDispatcher.STREAM_INITIALIZED.equals(event)) {
 				this.progress_gauge.cancel();
 				reg.remove();
 
@@ -1092,24 +1094,24 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		} else if (item == buttonYes) {
 			this.tf_jid_name.setText(exUsername + "@" + exServer);
 			// #ifndef GLIDER
-			wizardShown = true;
-			grp_new_account.setChecked(false);
+						wizardShown = true;
+						grp_new_account.setChecked(false);
 			// #endif
 			placeItems();
 		} else if (item == buttonNo) {
 			// #ifndef GLIDER
-			wizardShown = true;
-			grp_new_account.setChecked(true);
+						wizardShown = true;
+						grp_new_account.setChecked(true);
 			// #endif
 			placeItems();
 			// #ifndef GLIDER
-			remove(tf_email);
-			this.itemAction(this.grp_new_account);
+						remove(tf_email);
+						this.itemAction(this.grp_new_account);
 			// #endif
 			// #ifndef GLIDER	
-		} else if (item == grp_new_account) {
-			register = grp_new_account.isChecked();
-			placeItems();
+					} else if (item == grp_new_account) {
+						register = grp_new_account.isChecked();
+						placeItems();
 			// #endif
 			// #mdebug
 //@		} else if (item == cmd_debug) {
@@ -1149,7 +1151,7 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 			return;
 		} else if (item == tf_jid_name || item == tf_pwd
 		// #ifndef GLIDER
-				|| item == this.tf_pwd_confirm
+						|| item == this.tf_pwd_confirm
 		// #endif
 		) {
 			if (grp_server.getSelectedIndex() == 1) {
@@ -1237,8 +1239,8 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		UIMenu tempSubmenu = (complete == true ? loginMenu : null);
 		tf_jid_name.setSubmenu(tempSubmenu);
 		// #ifndef GLIDER
-		grp_new_account.setSubmenu(tempSubmenu);
-		tf_pwd_confirm.setSubmenu(tempSubmenu);
+				grp_new_account.setSubmenu(tempSubmenu);
+				tf_pwd_confirm.setSubmenu(tempSubmenu);
 		// #endif
 		tf_pwd.setSubmenu(tempSubmenu);
 		btn_login.setSubmenu(tempSubmenu);
@@ -1250,40 +1252,40 @@ public class RegisterScreen extends UIScreen implements StreamEventListener {
 		reset_all_data.setSubmenu(tempSubmenu);
 		//logoLabel.setSubmenu(tempSubmenu);
 		// #ifndef GLIDER
-		String loginString = rm.getString(ResourceIDs.STR_LOGIN);
-		if (grp_new_account.isChecked() == false) {
-			this.btn_login.setText(loginString);
-		} else {
-			// #ifdef BLUENDO_REG 
-			//@						String regString = rm.getString(ResourceIDs.STR_REGISTER);
-			//@						String captchaString = rm.getString(ResourceIDs.STR_CAPTCHA);
-			//@						if (getServer(tf_jid_name.getText()).compareTo(
-			//@								Config.DEFAULT_SERVER) != 0) {
-			//@							this.btn_login.setText(regString);
-			//@							loginLabel.setText(regString.toUpperCase());
-			//@						} else {
-			//@							if (this.regStatus == -1) {
-			//@								this.btn_login.setText(regString);
-			//@								loginLabel.setText(regString.toUpperCase());
-			//@							} else if (this.regStatus == 0) {
-			//@								this.btn_login.setText(captchaString);
-			//@								loginLabel.setText(captchaString.toUpperCase());
-			//@							} else if (this.regStatus == 1) {
-			//@								this.btn_login.setText(loginString);
-			//@								loginLabel.setText(loginString.toUpperCase());
-			//@							}
-			//@						}
-			// #endif
+				String loginString = rm.getString(ResourceIDs.STR_LOGIN);
+				if (grp_new_account.isChecked() == false) {
+					this.btn_login.setText(loginString);
+				} else {
+		// #ifdef BLUENDO_REG 
+		//@						String regString = rm.getString(ResourceIDs.STR_REGISTER);
+		//@						String captchaString = rm.getString(ResourceIDs.STR_CAPTCHA);
+		//@						if (getServer(tf_jid_name.getText()).compareTo(
+		//@								Config.DEFAULT_SERVER) != 0) {
+		//@							this.btn_login.setText(regString);
+		//@							loginLabel.setText(regString.toUpperCase());
+		//@						} else {
+		//@							if (this.regStatus == -1) {
+		//@								this.btn_login.setText(regString);
+		//@								loginLabel.setText(regString.toUpperCase());
+		//@							} else if (this.regStatus == 0) {
+		//@								this.btn_login.setText(captchaString);
+		//@								loginLabel.setText(captchaString.toUpperCase());
+		//@							} else if (this.regStatus == 1) {
+		//@								this.btn_login.setText(loginString);
+		//@								loginLabel.setText(loginString.toUpperCase());
+		//@							}
+		//@						}
+		// #endif
 // #ifndef BLUENDO_REG
-			this.btn_login.setText(rm.getString(ResourceIDs.STR_REGISTER));
-			// #endif
-		}
+					this.btn_login.setText(rm.getString(ResourceIDs.STR_REGISTER));
+		// #endif
+				}
 		// #endif
 		// #ifdef COMPRESSION
-//@						cb_compression.setSubmenu(tempSubmenu);
+//@		cb_compression.setSubmenu(tempSubmenu);
 		// #endif
 		// #ifdef TLS
-//@						cb_TLS.setSubmenu(tempSubmenu);
+//@								cb_TLS.setSubmenu(tempSubmenu);
 		// #endif
 	}
 

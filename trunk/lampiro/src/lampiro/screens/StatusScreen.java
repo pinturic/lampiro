@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: StatusScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: StatusScreen.java 2025 2010-03-23 14:27:59Z luca $
 */
 
 package lampiro.screens;
@@ -33,8 +33,8 @@ import javax.microedition.lcdui.TextField;
  * 
  */
 public class StatusScreen extends UIScreen {
-	
-	private UIPanel statusPanel = new UIPanel(true,false);
+
+	private UIPanel statusPanel = new UIPanel(true, false);
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -56,9 +56,9 @@ public class StatusScreen extends UIScreen {
 		XMPPClient client = XMPPClient.getInstance();
 		Contact myContact = client.getMyContact();
 		String mapping[] = Contact.availability_mapping;
-		String [] neededMappings = new String [5];
+		String[] neededMappings = new String[5];
 		System.arraycopy(mapping, 0, neededMappings, 0, 5);
-		
+
 		ch_status = new UIRadioButtons(neededMappings);
 		String show = "";
 		String messageStatus = "";
@@ -99,6 +99,7 @@ public class StatusScreen extends UIScreen {
 				.getString(ResourceIDs.STR_STATUS_MESSAGE), messageStatus, 128,
 				TextField.ANY);
 		tf_status.setSubmenu(closeMenu);
+		tf_status.setWrappable(true);
 		this.statusPanel.addItem(tf_status);
 		priority = new UITextField(rm.getString(ResourceIDs.STR_PRIORITY),
 				priorityVal, 10, TextField.NUMERIC);
@@ -111,7 +112,7 @@ public class StatusScreen extends UIScreen {
 
 		this.setFreezed(false);
 		this.append(statusPanel);
-		
+
 		this.askRepaint();
 	}
 
@@ -125,7 +126,7 @@ public class StatusScreen extends UIScreen {
 			int availability = ch_status.getSelectedIndex();
 
 			if (msg == null || "".equals(msg)) {
-				msg = "Connected using Lampiro: "+ Config.CLIENT_ADDRESS;
+				msg = "Connected using Lampiro: " + Config.CLIENT_ADDRESS;
 			}
 
 			Config cfg = Config.getInstance();
@@ -144,7 +145,7 @@ public class StatusScreen extends UIScreen {
 				client.setPresence(availability, msg, Integer
 						.parseInt(priorityString));
 			}
-			RosterScreen.getInstance().priorityChecked=false;
+			RosterScreen.getInstance().priorityChecked = false;
 			UICanvas.getInstance().close(this);
 		}
 	}

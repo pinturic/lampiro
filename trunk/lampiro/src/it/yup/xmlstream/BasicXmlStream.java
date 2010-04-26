@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: BasicXmlStream.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.xmlstream;
@@ -18,14 +18,18 @@ import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
 import it.yup.xmpp.packets.Iq;
+import it.yup.util.EventDispatcher;
+import it.yup.util.EventListener;
+import it.yup.util.ListenerRegistration;
 
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
+
 public abstract class BasicXmlStream implements TransportListener,
-		StreamEventListener {
+		EventListener {
 
 	/*
 	 * The registration for mySelf is used for unmatched stanza registration;
@@ -36,27 +40,7 @@ public abstract class BasicXmlStream implements TransportListener,
 	protected Vector sendQueue = new Vector(10);
 
 	/** Storing XPath like queries and relative packet listeners */
-	public static Vector eventListeners = new Vector(10);
-
-	/* EVENT CONSTANTS */
-	public static String STREAM_CONNECTED = "_01";
-	public static String STREAM_INITIALIZED = "_02";
-	// public static String STREAM_DISCONNECTED = "_03";
-	public static String STREAM_ERROR = "_04";
-	// public static String STREAM_RESOURCE_BOUND = "_05";
-	// public static String STREAM_SESSION_OPENED = "_06";
-	public static String STREAM_ACCOUNT_REGISTERED = "_07";
-	public static String CONNECTION_LOST = "_08";
-	public static String STREAM_TERMINATED = "_09";
-	// public static String AUTHENTICACTION_FAILED = "_09";
-	public static String REGISTRATION_FAILED = "_10";
-	public static String CONNECTION_FAILED = "_11";
-	public static String NOT_AUTHORIZED = "_12";
-	//public static String STREAM_REGISTRATION_ERROR = "_08";
-	public static String TLS_INITIALIZED = "_13";
-	public static String STREAM_AUTHENTICATED = "_14";
-	public static String COMPRESSION_INITIALIZED = "_15";
-	public static String UNMATCHED_STANZA = "_16";
+	private static Vector eventListeners = new Vector(10);
 
 	/** Session ID for this stream */
 	protected String SID = null;
@@ -83,28 +67,12 @@ public abstract class BasicXmlStream implements TransportListener,
 	 * calls */
 	protected Enumeration initializerInterator = null;
 
-	/**
-	 * Class used for associating packet listeners and queries
-	 */
-	protected static class ListenerRegistration {
-		public EventQuery query;
-		public Object listener;
-		public boolean oneTime;
-
-		public ListenerRegistration(EventQuery query, Object listener,
-				boolean oneTime) {
-			this.query = query;
-			this.listener = listener;
-			this.oneTime = oneTime;
-		}
-	}
-
 	protected BasicXmlStream() {
 		// prepare the default initializers
 		// #ifdef TLS
-		//@		if (XMPPClient.getInstance().addTLS){
-		//@		initializers.addElement(new TLSInitializer());
-		//@}
+//@				if (XMPPClient.getInstance().addTLS){
+//@				initializers.addElement(new TLSInitializer());
+//@		}
 		// #endif
 		// #ifdef COMPRESSION    
 //@		if (XMPPClient.getInstance().addCompression) {
@@ -117,9 +85,10 @@ public abstract class BasicXmlStream implements TransportListener,
 		initializers.addElement(new SessionOpener());
 
 		eventListeners.removeAllElements();
-		EventQuery eq = new EventQuery(BasicXmlStream.UNMATCHED_STANZA, null,
+		EventDispatcher.removeAllElements();
+		EventQuery eq = new EventQuery(EventDispatcher.UNMATCHED_STANZA, null,
 				null);
-		unmatchedStanzaReg = addEventListener(eq, this);
+		unmatchedStanzaReg = EventDispatcher.addEventListener(eq, this);
 	}
 
 	/** Initialize the stream 
@@ -194,43 +163,41 @@ public abstract class BasicXmlStream implements TransportListener,
 	protected abstract void tryToSend();
 
 	/**
-	 * Add an event listener, it may be either a {@link PacketListener} or a {@link StreamEventListener}
+	 * Add an event listener, it may be a {@link PacketListener}
 	 * @param query
-	 * @param listener either a {@link PacketListener} or a {@link StreamEventListener}
+	 * @param listener an {@link PacketListener}
 	 * @return the registration object that may be used for unregistering the listener
 	 */
-	public static EventQueryRegistration addEventListener(EventQuery query,
-			Object listener) {
-		ListenerRegistration ld = new ListenerRegistration(query, listener,
-				false);
-		synchronized (eventListeners) {
-			eventListeners.addElement(ld);
-		}
-
-		return new EventQueryRegistration(ld, eventListeners);
+	public static EventQueryRegistration addPacketListener(EventQuery query,
+			PacketListener listener) {
+		return addListener(query, listener, false);
 	}
 
 	/**
 	 * Remove an event listener passing the {@link EventQueryRegistration} received from 
-	 * {@link BasicXmlStream#addEventListener(EventQuery, Object)} or
-	 * {@link BasicXmlStream#addOnetimeEventListener(EventQuery, Object)} 
+	 * {@link BasicXmlStream#addOnetimePacketListener(EventQuery, Object)} 
 	 * @param registration
 	 */
-	public static void removeEventListener(EventQueryRegistration registration) {
+	public static void removePacketListener(EventQueryRegistration registration) {
 		registration.remove();
 	}
 
 	/**
-	 * Add an event listener that can be fired only one, it may be either a 
-	 * {@link PacketListener} or a {@link StreamEventListener}
+	 * Add an event listener that can be fired only one, it may be  a 
+	 * {@link PacketListener} 
 	 * @param query
-	 * @param listener either a {@link PacketListener} or a {@link StreamEventListener}
+	 * @param listener either a {@link PacketListener} 
 	 * @return the registration object that may be used for unregistering the listener
 	 */
-	public static EventQueryRegistration addOnetimeEventListener(
-			EventQuery query, Object listener) {
+	public static EventQueryRegistration addOnetimePacketListener(
+			EventQuery query, PacketListener listener) {
+		return addListener(query, listener, true);
+	}
+
+	private static EventQueryRegistration addListener(EventQuery query,
+			Object listener, boolean onetime) {
 		ListenerRegistration ld = new ListenerRegistration(query, listener,
-				true);
+				onetime);
 		synchronized (eventListeners) {
 			eventListeners.addElement(ld);
 		}
@@ -309,7 +276,8 @@ public abstract class BasicXmlStream implements TransportListener,
 		}
 		if (matched == false) {
 			try {
-				dispatchEvent(BasicXmlStream.UNMATCHED_STANZA, stanza);
+				EventDispatcher.dispatchEvent(EventDispatcher.UNMATCHED_STANZA,
+						stanza);
 			} catch (Exception e) {
 				// #mdebug
 //@				e.printStackTrace();
@@ -365,50 +333,8 @@ public abstract class BasicXmlStream implements TransportListener,
 		return true;
 	}
 
-	/**
-	 * Dispatch an XmlStream event
-	 * */
-	protected void dispatchEvent(String event, Object source) {
-		//		Vector listeners = BasicXmlStream.eventListeners;
-		//		Enumeration en = eventListeners.elements();
-		//		while (en.hasMoreElements()) {
-		//			ListenerRegistration listenerData = (ListenerRegistration) en
-		//					.nextElement();
-		//			if (listenerData.query.event.equals(EventQuery.ANY_EVENT)
-		//					|| event.equals(listenerData.query.event)) {
-		//				((StreamEventListener) listenerData.listener).gotStreamEvent(
-		//						event, source);
-		//				if (listenerData.oneTime) {
-		//					synchronized (eventListeners) {
-		//						eventListeners.removeElement(listenerData);
-		//					}
-		//				}
-		//			}
-		//		}
-
-		ListenerRegistration[] regs = null;
-		synchronized (eventListeners) {
-			regs = new ListenerRegistration[eventListeners.size()];
-			eventListeners.copyInto(regs);
-		}
-		for (int i = 0; i < regs.length; i++) {
-			ListenerRegistration listenerData = regs[i];
-			if (listenerData.query.event.equals(EventQuery.ANY_EVENT)
-					|| event.equals(listenerData.query.event)) {
-				((StreamEventListener) listenerData.listener).gotStreamEvent(
-						event, source);
-				if (listenerData.oneTime) {
-					synchronized (eventListeners) {
-						eventListeners.removeElement(listenerData);
-					}
-				}
-			}
-		}
-
-	}
-
 	public void gotStreamEvent(String event, Object source) {
-		if (event.equals(BasicXmlStream.UNMATCHED_STANZA)
+		if (event.equals(EventDispatcher.UNMATCHED_STANZA)
 				&& source instanceof Element) {
 			Element sSource = (Element) source;
 			if (sSource.name.equals(Iq.IQ)) {
@@ -463,7 +389,7 @@ public abstract class BasicXmlStream implements TransportListener,
 				return;
 			}
 		}
-		dispatchEvent(BasicXmlStream.STREAM_INITIALIZED, null);
+		EventDispatcher.dispatchEvent(EventDispatcher.STREAM_INITIALIZED, null);
 	}
 
 	public void addInitializer(Initializer initializer, int position) {
@@ -494,7 +420,7 @@ public abstract class BasicXmlStream implements TransportListener,
 			iq.addElement(bind);
 			EventQuery q = new EventQuery("iq", new String[] { "id" },
 					new String[] { iq.getAttribute("id") });
-			BasicXmlStream.addOnetimeEventListener(q, this);
+			BasicXmlStream.addOnetimePacketListener(q, this);
 			stream.send(iq, -1);
 		}
 
@@ -509,7 +435,7 @@ public abstract class BasicXmlStream implements TransportListener,
 				}
 				stream.nextInitializer();
 			} else {
-				stream.dispatchEvent(BasicXmlStream.STREAM_ERROR,
+				EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
 						"cannot bind resource");
 			}
 		}
@@ -532,7 +458,7 @@ public abstract class BasicXmlStream implements TransportListener,
 			iq.addElement(session);
 			EventQuery q = new EventQuery("iq", new String[] { "id" },
 					new String[] { iq.getAttribute("id") });
-			BasicXmlStream.addOnetimeEventListener(q, this);
+			BasicXmlStream.addOnetimePacketListener(q, this);
 			stream.send(iq, -1);
 		}
 
@@ -540,7 +466,7 @@ public abstract class BasicXmlStream implements TransportListener,
 			if ("result".equals(e.getAttribute("type"))) {
 				stream.nextInitializer();
 			} else {
-				stream.dispatchEvent(BasicXmlStream.STREAM_ERROR,
+				EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
 						"cannot start session");
 			}
 		}

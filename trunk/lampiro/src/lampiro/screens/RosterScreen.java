@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: RosterScreen.java 2059 2010-04-15 11:04:51Z luca $
 */
 
 package lampiro.screens;
@@ -9,7 +9,6 @@ package lampiro.screens;
 import it.yup.ui.UIAccordion;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
-import it.yup.ui.UICombobox;
 import it.yup.ui.UIConfig;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
@@ -21,6 +20,7 @@ import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 import it.yup.ui.UIVLayout;
+import it.yup.util.EventDispatcher;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
@@ -28,6 +28,7 @@ import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
+import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
 import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
@@ -39,6 +40,7 @@ import it.yup.xmpp.MUC;
 import it.yup.xmpp.Roster;
 import it.yup.xmpp.Task;
 import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
 import it.yup.xmpp.FTReceiver.FTREventHandler;
 import it.yup.xmpp.FTReceiver.OpenListener;
 import it.yup.xmpp.FTSender.FTSEventHandler;
@@ -68,6 +70,9 @@ import javax.microedition.media.control.VolumeControl;
 
 import lampiro.LampiroMidlet;
 import lampiro.screens.HandleMucScreen.HMC_CONSTANTS;
+
+
+
 import lampiro.screens.rosterItems.UIContact;
 import lampiro.screens.rosterItems.UIContactGroup;
 import lampiro.screens.rosterItems.UIGateway;
@@ -91,9 +96,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		FTREventHandler, FTSEventHandler, XMPPClient.XmppListener {
 
 	// #ifdef TEST_COMPONENTS 
-	//@	private String testServer = "moneiro.biz";
+//@	private String testServer = "moneiro.biz";
 	// #endif
-	private WaitScreen dataformWaitingScreen = null;
 
 	/*
 	 * A flag to know if the client is online
@@ -289,11 +293,26 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 		public void packetReceived(Element e) {
 			String from = e.getAttribute(Message.ATT_FROM);
-			UIContactGroup sg = UIServices.getGroup(rosterAccordion, false);
 			Contact c = xmppClient.getRoster().getContactByJid(from);
-			UIContact uic = c != null && sg != null ? sg.getUIContact(c) : null;
-			if (uic != null) {
-				((PacketListener) uic).packetReceived(e);
+			if (c != null) {
+				try {
+					UICanvas.lock();
+					// the contact must be created here in case it does not exist
+					// (contact creation can be delayed due to bufferizing)
+					dequeueContact(c, Contact.CH_STATUS);
+				} catch (Exception ex) {
+					// #mdebug
+//@					Logger.log("In pubsub reception:" + ex.getClass());
+//@					ex.printStackTrace();
+					// #enddebug
+				} finally {
+					UICanvas.unlock();
+				}
+				UIContactGroup sg = UIServices.getGroup(rosterAccordion, false);
+				UIContact uic = sg != null ? sg.getUIContact(c) : null;
+				if (uic != null) {
+					((PacketListener) uic).packetReceived(e);
+				}
 			}
 		}
 	};
@@ -302,12 +321,6 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		RosterScreen rs = RosterScreen.getInstance();
 		return UIContactGroup.getContactGroup(rs.highLightString,
 				rs.rosterAccordion, allocate);
-	}
-
-	public interface WaitScreen {
-
-		public void stopWaiting();
-
 	}
 
 	private class RosterScreenListener extends IQResultListener {
@@ -436,19 +449,45 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 	private class AdHocCommandsHandler extends IQResultListener {
 
-		private UIScreen returnScreen;
+		private WaitScreen ws;
+		private EventQueryRegistration eqr;
 
 		public AdHocCommandsHandler(UIScreen returnScreen) {
-			this.returnScreen = returnScreen;
+			ws = new WaitScreen(rm.getString(ResourceIDs.STR_CMDSCREEN_TITLE),
+					returnScreen);
+			eqr = EventDispatcher.addDelayedListener(ws, true);
+			UICanvas.getInstance().open(ws, true);
 		}
 
 		public void handleError(Element e) {
+			handlePacket(e, true);
+			showAlert(AlertType.INFO, rm.getString(ResourceIDs.STR_LISTCMD), rm
+					.getString(ResourceIDs.STR_COMMAND_ERROR), null);
+		}
+
+		public void handleResult(Element e) {
+			handlePacket(e, false);
+		}
+
+		private void handlePacket(Element e, boolean error) {
 			try {
 				UICanvas.lock();
-				closeWaitingScreen();
-				showAlert(AlertType.INFO,
-						rm.getString(ResourceIDs.STR_LISTCMD), rm
-								.getString(ResourceIDs.STR_COMMAND_ERROR), null);
+				if (!error) {
+					xmppClient.handleClientCommands(e);
+					String from = e.getAttribute(Stanza.ATT_FROM);
+					if (from == null) return;
+					Contact c = xmppClient.getRoster().getContactByJid(from);
+					if (c == null) return;
+					Element q = e.getChildByName(XMPPClient.NS_IQ_DISCO_ITEMS,
+							Iq.QUERY);
+					if (q != null) {
+						_updateContact(c, Contact.CH_TASK_NEW);
+						CommandListScreen cmdscr = new CommandListScreen(c,
+								from);
+						cmdscr.setReturnScreen(ws.getReturnScreen());
+						UICanvas.getInstance().open(cmdscr, true);
+					}
+				}
 			} catch (Exception ex) {
 				// #mdebug
 //@				Logger.log("In handling cmd error:");
@@ -457,10 +496,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			} finally {
 				UICanvas.unlock();
 			}
-		}
-
-		public void handleResult(Element e) {
-			xmppClient.handleClientCommands(e, true, returnScreen);
+			EventDispatcher.dispatchDelayed(eqr, AdHocCommandsHandler.this);
 		}
 	}
 
@@ -482,14 +518,21 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		 */
 		private UIScreen dfs;
 
+		private EventQueryRegistration eqr;
+
+		public RegisterHandler(EventQueryRegistration eqr) {
+			this.eqr = eqr;
+		}
+
 		public void handleError(Element e) {
+			EventDispatcher.dispatchDelayed(eqr, RegisterHandler.this);
 			RosterScreen.this.registerError(e);
 		}
 
 		public void handleResult(Element e) {
 			try {
 				UICanvas.lock();
-				closeWaitingScreen();
+				//closeWaitingScreen();
 				Element q = e.getChildByName(XMPPClient.IQ_REGISTER, Iq.QUERY);
 				if (q != null) {
 					/* Parse the dataform if present */
@@ -523,6 +566,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			} finally {
 				UICanvas.unlock();
 			}
+			EventDispatcher.dispatchDelayed(eqr, RegisterHandler.this);
 		}
 	}
 
@@ -535,7 +579,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			this.registerHandler = registerHandler;
 		}
 
-		public boolean execute(int cmd) {
+		public void execute(int cmd) {
 			if (cmd == DataFormListener.CMD_SUBMIT) {
 				String from = getFrom();
 				Iq reply = new Iq(from, Iq.T_SET);
@@ -551,7 +595,6 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			} else if (cmd == DataFormListener.CMD_CANCEL) {
 				UICanvas.getInstance().close(registerHandler.dfs);
 			}
-			return false;
 		}
 
 		public void handleError(Element e) {
@@ -587,6 +630,15 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			// TODO Auto-generated method stub
 			return this.registerHandler.e.getAttribute(Stanza.ATT_FROM);
 		}
+
+		public void setCel(CommandExecutorListener cel) {
+			//this.eqr=eqr;
+		}
+
+		public boolean needWaiting(int comm) {
+			// TODO Auto-generated method stub
+			return false;
+		}
 	}
 
 	public class DiscoExplorer extends IQResultListener {
@@ -597,6 +649,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		private int discoType = ITEMS;
 		private String serverAddress = null;
 		private int[] queriedGateways = null;
+
 
 		public void handleError(Element e) {
 			switch (discoType) {
@@ -751,7 +804,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 			Iq iq = new Iq(ithJid, Iq.T_GET);
 			iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-			xmppClient.sendIQ(iq, de,240000);
+			xmppClient.sendIQ(iq, de, 240000);
 		}
 
 		public DiscoExplorer(int type, final String serverAddress,
@@ -864,16 +917,9 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 	private RosterScreen() {
 // #ifndef GLIDER
-												defaultContacts.addElement(new Object[] { Config.LAMPIRO_AGENT,
-														"Lampiro Agent" });
+																defaultContacts.addElement(new Object[] { Config.LAMPIRO_AGENT,
+																		"Lampiro Agent" });
 		// #endif
-
-		// update the default strings for comboboxes
-		UICombobox.selectString = rm.getString(ResourceIDs.STR_SELECT)
-				.toUpperCase();
-		UICombobox.cancelString = rm.getString(ResourceIDs.STR_CANCEL)
-				.toUpperCase();
-
 		UIHLayout buttonLayout = new UIHLayout(2);
 		buttonLayout.setGroup(false);
 		buttonLayout.insert(cmdMucNo, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
@@ -1486,11 +1532,12 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		} else if (c == cmd_refresh_roster) {
 			try {
 				removeAllContacts();
-				new Thread() {
+				TimerTask tt = new TimerTask() {
 					public void run() {
 						xmppClient.roster.cleanAndRetrieve();
 					}
-				}.start();
+				};
+				Utils.tasks.schedule(tt, 200);
 			} catch (Exception e) {
 				// #mdebug
 //@				e.printStackTrace();
@@ -1623,7 +1670,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			if (to == null) return;
 			Iq iq = new Iq(to.jid, Iq.T_SET);
 			iq.addElement(XMPPClient.IQ_REGISTER, Iq.QUERY).addElement(null,
-					"remove");
+					XMPPClient.REMOVE);
 			xmppClient.sendIQ(iq, new RosterScreenListener(
 					RosterScreenListener.UNREGISTER_TYPE));
 			this.removePopup(UIContact.optionsMenu);
@@ -1668,11 +1715,6 @@ public class RosterScreen extends UIScreen implements PacketListener,
 	}
 
 	public void queryCmd(String fullJid, UIScreen returnScreen) {
-		SimpleWaitScreen rws = new SimpleWaitScreen(rm
-				.getString(ResourceIDs.STR_WAIT));
-		this.setWaitingDF(rws);
-		UICanvas.getInstance().open(rws, true, returnScreen);
-
 		Iq iq = new Iq(fullJid, Iq.T_GET);
 		Element query = iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
 		query.setAttribute("node", "http://jabber.org/protocol/commands");
@@ -1701,13 +1743,14 @@ public class RosterScreen extends UIScreen implements PacketListener,
 	/*
 	 * Query the server for the instant  messaging transports
 	 */
-	void queryDiscoItems(String serverAddress, int[] queriedGateways, int duration) {
+	void queryDiscoItems(String serverAddress, int[] queriedGateways,
+			int duration) {
 		DiscoExplorer de = new DiscoExplorer(DiscoExplorer.ITEMS,
 				serverAddress, queriedGateways);
 
 		Iq iq = new Iq(serverAddress, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_ITEMS, Iq.QUERY);
-		xmppClient.sendIQ(iq, de,duration);
+		xmppClient.sendIQ(iq, de, duration);
 	}
 
 	private void addGateway(Hashtable gws, String name, String from,
@@ -1776,7 +1819,9 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		String key = (preferredJid != null ? preferredJid : user.jid);
 		//		if (user.unread_msg() || force_chat) {
 		ChatScreen ms = (ChatScreen) chatScreenList.get(key);
+		boolean newScreen = false;
 		if (ms == null) {
+			newScreen = true;
 			if (user instanceof MUC == true) {
 				ms = new MUCScreen(user);
 				chatScreenList.put(key, ms);
@@ -1790,6 +1835,9 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			}
 		}
 		UICanvas.getInstance().open(ms, true, this);
+		if (newScreen) {
+			ms.fillScreen();
+		}
 		if (unread_msg == false && ms.getCurrent_conversation().size() == 0
 				&& online) ms.openComposer();
 
@@ -1810,12 +1858,6 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		if (currentIndex < 0) currentIndex = screenList.size() - 1;
 		if (screenList.size() > 1) UICanvas.getInstance().show(currentIndex);
 	}
-
-	//	public static void closeAndOpenRoster(UIScreen shownScreen) {
-	//		UICanvas uiCanvas = UICanvas.getInstance();
-	//		uiCanvas.close(shownScreen);
-	//		uiCanvas.show(RosterScreen.getInstance());
-	//	}
 
 	/**
 	 * Update the (global) status of a contact and repaint the roster
@@ -1932,17 +1974,49 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			}
 			return retVal;
 		} else {
+			// #mdebug
+//@			//			long startTime = System.currentTimeMillis();
+//@			//			Logger.log("Start update loop: " + startTime + " "
+//@			//					+ updateQueue.size());
+			// #enddebug
 			updateScheduled = false;
 			Enumeration en = this.updateQueue.elements();
-			while (en.hasMoreElements()) {
+			int count = 0;
+			updateTime = System.currentTimeMillis();
+			while (en.hasMoreElements()
+					&& (System.currentTimeMillis() - updateTime) < 250) {
 				Object[] uEl = (Object[]) en.nextElement();
 				Contact ithC = (Contact) uEl[0];
 				int ithReason = ((Integer) uEl[1]).intValue();
 				retVal |= dequeueContact(ithC, ithReason);
+				count++;
 			}
-			this.updateQueue.removeAllElements();
-			this.updateQueue.trimToSize();
-			updateTime = System.currentTimeMillis();
+			// only a part was updated force a new update after releasing lock
+			if (count < updateQueue.size()) {
+				Vector tempQueue = new Vector(updateQueue.size() - count);
+				en = updateQueue.elements();
+				while (count > 0) {
+					en.nextElement();
+					count--;
+				}
+				while (en.hasMoreElements()) {
+					tempQueue.addElement(en.nextElement());
+				}
+				updateQueue = tempQueue;
+				if (updateScheduled == false) {
+					updateScheduled = true;
+					UICanvas.getTimer().schedule(new UpdateTask(), 250);
+				}
+			} else {
+				this.updateQueue.removeAllElements();
+				this.updateQueue.trimToSize();
+				updateTime = System.currentTimeMillis();
+			}
+			// #mdebug
+//@			//			long endTime = System.currentTimeMillis();
+//@			//			Logger.log("End update loop: " + endTime + " "
+//@			//					+ (endTime - startTime));
+			// #enddebug
 		}
 
 		return retVal;
@@ -2152,7 +2226,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		return needRepaint;
 	}
 
-	public void removeContact(Contact c) {
+	public void removeContact(Contact c, boolean unsubscribed) {
 		try {
 			UICanvas.lock();
 			_removeContact(c);
@@ -2189,7 +2263,6 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 		if (isFiltering() == false) filterContacts(true);
 
-		// XXX we could repaint only if this contact is really displayed
 		askRepaint();
 	}
 
@@ -2428,7 +2501,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		q.child = x;
 		EventQuery invite = new EventQuery("invite", null, null);
 		x.child = invite;
-		BasicXmlStream.addEventListener(q, this);
+		BasicXmlStream.addPacketListener(q, this);
 
 		// registration to handle people left/join within MUCs
 		q = new EventQuery("presence", null, null);
@@ -2437,7 +2510,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		q.child = x;
 		invite = new EventQuery("item", null, null);
 		x.child = invite;
-		BasicXmlStream.addEventListener(q, this);
+		BasicXmlStream.addPacketListener(q, this);
 
 		// listen for all incoming messages with subject
 		// this is used to set the topic for MUC
@@ -2446,7 +2519,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		q = new EventQuery("message", new String[] { Iq.ATT_TYPE },
 				new String[] { Message.GROUPCHAT });
 		q.child = new EventQuery("subject", null, null);
-		BasicXmlStream.addEventListener(q, this);
+		BasicXmlStream.addPacketListener(q, this);
 
 		this.ftReceiver = new FTReceiver((FTREventHandler) this);
 		//= Contact.domain(XMPPClient.getInstance().my_jid);
@@ -2456,14 +2529,14 @@ public class RosterScreen extends UIScreen implements PacketListener,
 				new String[] { "xmlns" },
 				new String[] { XMPPClient.NS_PUBSUB_EVENT });
 		q.child = event;
-		BasicXmlStream.addEventListener(q, this.pubSubListener);
+		BasicXmlStream.addPacketListener(q, this.pubSubListener);
 
 		firstLoginIntro();
 		online = true;
 		try {
 			UICanvas.lock();
 // #ifndef GLIDER
-																		UICanvas.getInstance().open(this, true);
+																								UICanvas.getInstance().open(this, true);
 			// #endif
 			this.toggleMenus();
 		} catch (Exception ex) {
@@ -2702,24 +2775,6 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		}
 	}
 
-	public void handleCommand(Contact c, String chosenResource,
-			Object optionalArguments) {
-		try {
-			UICanvas.lock();
-			CommandListScreen cmdscr = new CommandListScreen(c, chosenResource);
-			cmdscr.setReturnScreen((UIScreen) optionalArguments);
-			UICanvas.getInstance().open(cmdscr, true);
-			this.closeWaitingScreen();
-		} catch (Exception e) {
-			// #mdebug
-//@			Logger.log("In receiving a command:" + e.getClass());
-//@			e.printStackTrace();
-			// #enddebug
-		} finally {
-			UICanvas.unlock();
-		}
-	}
-
 	private void loadConvs() {
 		if (savedConvs == null) return;
 		Enumeration oldConvs = savedConvs.elements();
@@ -2793,8 +2848,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 		}
 		this.toggleMenus();
 // #ifndef GLIDER
-												UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
-												this.askRepaint();
+																UICanvas.getInstance().open(RegisterScreen.getInstance(), true);
+																this.askRepaint();
 		// #endif
 		//UICanvas.getInstance().close(this);
 	}
@@ -2918,18 +2973,11 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			//@			Displayable cur = LampiroMidlet.disp.getCurrent();
 			//@ task.display(LampiroMidlet.disp, cur);
 			// #endif
-		} else {
-			closeWaitingScreen();
 		}
 	}
 
-	public void setWaitingDF(WaitScreen dataFormScreen) {
-		closeWaitingScreen();
-		this.dataformWaitingScreen = dataFormScreen;
-	}
-
 	public Object handleDataForm(DataForm df, byte type, DataFormListener dfl,
-			int cmds, Object optionalArguments) {
+			int cmds) {
 		UIScreen scr = null;
 		if (type == Task.CMD_INPUT) {
 			scr = new DataFormScreen(df, dfl, cmds);
@@ -2937,18 +2985,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			scr = new DataResultScreen(df, dfl);
 		}
 
-		//closeWaitingScreen();
-		UICanvas.getInstance().open(scr, true, (UIScreen) optionalArguments);
-		closeWaitingScreen();
 		return scr;
-	}
-
-	private void closeWaitingScreen() {
-		WaitScreen oldWatingScreen = dataformWaitingScreen;
-		if (oldWatingScreen != null) {
-			oldWatingScreen.stopWaiting();
-			this.dataformWaitingScreen = null;
-		}
 	}
 
 	public void showCommand(Object screen) {
@@ -3030,13 +3067,13 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			}
 		}
 		String localServer = Contact.domain(xmppClient.my_jid);
-		queryDiscoItems(localServer, new int[] { 0 },240000);
+		queryDiscoItems(localServer, new int[] { 0 }, 240000);
 		if (localServer.equals(Config.DEFAULT_SERVER) == false) {
-			queryDiscoItems(Config.DEFAULT_SERVER, new int[] { 0 },240000);
+			queryDiscoItems(Config.DEFAULT_SERVER, new int[] { 0 }, 240000);
 		}
 		// #ifdef TEST_COMPONENTS
-		//@		// // to test the test component
-		//@		queryDiscoItems(testServer, new int[] { 0 });
+//@		// // to test the test component
+//@		queryDiscoItems(testServer, new int[] { 0 }, 240000);
 		//  #endif 
 		try {
 			UICanvas.lock();
@@ -3044,6 +3081,7 @@ public class RosterScreen extends UIScreen implements PacketListener,
 			UIGatewayGroup.getGroup(rosterAccordion, true);
 			// load again all the lost conversations;
 			this.loadConvs();
+
 		} catch (Exception e) {
 			// #mdebug
 //@			Logger.log("In roster retrieved:");

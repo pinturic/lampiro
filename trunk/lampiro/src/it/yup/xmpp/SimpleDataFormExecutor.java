@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleDataFormExecutor.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: SimpleDataFormExecutor.java 2056 2010-04-13 17:51:13Z luca $
 */
 
 package it.yup.xmpp;
@@ -17,6 +17,7 @@ import java.util.Date;
 // #endif
 
 import it.yup.xml.Element;
+import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
 import it.yup.xmpp.XMPPClient.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
@@ -51,7 +52,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		arrive_time = new Date();
 	}
 
-	public boolean execute(int cmd) {
+	public void execute(int cmd) {
 		XMPPClient client = XMPPClient.getInstance();
 		boolean send_reply = false;
 
@@ -81,9 +82,6 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		}
 
 		client.updateTask(this);
-
-		// true if the form_element is an IQ 
-		return Iq.IQ.equals(form_element.name);
 	}
 
 	/**
@@ -129,14 +127,19 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 
 		XmppListener xmppListener = XMPPClient.getInstance().getXmppListener();
 		if (xmppListener != null) {
+			Object screen = null;
 			if (df.type == DataForm.TYPE_FORM) {
-				xmppListener.handleDataForm(df, Task.CMD_INPUT, this, -1, null);
+				screen = xmppListener.handleDataForm(df, Task.CMD_INPUT, this,
+						-1);
 			} else if (df.type == DataForm.TYPE_RESULT) {
-				xmppListener.handleDataForm(df, Task.CMD_FINISHED, this, -1,
-						null);
+				screen = xmppListener.handleDataForm(df, Task.CMD_FINISHED,
+						this, -1);
 			} else {
 				/* should log it... */
 				return;
+			}
+			if (screen != null) {
+				xmppListener.showCommand(screen);
 			}
 		}
 	}
@@ -154,18 +157,27 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	}
 
 	public void setEnableDisplay(boolean enableDisplay) {
-		this.enableDisplay=enableDisplay;
+		this.enableDisplay = enableDisplay;
 	}
 
 	public void setEnableNew(boolean enableNew) {
 		this.enableNew = enableNew;
 	}
-	
+
 	public boolean getEnableDisplay() {
 		return this.enableDisplay;
 	}
 
 	public boolean getEnableNew() {
 		return this.enableNew;
+	}
+
+	public void setCel(CommandExecutorListener cel) {
+		
+	}
+
+	public boolean needWaiting(int comm) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

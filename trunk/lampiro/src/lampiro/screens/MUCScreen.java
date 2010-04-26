@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUCScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: MUCScreen.java 2032 2010-03-25 17:30:11Z luca $
 */
 
 package lampiro.screens;
@@ -91,8 +91,6 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		UILabel mucName = (UILabel) header.getItem(0);
 		mucName.setText(rm.getString(ResourceIDs.STR_TOPIC) + ": "
 				+ ((MUC) this.user).topic);
-		//this.setFreezed(false);
-		this.askRepaint();
 	}
 
 	/**
@@ -291,6 +289,8 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 				MUCScreen ms = (MUCScreen) RosterScreen.getChatScreenList()
 						.get(presenceMUC.jid);
 				if (ms != null) {
+					if (UICanvas.getInstance().getCurrentScreen() == ms) ms
+							.updateConversation();
 					ms.askRepaint();
 				}
 			} catch (Exception ex) {

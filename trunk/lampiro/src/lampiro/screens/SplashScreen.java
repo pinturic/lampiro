@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SplashScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: SplashScreen.java 2053 2010-04-11 16:37:53Z luca $
 */
 
 package lampiro.screens;
@@ -16,11 +16,13 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 import it.yup.ui.UIVLayout;
+
 //#mdebug
 //@
 //@import it.yup.util.Logger;
 //@
 //#enddebug
+
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
@@ -82,9 +84,9 @@ public class SplashScreen extends UIScreen {
 
 			setTitle(Config.CLIENT_NAME);
 // #ifndef GLIDER
-												
-										Image logo = Image.createImage("/icons/lampiro_icon.png");
-										UILabel ul = new UILabel("Loading Lampiro...");
+			
+						Image logo = Image.createImage("/icons/lampiro_icon.png");
+						UILabel ul = new UILabel("Loading Lampiro...");
 			// #endif
 			UILabel up = new UILabel(logo);
 			up.setAnchorPoint(Graphics.HCENTER | Graphics.VCENTER);
@@ -111,6 +113,9 @@ public class SplashScreen extends UIScreen {
 				} catch (Exception e) {
 					// #mdebug
 //@					Logger.log("In splash screen:" + e.getClass());
+//@					UILabel label = new UILabel(e.getClass().toString());
+//@					label.setWrappable(true, 170);
+//@					addPopup(UIUtils.easyMenu("Error in checkKeys ", 20, 20, 180, label));
 //@					e.printStackTrace();
 					// #enddebug
 				} finally {
@@ -148,15 +153,19 @@ public class SplashScreen extends UIScreen {
 
 	private void checkKeys() {
 		int q;
+
 		Config cfg = Config.getInstance();
+
 		String keys = cfg.getProperty(Config.CANVAS_KEYS);
+
 		if (keys != null && (q = keys.indexOf(',')) != -1) {
 			int l = Integer.parseInt(keys.substring(0, q));
 			int r = Integer.parseInt(keys.substring(q + 1));
 			UICanvas.setMenuKeys(l, r);
 			UIScreen sc = null;
+
 // #ifndef GLIDER
-												sc=RegisterScreen.getInstance();
+						sc = RegisterScreen.getInstance();
 			// #endif 
 			UICanvas.getInstance().open(sc, true);
 			UICanvas.getInstance().close(SplashScreen.this);

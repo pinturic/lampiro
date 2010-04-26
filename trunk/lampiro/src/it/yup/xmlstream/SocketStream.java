@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketStream.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: SocketStream.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.xmlstream;
@@ -12,6 +12,7 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import it.yup.transport.BaseChannel;
 import it.yup.transport.SocketChannel;
+import it.yup.util.EventDispatcher;
 
 // #mdebug
 //@
@@ -67,7 +68,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 			channel.sendContent(Utils.getBytesUtf8(streamStart.toString()));
 
 		} catch (XmlPullParserException e) {
-			dispatchEvent(BasicXmlStream.STREAM_ERROR, null);
+			EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR, null);
 			// #mdebug
 //@			Logger.log("[SocketStream::restart] XmlPullParserException: "
 //@					+ e.getMessage());
@@ -99,7 +100,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		// #debug		
 //@		Logger.log("Connection established");
 		this.channel = (SocketChannel) connection;
-		dispatchEvent(BasicXmlStream.STREAM_CONNECTED, null);
+		EventDispatcher.dispatchEvent(EventDispatcher.STREAM_CONNECTED, null);
 		// #debug		
 //@		Logger.log("restarting stream");
 		restart();
@@ -109,7 +110,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 	}
 
 	public void connectionFailed(BaseChannel connection) {
-		dispatchEvent(BasicXmlStream.CONNECTION_FAILED, null);
+		EventDispatcher.dispatchEvent(EventDispatcher.CONNECTION_FAILED, null);
 	}
 
 	public void connectionLost(BaseChannel connection) {
@@ -119,8 +120,8 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 			// multiple transports this is not feasible!!!
 			this.sendQueue.removeAllElements();
 		}
-		dispatchEvent(BasicXmlStream.STREAM_TERMINATED, null);
-		dispatchEvent(BasicXmlStream.CONNECTION_LOST, null);
+		EventDispatcher.dispatchEvent(EventDispatcher.STREAM_TERMINATED, null);
+		EventDispatcher.dispatchEvent(EventDispatcher.CONNECTION_LOST, null);
 	}
 
 	public void run() {
@@ -185,10 +186,10 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 	}
 
 	//	 #ifdef TLS
-	//@				protected void startTLS() throws IOException {
-	//@					channel.startTLS();
-	//@				}
-	//@				
+//@					protected void startTLS() throws IOException {
+//@						channel.startTLS();
+//@					}
+//@					
 	//	 #endif
 
 	// #ifdef COMPRESSION

@@ -100,6 +100,9 @@
 110	Forwarded message from
 111	Participants
 112	Displayed name
+113	Automatic
+114	Manual
+115	OK
 200	Jabber ID
 202	Email address (optional)
 203	Register new account

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Utils.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Utils.java 2045 2010-04-01 09:14:22Z luca $
 */
 
 package it.yup.util;
@@ -27,7 +27,7 @@ public class Utils {
 	 */
 	static public Timer tasks = new Timer();
 
-	private static boolean has_utf8 = false;
+	public static boolean has_utf8 = false;
 
 	static {
 		try {
@@ -281,18 +281,32 @@ public class Utils {
 		return v;
 	}
 
-	public static final String getStringUTF8(byte in[]) {
-		if (has_utf8) {
-			try {
-				return new String(in, "UTF-8");
-			} catch (UnsupportedEncodingException usx) {
-				// shouldnt...
+	public static final String getStringUTF8(byte in[], int len) {
+		//		if (has_utf8) {
+		//			try {
+		//				return new String(in, 0, len, "UTF-8");
+		//			} catch (UnsupportedEncodingException usx) {
+		//				// shouldnt...
+		//			}
+		//		}
+		int max = len;
+		int outLen = len;
+		for (int i = 0; i < max; i++) {
+			if ((in[i] & 0x80) == 0) {
+				;
+			} else if ((in[i] & 0xe0) == 0xc0) {
+				outLen--;
+			} else if ((in[i] & 0xf0) == 0xe0) {
+				outLen -= 2;
+			} else if ((in[i] & 0xf8) == 0xf0) {
+				outLen -= 3;
+			} else {
+				;
 			}
 		}
-
-		StringBuffer buff = new StringBuffer();
-		int max = in.length;
-		for (int i = 0; i < max; i++) {
+		char[] outChar = new char[outLen];
+		int outIndex = 0;
+		for (int i = 0; i < len; i++) {
 			char c = 0;
 			if ((in[i] & 0x80) == 0) {
 				c = (char) in[i];
@@ -315,21 +329,27 @@ public class Utils {
 				i++;
 				c |= ((in[i] & 0x3f) << 0);
 			} else {
-				c = '?';
+
 			}
-			buff.append(c);
+			outChar[outIndex] = c;
+			outIndex++;
 		}
-		return buff.toString();
+		return new String(outChar);
+
+	}
+
+	public static final String getStringUTF8(byte in[]) {
+		return getStringUTF8(in, in.length);
 	}
 
 	public static final byte[] getBytesUtf8(String str) {
-		if (has_utf8) {
-			try {
-				return str.getBytes("UTF-8");
-			} catch (UnsupportedEncodingException usx) {
-				// shouldnt...
-			}
-		}
+		//		if (has_utf8) {
+		//			try {
+		//				return str.getBytes("UTF-8");
+		//			} catch (UnsupportedEncodingException usx) {
+		//				// shouldnt...
+		//			}
+		//		}
 		char[] chars = str.toCharArray();
 		int vlen = chars.length;
 		for (int i = 0; i < chars.length; i++) {
@@ -341,8 +361,7 @@ public class Utils {
 			} else if ((ch >= 0x0800 && ch <= 0x0D7FF)
 					|| (ch >= 0x00E000 && ch <= 0x00FFFD)) {
 				vlen += 2;
-			}
-			if (ch >= 0x010000 && ch <= 0x10FFFF) {
+			} else if (ch >= 0x010000 && ch <= 0x10FFFF) {
 				vlen += 3;
 			} else {
 				/* invalid char, ignore */
@@ -363,8 +382,7 @@ public class Utils {
 				buf[j++] = (byte) (0xE0 | ((ch & 0x0F000) >> 12));
 				buf[j++] = (byte) (0x80 | ((ch & 0x00FC0) >> 6));
 				buf[j++] = (byte) (0x80 | ((ch & 0x0003F)));
-			}
-			if (ch >= 0x010000 && ch <= 0x10FFFF) {
+			} else if (ch >= 0x010000 && ch <= 0x10FFFF) {
 				/* non dovrebbero essere usate */
 				buf[j++] = (byte) (0xE0 | ((ch & 0x1C0000) >> 18));
 				buf[j++] = (byte) (0x80 | ((ch & 0x03F000) >> 12));
@@ -385,6 +403,38 @@ public class Utils {
 		return left.getPrintableName().toLowerCase().compareTo(
 				right.getPrintableName().toLowerCase()) < 0;
 	}
+
+	//	public static int indexOf(char[] source, char[] target, int fromIndex,
+	//			int sourceCount) {
+	//		if (fromIndex >= sourceCount) { return (target.length == 0 ? sourceCount
+	//				: -1); }
+	//		if (fromIndex < 0) {
+	//			fromIndex = 0;
+	//		}
+	//		if (target.length == 0) { return fromIndex; }
+	//
+	//		char first = target[0];
+	//		int max = (sourceCount - target.length);
+	//		for (int i = fromIndex; i <= max; i++) {
+	//			/* Look for first character. */
+	//			if (source[i] != first) {
+	//				while (++i <= max && source[i] != first)
+	//					;
+	//			}
+	//			if (i <= max) {
+	//				int j = i + 1;
+	//				int end = j + target.length - 1;
+	//				for (int k = 1; j < end && source[j] == target[k]; j++, k++)
+	//					;
+	//
+	//				if (j == end) {
+	//					/* Found whole string. */
+	//					return i;
+	//				}
+	//			}
+	//		}
+	//		return -1;
+	//	}
 
 	/**
 	 * The lookup table used to memorize letters for search pattern

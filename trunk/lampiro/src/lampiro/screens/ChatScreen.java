@@ -1,11 +1,12 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: ChatScreen.java 2040 2010-03-31 10:45:55Z luca $
 */
 
 package lampiro.screens;
 
+import it.yup.ui.TokenIterator;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICombobox;
@@ -125,30 +126,51 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	class UICutLabel extends UIEmoLabel {
 
-		private String completeText = "";
+		private boolean needCut = false;
 
-		public UICutLabel(String newText, String completeText) {
-			super(newText);
-			this.completeText = completeText;
-			// TODO Auto-generated constructor stub
+		public UICutLabel(String text, int cutHeight) {
+			super(text);
 		}
-		
-		public String getText() {
-			return completeText;
+
+		protected void computeTextLines(Font usedFont, int w) {
+			textLines = new Vector();
+			TokenIterator ti = new TokenIterator(this);
+			ti.computeLazyLines(usedFont, w);
+			int count = 0;
+			// compute only the needed lines to fit the screen
+			int fontHeight = usedFont.getHeight();
+			int cumulativeHeight = (2 * getPaddings()[1]);
+			while (count < ti.getLinesNumber()) {
+				String ithString = ti.elementAt(count).trim();
+				if (ithString.length() > 0) {
+					cumulativeHeight += ((fontHeight + 2));
+					if (cumulativeHeight <= printableHeight) {
+						textLines.addElement(ithString);
+					} else {
+						needCut = true;
+						this.setSubmenu(zoomSubmenu);
+						break;
+					}
+				}
+				count++;
+			}
 		}
 
 		protected void paint(Graphics g, int w, int h) {
 			super.paint(g, w, h);
-			g.setColor(0x555555);
-			Font currentFont = this.getFont();
-			if (currentFont == null) currentFont = UIConfig.font_body;
-			String moreString = " " + rm.getString(ResourceIDs.STR_MORE) + " ";
-			int moreWidth = currentFont.stringWidth(moreString);
-			g.fillRect(1, h - currentFont.getHeight() - 2, moreWidth + 1,
-					currentFont.getHeight() + 1);
-			g.setColor(0xFFFFFF);
-			g.drawString(moreString, 1, h - currentFont.getHeight() - 1,
-					Graphics.TOP | Graphics.LEFT);
+			if (needCut) {
+				g.setColor(0x555555);
+				Font currentFont = this.getFont();
+				if (currentFont == null) currentFont = UIConfig.font_body;
+				String moreString = " " + rm.getString(ResourceIDs.STR_MORE)
+						+ " ";
+				int moreWidth = currentFont.stringWidth(moreString);
+				g.fillRect(1, h - currentFont.getHeight() - 2, moreWidth + 1,
+						currentFont.getHeight() + 1);
+				g.setColor(0xFFFFFF);
+				g.drawString(moreString, 1, h - currentFont.getHeight() - 1,
+						Graphics.TOP | Graphics.LEFT);
+			}
 		}
 
 	}
@@ -166,16 +188,17 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	private String oldStatus = "";
 
 	/*
+	 *  some blocking or long operation must be done when the screen has
+	 *  already been shown 
+	 */
+	private boolean filledScreen = false;
+
+	/*
 	 * The area in which the screen can paint (hence excluding
 	 * headers footers and title screen)
 	 */
 	protected int printableHeight = -1;
 
-	/*
-	 * The total area screen. Since it may vary during execution 
-	 * its value is saved here
-	 */
-	protected int screenHeight = -1;
 	/*
 	 * The header used to show stats and advice;
 	 */
@@ -344,6 +367,12 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		getPrintableHeight(UICanvas.getInstance().getCurrentScreen()
 				.getGraphics(), this.height);
 
+	}
+
+	/**
+	 * 
+	 */
+	public void fillScreen() {
 		for (int j = 0; j < current_conversation.size(); j++) {
 			ConversationEntry entry = (ConversationEntry) current_conversation
 					.elementAt(j);
@@ -353,7 +382,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			// remember the separator
 			chatPanel.setSelectedIndex(chatPanel.getItems().size() - 2);
 			chatPanel.setDirty(true);
-			this.askRepaint();
 		}
 
 		// prepare zoomSubMenu
@@ -367,16 +395,15 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		EventQuery q = new EventQuery("message", null, null);
 		q.child = new EventQuery("body", null, null);
 		if (reg == null) {
-			reg = BasicXmlStream.addEventListener(q, this);
+			reg = BasicXmlStream.addPacketListener(q, this);
 		}
 
 		// so to reset the status in the roster
 		updateConversation();
 		RosterScreen roster = RosterScreen.getInstance();
 		roster._updateContact(user, Contact.CH_MESSAGE_READ);
-
+		filledScreen = true;
 		this.askRepaint();
-
 	}
 
 	/**
@@ -458,9 +485,9 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	}
 
 	protected void paint(Graphics g, int w, int h) {
-		if (this.updateConversation()) this.chatPanel.setDirty(true);
-		RosterScreen.getInstance()
-				._updateContact(user, Contact.CH_MESSAGE_READ);
+		//		if (this.updateConversation()) this.chatPanel.setDirty(true);
+		//		RosterScreen.getInstance()
+		//				._updateContact(user, Contact.CH_MESSAGE_READ);
 		super.paint(g, w, h);
 	}
 
@@ -470,7 +497,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		maxHeight -= this.headerLayout.getHeight(g);
 		maxHeight -= this.footer.getHeight(g);
 		this.printableHeight = maxHeight;
-		this.screenHeight = h;
 	}
 
 	/**
@@ -484,7 +510,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	boolean updateResConversation(String res) {
 		if (res == null) res = this.preferredResource;
-
 		// if the user is offline i get all the conversations
 		//		Presence[] ps = user.getAllPresences();
 		Vector messages = null;
@@ -494,11 +519,13 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		//			messages = user.getAllMessageHistory();
 		if (messages == null || messages.size() == 0) { return false; }
 		Enumeration en = messages.elements();
+		boolean updated = false;
 		while (en.hasMoreElements()) {
-			String [] msg = (String []) en.nextElement();
+			String[] msg = (String[]) en.nextElement();
 			ConversationEntry entry = wrapMessage(msg);
 			updateLabel(entry);
 			current_conversation.addElement(entry);
+			updated = true;
 		}
 		//		if (ps == null || ps.length ==0)
 		user.resetMessageHistory(res);
@@ -508,7 +535,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		// must be done here after repaint to be sure all the panel
 		// has been updated
 		this.chatPanel.setSelectedIndex(this.chatPanel.getItems().size() - 2);
-		return true;
+		this.chatPanel.setDirty(true);
+		return updated;
 	}
 
 	/**
@@ -518,7 +546,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		String s = entry.text;
 		s = getLabelHeader(entry) + s;
 		checkUrls(cmd_urls, s, this.getMenu());
-		UIEmoLabel uel = new UIEmoLabel(s);
+		UICutLabel uel = new UICutLabel(s, this.printableHeight);
 		uel.setWrappable(true, this.width - 10);
 		uel.setFocusable(true);
 
@@ -539,7 +567,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 		this.chatPanel.addItem(uel);
 		uel.setSubmenu(this.closeMenu);
-		this.checkSize(uel);
 		UISeparator sep = new UISeparator(1);
 		sep.setFg_color(0xCCCCCC);
 		this.chatPanel.addItem(sep);
@@ -549,57 +576,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			this.chatPanel.removeItemAt(this.chatLineStart);
 			this.chatPanel.removeItemAt(this.chatLineStart);
 		}
-	}
-
-	/*
-	 * Checks if the current label must be cut in order to fit the screen
-	 * 
-	 * @param uel the current label that is inserted now
-	 */
-	private void checkSize(UIEmoLabel uel) {
-		//UIScreen currentScreen = UICanvas.getInstance().getCurrentScreen();
-		//if (currentScreen == null) return;
-
-		// first try to use the the Chatscreen
-		// otherwise the currentScreen just in case
-		// i am not shown (composing or other screen has focus)
-		UIScreen currentScreen = this;
-		Graphics tempGraphics = currentScreen.getGraphics();
-		if (tempGraphics == null) {
-			currentScreen = UICanvas.getInstance().getCurrentScreen();
-			if (currentScreen == null) return;
-			tempGraphics = currentScreen.getGraphics();
-		}
-
-		Font oldFont = tempGraphics.getFont();
-		tempGraphics.setFont(UIConfig.font_body);
-		int labelHeight = uel.getHeight(tempGraphics);
-		//int panelHeight = this.chatPanel.getHeight(tempGraphics);
-		UIMenu itemSubMenu = uel.getSubmenu();
-		if (labelHeight > this.printableHeight
-				&& (itemSubMenu == null || itemSubMenu != zoomSubmenu)) {
-			String oldText = uel.getText();
-			Vector oldTextLines = uel.getTextLines();
-			int lineHeight = labelHeight / oldTextLines.size();
-			oldTextLines.setSize(printableHeight / lineHeight - 1);
-			String newText = "";
-			Enumeration en = oldTextLines.elements();
-			while (en.hasMoreElements()) {
-				newText += (en.nextElement() + "\n");
-			}
-			newText = newText.substring(0, newText.length() - 1);
-			UICutLabel uicl = new UICutLabel(newText, oldText);
-			uicl.setWrappable(true, this.width - 10);
-			uicl.setSubmenu(zoomSubmenu);
-			uicl.setTextLines(null);
-			// the status of UILabel is the conversatino entry
-			uicl.setStatus(uel.getStatus());
-			int index = this.chatPanel.getItems().indexOf(uel);
-			this.chatPanel.insertItemAt(uicl, index);
-			this.chatPanel.removeItem(uel);
-		}
-		uel.setTextLines(null);
-		tempGraphics.setFont(oldFont);
 	}
 
 	String getLabelHeader(ConversationEntry entry) {
@@ -617,6 +593,9 @@ public class ChatScreen extends UIScreen implements PacketListener,
 				preferredResource, user.getAvailability());
 		if (img != ((UILabel) this.header.getItem(1)).getImg()) {
 			((UILabel) this.header.getItem(1)).setImg(img);
+			this.askRepaint();
+		}
+		if (filledScreen && updateConversation()) {
 			this.askRepaint();
 		}
 	}
@@ -730,7 +709,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 							new MUCUpdateListener()), true, true);
 		} else if (cmd == this.zoomLabel) {
 			UICutLabel selLabel = (UICutLabel) this.chatPanel.getSelectedItem();
-			final String selText = selLabel.completeText;
+			final String selText = selLabel.getText();
 
 			UITextField expField = new UITextField("", selText, selText
 					.length(), TextField.UNEDITABLE);

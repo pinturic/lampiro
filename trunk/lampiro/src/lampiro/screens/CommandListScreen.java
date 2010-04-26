@@ -1,18 +1,13 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandListScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: CommandListScreen.java 2056 2010-04-13 17:51:13Z luca $
 */
 
 package lampiro.screens;
 
-import javax.microedition.lcdui.Gauge;
-
-import lampiro.screens.RosterScreen.WaitScreen;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
-import it.yup.ui.UIGauge;
 import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
@@ -20,15 +15,19 @@ import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UIUtils;
+import it.yup.util.EventDispatcher;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmpp.CommandExecutor;
 import it.yup.xmpp.Contact;
+import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
 
 /**
  * XXX: maybe not necessary anymore with submenus
  */
-public class CommandListScreen extends UIScreen implements WaitScreen {
+public class CommandListScreen extends UIScreen implements
+		CommandExecutorListener {
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -44,12 +43,13 @@ public class CommandListScreen extends UIScreen implements WaitScreen {
 
 	private UIPanel mainList = new UIPanel(true, false);
 
+	private WaitScreen ws = null;
+	private EventQueryRegistration eqr = null;
+
 	/*
 	 * The chosen resource for this command   
 	 */
 	private String chosenResource;
-
-	UIGauge progress_gauge = null;
 
 	public CommandListScreen(Contact _usr, String chosenResource) {
 		setMenu(new UIMenu(""));
@@ -98,7 +98,7 @@ public class CommandListScreen extends UIScreen implements WaitScreen {
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_cancel) {
-			stopWaiting();
+			UICanvas.getInstance().close(this);
 		} else if (cmd == cmd_select) {
 			this.itemAction(mainList.getSelectedItem());
 		}
@@ -117,30 +117,24 @@ public class CommandListScreen extends UIScreen implements WaitScreen {
 			return;
 		} else if (item instanceof UIButton) {
 			this.getMenu().remove(cmd_select);
-			cmd_cancel.setText(rm.getString(ResourceIDs.STR_CLOSE)
-					.toUpperCase());
-			mainList.removeAllItems();
-			progress_gauge = new UIGauge(rm.getString(ResourceIDs.STR_WAIT),
-					false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING);;
-			mainList.addItem(progress_gauge);
-			progress_gauge.start();
-//			RosterScreen.getInstance().setWaitingDF(this);
-//			this.askRepaint();
-			CommandExecutor cmdEx = null;
 			String[] selCmd = (String[]) item.getStatus();
-
-			cmdEx = new CommandExecutor(selCmd, chosenResource,
-					getReturnScreen());
+			ws = new WaitScreen(this.getTitle(), this.getReturnScreen());
+			eqr = EventDispatcher.addDelayedListener(ws, true);
+			CommandExecutor cmdEx = new CommandExecutor(selCmd, chosenResource,
+					this);
+			UICanvas.getInstance().open(ws, true);
 			RosterScreen.getInstance()._handleTask(cmdEx);
-			RosterScreen.getInstance().setWaitingDF(this);
-			this.askRepaint();
 			cmdEx.setupCommand();
+			UICanvas.getInstance().close(this);
 		}
 	}
 
-	public void stopWaiting() {
-		if (progress_gauge!=null)
-			progress_gauge.cancel();
-		UICanvas.getInstance().close(this);
+	public void executed(Object screen) {
+		if (eqr != null) {
+			if (ws != null) ((UIScreen) screen).setReturnScreen(ws
+					.getReturnScreen());
+			EventDispatcher.dispatchDelayed(eqr, this);
+			eqr = null;
+		}
 	}
 }

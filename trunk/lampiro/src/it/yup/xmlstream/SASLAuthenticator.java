@@ -1,11 +1,12 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SASLAuthenticator.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: SASLAuthenticator.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.xmlstream;
 
+import it.yup.util.EventDispatcher;
 import it.yup.util.GoogleToken;
 import it.yup.util.Utils;
 import it.yup.xml.Element;
@@ -82,19 +83,19 @@ public class SASLAuthenticator extends Initializer {
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
 
-						BasicXmlStream.addOnetimeEventListener(pq,
+						BasicXmlStream.addOnetimePacketListener(pq,
 								new PacketListener() {
 									public void packetReceived(Element e) {
 										if ("success".equals(e.name)) {
 											stream.restart();
-											stream
+											EventDispatcher
 													.dispatchEvent(
-															BasicXmlStream.STREAM_AUTHENTICATED,
+															EventDispatcher.STREAM_AUTHENTICATED,
 															null);
 										} else {
-											stream
+											EventDispatcher
 													.dispatchEvent(
-															BasicXmlStream.STREAM_ERROR,
+															EventDispatcher.STREAM_ERROR,
 															"Cannot authenticate");
 										}
 									}
@@ -107,19 +108,19 @@ public class SASLAuthenticator extends Initializer {
 						auth.setAttribute("mechanism", MECHANISM_DIGEST_MD5);
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
-						BasicXmlStream.addOnetimeEventListener(pq,
+						BasicXmlStream.addOnetimePacketListener(pq,
 								new PacketListener() {
 									public void packetReceived(Element e) {
 										if ("challenge".equals(e.name)) {
 											gotChallenge(e);
-											stream
+											EventDispatcher
 													.dispatchEvent(
-															BasicXmlStream.STREAM_AUTHENTICATED,
+															EventDispatcher.STREAM_AUTHENTICATED,
 															null);
 										} else {
-											stream
+											EventDispatcher
 													.dispatchEvent(
-															BasicXmlStream.STREAM_ERROR,
+															EventDispatcher.STREAM_ERROR,
 															"Cannot authenticate");
 										}
 									}
@@ -160,20 +161,20 @@ public class SASLAuthenticator extends Initializer {
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
 
-						BasicXmlStream.addOnetimeEventListener(pq,
+						BasicXmlStream.addOnetimePacketListener(pq,
 								new PacketListener() {
 									public void packetReceived(Element e) {
 										if ("success".equals(e.name)) {
 											stream.restart();
-											stream
+											EventDispatcher
 													.dispatchEvent(
-															BasicXmlStream.STREAM_AUTHENTICATED,
+															EventDispatcher.STREAM_AUTHENTICATED,
 															null);
 											return;
 										} else {
-											stream
+											EventDispatcher
 													.dispatchEvent(
-															BasicXmlStream.STREAM_ERROR,
+															EventDispatcher.STREAM_ERROR,
 															"Cannot authenticate");
 										}
 									}
@@ -186,7 +187,7 @@ public class SASLAuthenticator extends Initializer {
 			}
 		}
 		// XXX here we should use a different event
-		stream.dispatchEvent(BasicXmlStream.STREAM_ERROR,
+		EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
 				"Cannot find suitable mechanism for authentication");
 	}
 
@@ -253,7 +254,7 @@ public class SASLAuthenticator extends Initializer {
 					.getBytesUtf8(response_content))));
 			EventQuery pq = new EventQuery(EventQuery.ANY_PACKET, null, null);
 
-			BasicXmlStream.addOnetimeEventListener(pq, new PacketListener() {
+			BasicXmlStream.addOnetimePacketListener(pq, new PacketListener() {
 				public void packetReceived(Element e) {
 					if ("success".equals(e.name)) {
 						stream.restart();
@@ -262,15 +263,15 @@ public class SASLAuthenticator extends Initializer {
 					} else if ("failure".equals(e.name)) {
 						Element child = e
 								.getChildByName(null, "not-authorized");
-						if (child != null) stream.dispatchEvent(
-								BasicXmlStream.NOT_AUTHORIZED,
+						if (child != null) EventDispatcher.dispatchEvent(
+								EventDispatcher.NOT_AUTHORIZED,
 								"Cannot authenticate");
 						else
-							stream.dispatchEvent(
-									BasicXmlStream.REGISTRATION_FAILED,
+							EventDispatcher.dispatchEvent(
+									EventDispatcher.REGISTRATION_FAILED,
 									"Cannot registrate");
 					} else {
-						stream.dispatchEvent(BasicXmlStream.STREAM_ERROR,
+						EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
 								"Cannot authenticate");
 					}
 				}
@@ -280,7 +281,7 @@ public class SASLAuthenticator extends Initializer {
 		} catch (UnsupportedEncodingException e) {
 			// YUPMidlet.yup.reportException("UnsupportedEncoding on gotChallenge in SASLAutenticator", e, null);
 		} catch (IOException e1) {
-			stream.dispatchEvent(BasicXmlStream.STREAM_ERROR,
+			EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
 					"Not enough memory for completing the authentication");
 		}
 	}

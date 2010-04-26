@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILabel.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UILabel.java 2033 2010-03-26 16:33:26Z luca $
 */
 
 /**
@@ -9,7 +9,7 @@
  */
 package it.yup.ui;
 
-import it.yup.util.Utils;
+import it.yup.ui.TokenIterator.UIISplittableItem;
 
 import java.util.Enumeration;
 import java.util.Vector;
@@ -22,13 +22,13 @@ import javax.microedition.lcdui.Image;
  * @author luca
  * 
  */
-public class UILabel extends UIItem {
+public class UILabel extends UIItem implements UIISplittableItem {
 
 	String text;
 	Image img;
 	boolean flip = false;
 
-	Vector textLines = null;
+	protected Vector textLines = null;
 
 	/**
 	 * The font used to paint the Label
@@ -95,8 +95,9 @@ public class UILabel extends UIItem {
 
 	}
 
-	int getTextWidth(String textLine, Font font) {
-		return font.stringWidth(textLine);
+	public int getTextWidth(String textLine, Font font, int startIndex,
+			int length) {
+		return font.substringWidth(textLine, startIndex, length);
 	}
 
 	private void paintLine(Graphics g, int w, int h, Image imgLine,
@@ -113,7 +114,7 @@ public class UILabel extends UIItem {
 			lineHeight = h;
 		}
 		textHeight = usedFont.getHeight();
-		textWidth = getTextWidth(textLine, usedFont);
+		textWidth = getTextWidth(textLine, usedFont, 0, textLine.length());
 		// text and Image must have an offset from the TOP
 		// in order to be aligned
 		int imgVerticalOffset = (lineHeight - imgHeight - 2) / 2;
@@ -123,10 +124,9 @@ public class UILabel extends UIItem {
 		// orientation
 		int horizontalSpace = 0;
 		lineWidth = 0;
-		if (imgLine != null) lineWidth = imgLine.getWidth() + 3
-				+ getTextWidth(textLine, usedFont);
+		if (imgLine != null) lineWidth = imgLine.getWidth() + 3 + textWidth;
 		else
-			lineWidth = getTextWidth(textLine, usedFont) + 2;
+			lineWidth = textWidth + 2;
 		lineWidth += (2 * hPadding);
 		if (w > lineWidth) {
 			horizontalSpace = w - lineWidth;
@@ -302,82 +302,78 @@ public class UILabel extends UIItem {
 		g.setFont(oldFont);
 	}
 
-	public void computeTextLines(Font usedFont, int w) {
+	protected void computeTextLines(Font usedFont, int w) {
 		textLines = new Vector();
-		Vector splittedVector = Utils.tokenize(this.text.replace('\t', ' '),
-				new String[] { "\n", " " }, true);
-		String[] splittedStrings = new String[splittedVector.size()];
-		if (splittedVector.size() > 0) {
-			splittedVector.copyInto(splittedStrings);
-		} else {
-			// for "white lines"
-			splittedStrings = new String[] { " " };
+		TokenIterator ti = new TokenIterator(this);
+		ti.computeLazyLines(usedFont, w);
+		int count = 0;
+		while (count < ti.getLinesNumber()) {
+			String ithString = ti.elementAt(count).trim();
+			if (ithString.length() > 0) textLines.addElement(ithString);
+			count++;
 		}
-		int index = 0;
-		String tempString = "";
-		while (index < splittedStrings.length) {
-			do {
-				tempString = tempString + splittedStrings[index];
-				index++;
-			} while (index < splittedStrings.length
-					&& getTextWidth(tempString + splittedStrings[index],
-							usedFont) < w
-					&& (splittedStrings[index].compareTo("\n") != 0));
-			tempString = tempString.trim();
-			// just in case the line is empty it is not shown
-			if (tempString.length() > 0) {
-				// just in case the string is toooooooooo big
-				Vector longStrings = splitLongStrings(tempString, w, usedFont);
-				for (Enumeration en = longStrings.elements(); en
-						.hasMoreElements();) {
-					String s = (String) en.nextElement();
-					s = s.trim();
-					if (s.length() == 0) s = " ";
-					textLines.addElement(s);
-				}
-			}
-			tempString = "";
-		}
-		if (maxWrappedLines > 0 && textLines.size() > maxWrappedLines) {
-			textLines.setSize(maxWrappedLines);
-			String lastString = (String) textLines
-					.elementAt(maxWrappedLines - 1);
-			lastString.substring(0, lastString.length() - 4);
-			lastString += "...";
-			textLines.setElementAt(lastString, maxWrappedLines - 1);
-		}
-	}
-
-	private Vector splitLongStrings(String longString, int w, Font usedFont) {
-		if (getTextWidth(longString, usedFont) < w) {
-			Vector v = new Vector();
-			v.addElement(longString);
-			return v;
-		}
-		Vector retVector = new Vector();
-		String tempString = "";
-		int index = 0;
-		while (longString.length() > 0) {
-			while (index <= longString.length()) {
-				int stringLength = getTextWidth(tempString, usedFont);
-				if (stringLength > w) {
-					index--;
-					tempString = longString.substring(0, index - 1);
-					break;
-				}
-				tempString = longString.substring(0, index);
-				index++;
-			}
-			retVector.addElement(tempString);
-			if (index - 1 < longString.length()) {
-				longString = longString.substring(index - 1, longString
-						.length());
-			}
-			if (index - 1 == longString.length()) break;
-			tempString = "";
-			index = 0;
-		}
-		return retVector;
+		// a dummy "\n" to be sure to end
+		//		String textChars = (text + "\n");
+		//		for (int i = 0; i < textChars.length(); i++) {
+		//			ithChar = textChars.charAt(i);
+		//			switch (ithChar) {
+		//				case '\n':
+		//				case '\r':
+		//					if (i == startIndex) {
+		//						startIndex++;
+		//					} else {
+		//						int ithWidth = this.getTextWidth(textChars.substring(startIndex,
+		//								i), usedFont);
+		//						if (ithWidth <= w) {
+		//							String ithString = textChars.substring(startIndex,
+		//									i);
+		//							textLines.addElement(ithString);
+		//							startIndex = i + 1;
+		//							goodIndex = startIndex;
+		//						} else
+		//							needSplit = true;
+		//					}
+		//					break;
+		//
+		//				case ' ':
+		//					if (i == startIndex) {
+		//						startIndex++;
+		//					} else {
+		//						int ithWidth = this.getTextWidth(textChars.substring(
+		//								startIndex, i), usedFont);
+		//						if (ithWidth <= w) goodIndex = i - 1;
+		//						else
+		//							needSplit = true;
+		//					}
+		//					break;
+		//			}
+		//			if (needSplit) {
+		//				if (goodIndex > startIndex) {
+		//					String ithString = textChars.substring(startIndex,
+		//							goodIndex + 1);
+		//					textLines.addElement(ithString);
+		//					startIndex = goodIndex + 1;
+		//				} else {
+		//					int min = startIndex;
+		//					int max = i;
+		//					int med = 0;
+		//					while (min != max) {
+		//						med = (min + max) / 2;
+		//						int ithWidth = getTextWidth(textChars.substring(
+		//								startIndex, med + 1), usedFont);
+		//						if (ithWidth <= w) min = med + 1;
+		//						else
+		//							max = med;
+		//					}
+		//					String ithString = textChars.substring(startIndex, min);
+		//					textLines.addElement(ithString);
+		//					startIndex = min;
+		//				}
+		//				goodIndex = startIndex;
+		//				i = goodIndex - 1;
+		//				needSplit = false;
+		//			}
+		//		}
 	}
 
 	/**
@@ -445,9 +441,6 @@ public class UILabel extends UIItem {
 		if (text.equals(_text) == false) this.textLines = null;
 		text = _text;
 		dirty = true;
-		// reset the text lines for wrappable labels
-		// only when needed and avoid recomputing lines
-
 	}
 
 	/**
@@ -516,22 +509,6 @@ public class UILabel extends UIItem {
 		this.dirty = true;
 		this.img = img;
 		this.wrappable = false;
-	}
-
-	/**
-	 * @param textLines
-	 *            the textLines to set
-	 */
-	public void setTextLines(Vector textLines) {
-		this.textLines = textLines;
-		this.dirty = true;
-	}
-
-	/**
-	 * @return the textLines
-	 */
-	public Vector getTextLines() {
-		return textLines;
 	}
 
 	public void setImgAnchorPoint(int imgAnchorPoint) {

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Contact.java 2050 2010-04-08 10:44:26Z luca $
 */
 
 package it.yup.xmpp;
@@ -162,7 +162,7 @@ public class Contact extends IQResultListener {
 
 	public Element store() {
 		Element el = new Element(XMPPClient.NS_IQ_ROSTER, "item");
-		el.setAttributes(new String[] { "jid", "name", "subscription" },
+		el.setAttributes(new String[] { "jid", "name", XMPPClient.SUBSCRIPTION },
 				new String[] { jid, name, subscription });
 		for (int i = 0; i < this.groups.length; i++) {
 			if (this.groups[i].equals(Roster.unGroupedCode) == false) {
@@ -452,6 +452,9 @@ public class Contact extends IQResultListener {
 			}
 		}
 
+		// cache the new availability
+		availability = mapAvailability(resources[0].getShow());
+		
 		// check the capabilities
 		// pass them to the roster that checks the db 
 		Element capNode = p.getChildByName(null, "c");
@@ -460,18 +463,6 @@ public class Contact extends IQResultListener {
 			queryCapVer = capNode.getAttribute("ver");
 			Element cap = Config.getInstance().getCapabilities(queryCapNode,
 					queryCapVer);
-			if (cap == null) {
-				this.askCapabilities(p);
-			}
-		}
-
-		// cache the new availability
-		availability = mapAvailability(resources[0].getShow());
-		capNode = p.getChildByName(null, "c");
-		if (capNode != null) {
-			String node = capNode.getAttribute("node");
-			String ver = capNode.getAttribute("ver");
-			Element cap = Config.getInstance().getCapabilities(node, ver);
 			if (cap != null) {
 				Element identity = cap.getChildByName(null, "identity");
 				if (identity != null) {
@@ -480,6 +471,9 @@ public class Contact extends IQResultListener {
 						p.pType = Presence.PHONE;
 					}
 				}
+			}
+			else{
+				this.askCapabilities(p);
 			}
 		}
 	}

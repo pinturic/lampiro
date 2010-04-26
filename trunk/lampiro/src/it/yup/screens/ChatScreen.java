@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: ChatScreen.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.screens;
@@ -166,7 +166,7 @@ public class ChatScreen extends Canvas implements CommandListener,
 		EventQuery q = new EventQuery("message", null, null);
 		q.child = new EventQuery("body", null, null);
 
-		reg = BasicXmlStream.addEventListener(q, this);
+		reg = BasicXmlStream.addPacketListener(q, this);
 	}
 
 	protected void hideNotify() {

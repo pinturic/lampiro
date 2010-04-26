@@ -21,8 +21,6 @@ import javax.microedition.rms.RecordStoreNotFoundException;
 //#mdebug
 //@
 //@import javax.microedition.rms.InvalidRecordIDException;
-//@
-//@import javax.microedition.rms.RecordStoreException;
 //@import javax.microedition.rms.RecordStoreNotOpenException;
 //@
 //#enddebug
@@ -99,9 +97,9 @@ public class RMSIndex {
 					tempRs.closeRecordStore();
 				} catch (Exception e) {
 					// #mdebug
-//@																				e.printStackTrace();
-//@																				System.out.println("In rmExists" + e.getMessage()
-//@																						+ e.getClass());
+//@					e.printStackTrace();
+//@					System.out.println("In rmExists" + e.getMessage()
+//@							+ e.getClass());
 					// #enddebug
 				}
 			}
@@ -195,17 +193,17 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@												// XXX clean dirty records! how ??!?
-//@												e.printStackTrace();
-//@												System.out.println("In deleting splitted records" + e.getMessage()
-//@														+ e.getClass());
+//@			// XXX clean dirty records! how ??!?
+//@			e.printStackTrace();
+//@			System.out.println("In deleting splitted records" + e.getMessage()
+//@					+ e.getClass());
 			// #enddebug
 		}
 	}
 
 	private void join(Item firstItem, Item secondItem) {
 		// #mdebug
-//@								System.out.println("join");
+//@		System.out.println("join");
 		// #enddebug
 		try {
 			Vector firstChunk, secondChunk;
@@ -230,8 +228,8 @@ public class RMSIndex {
 			saveChunk(1, chunk_index);
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 	}
@@ -321,9 +319,9 @@ public class RMSIndex {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println("In loading a chuck " + e.getMessage()
-//@														+ e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println("In loading a chuck " + e.getMessage()
+//@					+ e.getClass());
 			// #enddebug
 		}
 		return chunk;
@@ -420,10 +418,10 @@ public class RMSIndex {
 				len = dataBuf.length;
 			} catch (Exception e) {
 				// #mdebug
-//@																// XXX clean dirty records! how ??!?
-//@																e.printStackTrace();
-//@																System.out.println("Error in serialize split chunks "
-//@																		+ e.getMessage() + e.getClass());
+//@				// XXX clean dirty records! how ??!?
+//@				e.printStackTrace();
+//@				System.out.println("Error in serialize split chunks "
+//@						+ e.getMessage() + e.getClass());
 				// #enddebug
 			}
 		}
@@ -446,10 +444,10 @@ public class RMSIndex {
 			return recordId;
 		} catch (Exception e) {
 			// #mdebug
-//@												// XXX clean dirty records! how ??!?
-//@												e.printStackTrace();
-//@												System.out.println("Error in final write " + e.getMessage()
-//@														+ e.getClass());
+//@			// XXX clean dirty records! how ??!?
+//@			e.printStackTrace();
+//@			System.out.println("Error in final write " + e.getMessage()
+//@					+ e.getClass());
 			// #enddebug
 		}
 
@@ -502,15 +500,15 @@ public class RMSIndex {
 					break;
 			}
 			// #mdebug
-//@											} catch (InvalidRecordIDException e) {
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
-//@											
+//@		} catch (InvalidRecordIDException e) {
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
+//@
 			// #enddebug
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return null;
@@ -523,8 +521,8 @@ public class RMSIndex {
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return new int[] { 0, 0 };
@@ -598,7 +596,7 @@ public class RMSIndex {
 					} else {
 						// split the chunk before saving
 						// #mdebug
-//@																								System.out.println("split");
+//@						System.out.println("split");
 						// #enddebug
 						Vector new_chunk = new Vector();
 						int end = current_chunk.size();
@@ -619,21 +617,21 @@ public class RMSIndex {
 						sorted_insert(chunk_index, new_index);
 						saveChunk(1, chunk_index);
 						// #mdebug
-//@																								for (int i = 0; i < chunk_index.size(); i++) {
-//@																									System.out.println("~"
-//@																											+ i
-//@																											+ "~:"
-//@																											+ new String(((Item) chunk_index
-//@																													.elementAt(i)).key));
-//@																								}
+//@						for (int i = 0; i < chunk_index.size(); i++) {
+//@							System.out.println("~"
+//@									+ i
+//@									+ "~:"
+//@									+ new String(((Item) chunk_index
+//@											.elementAt(i)).key));
+//@						}
 						// #enddebug
 					}
 				}
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 	}
@@ -655,8 +653,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return false;
@@ -679,8 +677,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 		return null;
@@ -738,8 +736,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 		}
 	}
@@ -749,8 +747,8 @@ public class RMSIndex {
 			this.rs.closeRecordStore();
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 			return false;
 		}
@@ -793,8 +791,8 @@ public class RMSIndex {
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@												e.printStackTrace();
-//@												System.out.println(e.getMessage() + e.getClass());
+//@			e.printStackTrace();
+//@			System.out.println(e.getMessage() + e.getClass());
 			// #enddebug
 			return false;
 		}

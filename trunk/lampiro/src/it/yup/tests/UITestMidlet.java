@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITestMidlet.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UITestMidlet.java 2016 2010-03-16 17:29:23Z luca $
 */
 
 package it.yup.tests;
@@ -285,11 +285,11 @@ public class UITestMidlet extends MIDlet {
 			longPanel.setText(veryLongLabel);
 			this.append(longPanel);
 
-			UITextPanel shortPanel = new UITextPanel();
-			shortPanel.setMaxHeight(50);
-			String shortLabel = "veryShortLabel ";
-			shortPanel.setText(shortLabel);
-			this.append(shortPanel);
+//			UITextPanel shortPanel = new UITextPanel();
+//			shortPanel.setMaxHeight(50);
+//			String shortLabel = "veryShortLabel ";
+//			shortPanel.setText(shortLabel);
+//			this.append(shortPanel);
 
 			this.setMenu(um);
 			try {

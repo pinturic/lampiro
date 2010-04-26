@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: LampiroMidlet.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: LampiroMidlet.java 2034 2010-03-26 17:11:34Z luca $
 */
 
 package lampiro;
@@ -18,7 +18,9 @@ package lampiro;
 // #ifdef UI
 
 import it.yup.ui.UICanvas;
+import it.yup.ui.UICombobox;
 import it.yup.ui.UIConfig;
+import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
@@ -90,6 +92,17 @@ public class LampiroMidlet extends MIDlet {
 				"0");
 		int fontInt = fontString.toCharArray()[0] - '0';
 		LampiroMidlet.changeFont(fontInt);
+
+		// update the default strings for comboboxes
+		ResourceManager rm = ResourceManager.getManager();
+		UICombobox.selectString = rm.getString(ResourceIDs.STR_SELECT)
+				.toUpperCase();
+		String cancelString = rm.getString(ResourceIDs.STR_CANCEL)
+				.toUpperCase();
+		String okString = rm.getString(ResourceIDs.STR_OK).toUpperCase();
+		UICombobox.cancelString = cancelString;
+		UITextField.setButtonsString(cancelString, okString);
+
 		canvas.open(new SplashScreen(), true);
 		// #endif
 // #ifndef UI
