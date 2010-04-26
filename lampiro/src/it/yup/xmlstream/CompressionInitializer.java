@@ -1,12 +1,13 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CompressionInitializer.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: CompressionInitializer.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 // #ifdef COMPRESSION
 //@package it.yup.xmlstream;
 //@
+//@import it.yup.util.EventDispatcher;
 //@import it.yup.xml.Element;
 //@
 //@public class CompressionInitializer extends Initializer implements PacketListener {
@@ -36,7 +37,7 @@
 //@			Element compress = new Element("http://jabber.org/protocol/compress", "compress");
 //@			compress.addElement("http://jabber.org/protocol/compress", "method").addText("zlib");
 //@			EventQuery pq = new EventQuery(EventQuery.ANY_PACKET, null, null);
-//@			BasicXmlStream.addOnetimeEventListener(pq, this);
+//@			BasicXmlStream.addOnetimePacketListener(pq, this);
 //@			stream.send(compress, -1);
 //@		} else {
 //@			stream.nextInitializer();
@@ -47,7 +48,7 @@
 //@		if("compressed".equals(e.name)) {
 //@			((SocketStream) stream).startCompression();
 //@			stream.restart();
-//@			stream.dispatchEvent(BasicXmlStream.COMPRESSION_INITIALIZED, null);
+//@			EventDispatcher.dispatchEvent(EventDispatcher.COMPRESSION_INITIALIZED, null);
 //@		} else {
 //@			stream.nextInitializer();
 //@		}

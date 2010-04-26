@@ -6,7 +6,6 @@
 
 package it.yup.ui;
 
-import it.yup.util.MetaVector;
 
 import java.util.Enumeration;
 import java.util.Hashtable;

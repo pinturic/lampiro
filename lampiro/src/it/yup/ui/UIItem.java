@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIItem.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UIItem.java 2018 2010-03-17 15:16:55Z luca $
 */
 
 /**
@@ -287,6 +287,7 @@ public abstract class UIItem {
 		int originalClipY = g.getClipY();
 		int originalClipWidth = g.getClipWidth();
 		int originalClipHeight = g.getClipHeight();
+		int oldColor = g.getColor();
 
 		this.setWidth(w);
 		// UIMenu computes its clip by itself
@@ -320,6 +321,7 @@ public abstract class UIItem {
 				- g.getTranslateY());
 		g.setClip(originalClipX, originalClipY, originalClipWidth,
 				originalClipHeight);
+		g.setColor(oldColor);
 
 		if (this instanceof UIMenu == false && this.subMenu != null
 				&& this.selected == true) {

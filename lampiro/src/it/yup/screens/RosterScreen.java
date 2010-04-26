@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RosterScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: RosterScreen.java 2056 2010-04-13 17:51:13Z luca $
 */
 
 package it.yup.screens;
@@ -82,8 +82,10 @@ public class RosterScreen extends Canvas implements CommandListener,
 	//    private Command cmd_reload = new Command(rm.getString(ResourceIDs.STR_RELOAD_CONTACT), Command.SCREEN, 6);
 	private Command cmd_exit = new Command(rm.getString(ResourceIDs.STR_EXIT),
 			Command.SCREEN, 99);
-	// #debug    
-//@				    private Command cmd_debug = new Command(rm.getString(ResourceIDs.STR_DEBUG), Command.SCREEN, 100);
+	// #mdebug    
+//@	private Command cmd_debug = new Command(
+//@			rm.getString(ResourceIDs.STR_DEBUG), Command.SCREEN, 100);
+	// #enddebug
 	private Command cmd_about = new Command(
 			rm.getString(ResourceIDs.STR_ABOUT), Command.SCREEN, 98);
 	private Command cmd_querycmd = new Command(rm
@@ -190,7 +192,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 		addCommand(cmd_state);
 		//        addCommand(cmd_reload);
 		// #debug        
-//@								        addCommand(cmd_debug);
+//@		addCommand(cmd_debug);
 		addCommand(cmd_about);
 		addCommand(cmd_options);
 		setCommandListener(this);
@@ -339,7 +341,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 			} else {
 				c = selected_contact;
 			}
-			Image img = XMPPClient.getInstance().getPresenceIcon(c,null,
+			Image img = XMPPClient.getInstance().getPresenceIcon(c, null,
 					c.getAvailability());
 			hpos = (selected_line - start_line + 1) * line_height;
 			g.fillRect(0, hpos + 1, 16, 16);
@@ -366,7 +368,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 			Contact u = (Contact) shown_contacts.elementAt(i);
 			String uname = u.getPrintableName();
 
-			Image pimg = xmpp.getPresenceIcon(u,null, u.getAvailability());
+			Image pimg = xmpp.getPresenceIcon(u, null, u.getAvailability());
 			Image cimg = null;
 			if (u.cmdlist != null) {
 				cimg = img_cmd;
@@ -471,7 +473,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 		}
 
 		Contact myContact = client.getMyContact();
-		Image pimg = client.getPresenceIcon(myContact,null, myContact
+		Image pimg = client.getPresenceIcon(myContact, null, myContact
 				.getAvailability());
 		g.drawImage(pimg, w, 0, Graphics.TOP | Graphics.RIGHT);
 		// contacts with unread messages are always at the top
@@ -745,10 +747,10 @@ public class RosterScreen extends Canvas implements CommandListener,
 			StatusScreen ssc = new StatusScreen();
 			disp.setCurrent(ssc);
 			// #mdebug        	
-//@												        } else if(c == cmd_debug) {
-//@												        	DebugScreen debugScreen = new DebugScreen();
-//@												        	debugScreen.setReturnScreen(this);
-//@												        	disp.setCurrent(debugScreen);
+//@		} else if (c == cmd_debug) {
+//@			DebugScreen debugScreen = new DebugScreen();
+//@			debugScreen.setReturnScreen(this);
+//@			disp.setCurrent(debugScreen);
 			// #enddebug        	
 		} else if (c == cmd_querycmd) {
 			Contact usr = selected_contact;
@@ -809,7 +811,12 @@ public class RosterScreen extends Canvas implements CommandListener,
 		}
 
 		public void handleResult(Element e) {
-			XMPPClient.getInstance().handleClientCommands(e, true,this);
+			XMPPClient.getInstance().handleClientCommands(e);
+			String from = e.getAttribute(Iq.ATT_FROM);
+			Contact c = XMPPClient.getInstance().getRoster().getContactByJid(
+					from);
+			CommandListScreen cmdscr = new CommandListScreen(c, from);
+			LampiroMidlet.disp.setCurrent(cmdscr);
 		}
 	}
 
@@ -867,7 +874,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 		// #endif 		
 	}
 
-	public synchronized void removeContact(Contact c) {
+	public synchronized void removeContact(Contact c, boolean unsubscribed) {
 		active_contacts.removeElement(c);
 		// XXX we could repaint only if this contact is really displayed 
 		repaint();
@@ -915,21 +922,16 @@ public class RosterScreen extends Canvas implements CommandListener,
 		d.setCurrent(scf);
 	}
 
-	public void handleCommand(Contact c, String chosenResource, Object optionalArguments) {
-		CommandListScreen cmdscr = new CommandListScreen(c, chosenResource);
-		LampiroMidlet.disp.setCurrent(cmdscr);
-	}
-
 	public void connectionLost() {
 		removeAllContacts();
 		RegisterScreen rgs = RegisterScreen.getInstance();
 		LampiroMidlet.disp.setCurrent(rgs);
 	}
-	
+
 	public void showAlert(AlertType type, int titleCode, int textCode,
 			String additionalText) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	public void showAlert(AlertType type, String title, String text,
@@ -975,7 +977,7 @@ public class RosterScreen extends Canvas implements CommandListener,
 	}
 
 	public Object handleDataForm(DataForm df, byte type, DataFormListener dfl,
-			int cmds,Object optionalArguments) {
+			int cmds) {
 		Displayable scr = null;
 		if (type == Task.CMD_INPUT) {
 			scr = new DataFormScreen(df, dfl);
@@ -995,15 +997,15 @@ public class RosterScreen extends Canvas implements CommandListener,
 	public void showCommand(Object screen) {
 		LampiroMidlet.disp.setCurrent((Displayable) screen);
 	}
-	
+
 	public void rosterRetrieved() {
-		
+
 	}
 
 
 	public void handlePresenceError(Presence presence) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 }

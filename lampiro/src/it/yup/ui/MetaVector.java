@@ -3,7 +3,7 @@
  *
  * $Id: MetaVector.java 1858 2009-10-16 22:42:29Z luca $
 */
-package it.yup.util;
+package it.yup.ui;
 
 import java.util.Enumeration;
 import java.util.NoSuchElementException;

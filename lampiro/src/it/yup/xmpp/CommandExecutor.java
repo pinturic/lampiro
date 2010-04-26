@@ -1,15 +1,17 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandExecutor.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: CommandExecutor.java 2065 2010-04-20 17:03:56Z luca $
 */
 
 package it.yup.xmpp;
 
 import java.util.Date;
+
 import javax.microedition.lcdui.AlertType;
 
 // #ifndef UI
+//@
 //@import javax.microedition.lcdui.Display;
 //@import javax.microedition.lcdui.Displayable;
 //@
@@ -19,12 +21,18 @@ import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
+
+
 import it.yup.xmpp.XMPPClient.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 
 public class CommandExecutor implements PacketListener, DataFormListener, Task {
+
+	public interface CommandExecutorListener {
+		public void executed(Object screen);
+	}
 
 	private static final String STATUS_EXECUTING = "executing";
 	private static final String STATUS_COMPLETED = "completed";
@@ -64,14 +72,24 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	private int step;
 
 	private String chosenResource;
-	private Object optionalArguments;
+
+	/*
+	 * The delayed registration
+	 */
+	private CommandExecutorListener cel;
 
 
+	/**
+	 * @param cmd the parameters for the command execution
+	 * @param chosenResource the resource foe which to execute the command
+	 * @param eqr the delayed registration to execute
+	 * 
+	 */
 	public CommandExecutor(String[] cmd, String chosenResource,
-			Object optionalArguments) {
-		this.optionalArguments = optionalArguments;
+			CommandExecutorListener cel) {
 		this.cmd = cmd;
 		this.chosenResource = chosenResource;
+		this.cel = cel;
 		this.status = Task.CMD_EXECUTING;
 		step = 1;
 		last_modify = new Date();
@@ -84,9 +102,10 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	 */
 	public void setupCommand() {
 		Iq iq = new Iq(chosenResource, Iq.T_SET);
-		Element cel = iq.addElement(XMPPClient.NS_COMMANDS, XMPPClient.COMMAND);
-		cel.setAttribute("node", cmd[0]);
-		cel.setAttribute(XMPPClient.ACTION, EXECUTE);
+		Element commandEl = iq.addElement(XMPPClient.NS_COMMANDS,
+				XMPPClient.COMMAND);
+		commandEl.setAttribute("node", cmd[0]);
+		commandEl.setAttribute(XMPPClient.ACTION, EXECUTE);
 
 		sendPacket(iq);
 	}
@@ -96,7 +115,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "id" },
 				new String[] { iq.getAttribute(Iq.ATT_ID) });
 
-		BasicXmlStream.addOnetimeEventListener(eq, this);
+		BasicXmlStream.addOnetimePacketListener(eq, this);
 		xmpp.sendPacket(iq);
 	}
 
@@ -168,14 +187,17 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 			xmppListener.handleTask(this);
 		}
 
+		boolean enableEvent = (this.cel != null && this.status != Task.CMD_ERROR);
+		if (enableEvent) {
+			this.cel.executed(screen);
+		}
 	}
 
-	public boolean execute(int cmd) {
+	public void execute(int cmd) {
 		/*
 		 * not checking if the cmd is in the allowed ones, as I have built the
 		 * screen accordingly...
 		 */
-		boolean setWaiting = false;
 		last_modify = new Date();
 		switch (cmd) {
 			case DataFormListener.CMD_CANCEL:
@@ -186,7 +208,6 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				step--;
 				status = Task.CMD_EXECUTING;
 				sendReply(PREV, null);
-				setWaiting = true;
 				break;
 			case DataFormListener.CMD_NEXT:
 				step++;
@@ -196,7 +217,6 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 					sendReply(NEXT, df.getResultElement());
 				} else
 					sendReply(NEXT, null);
-				setWaiting = true;
 				break;
 			case DataFormListener.CMD_SUBMIT:
 				step++;
@@ -206,11 +226,9 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 					sendReply(EXECUTE, df.getResultElement());
 				} else
 					sendReply(EXECUTE, null);
-				setWaiting = true;
 				break;
 			case DataFormListener.CMD_DELAY:
 				// do nothing, just display the next screen
-				setWaiting = true;
 				break;
 			case DataFormListener.CMD_DESTROY:
 				status = Task.CMD_DESTROY;
@@ -219,21 +237,21 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		// update command status
 		XMPPClient instance = XMPPClient.getInstance();
 		instance.updateTask(this);
-		return setWaiting;
 	}
 
 	void sendReply(String action, Element dfel) {
 		Iq iq = new Iq(chosenResource, Iq.T_SET);
-		Element cel = iq.addElement(XMPPClient.NS_COMMANDS, XMPPClient.COMMAND);
-		cel.setAttribute("node", cmd[0]);
+		Element commandEl = iq.addElement(XMPPClient.NS_COMMANDS,
+				XMPPClient.COMMAND);
+		commandEl.setAttribute("node", cmd[0]);
 		if (sid != null) {
-			cel.setAttribute("sessionid", sid);
+			commandEl.setAttribute("sessionid", sid);
 		}
 		if (action != null) {
-			cel.setAttribute(XMPPClient.ACTION, action);
+			commandEl.setAttribute(XMPPClient.ACTION, action);
 		}
 		if (dfel != null) {
-			cel.addElement(dfel);
+			commandEl.addElement(dfel);
 		}
 
 
@@ -278,13 +296,8 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 							.getXmppListener();
 					if (xmppListener != null) {
 						screen = xmppListener.handleDataForm(df,
-								Task.CMD_INPUT, this, cmds, optionalArguments);
+								Task.CMD_INPUT, this, cmds);
 					}
-					/*
-					screen = new DataFormScreen(df, this);
-					DataFormScreen dfs = (DataFormScreen) screen;
-					dfs.setActions(cmds);
-					*/
 				}
 				break;
 			case Task.CMD_EXECUTING:
@@ -308,7 +321,7 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 							.getXmppListener();
 					if (xmppListener != null) {
 						screen = xmppListener.handleDataForm(df,
-								Task.CMD_FINISHED, this, -1, optionalArguments);
+								Task.CMD_FINISHED, this, -1);
 					}
 				} else {
 					// XXX handle note here, if present
@@ -393,5 +406,24 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 
 	public boolean getEnableNew() {
 		return this.enableNew;
+	}
+
+	public boolean needWaiting(int comm) {
+		boolean setWaiting = false;
+		if (comm == DataFormListener.CMD_SUBMIT) {
+			setWaiting = true;
+		} else if (comm == DataFormListener.CMD_NEXT) {
+			setWaiting = true;
+		} else if (comm == DataFormListener.CMD_PREV) {
+			setWaiting = true;
+		} else if (comm == DataFormListener.CMD_DELAY) {
+			setWaiting = true;
+		}
+		return setWaiting;
+	}
+
+	public void setCel(CommandExecutorListener cel) {
+		this.cel = cel;
+
 	}
 }

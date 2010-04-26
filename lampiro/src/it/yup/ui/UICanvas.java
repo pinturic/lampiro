@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UICanvas.java 2022 2010-03-22 10:54:58Z luca $
  */
 
 /**
@@ -1011,13 +1011,6 @@ public class UICanvas extends GameCanvas {
 		viewedIndex = i;
 		si.askRepaint();
 		si.showNotify();
-
-		// if (wlist != null) {
-		/* switch also wlist */
-		// UIItem ui = wlist.remove(i);
-		// if
-		// wlist.insert(0, ui);
-		// }
 	}
 
 	/**

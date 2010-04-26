@@ -277,7 +277,7 @@ public class HandleMucScreen extends UIScreen {
 							+ "@" + hostText + "/" + corText });
 			q.child = new EventQuery("x", new String[] { "xmlns" },
 					new String[] { XMPPClient.NS_MUC_USER });
-			BasicXmlStream.addOnetimeEventListener(q, new PacketListener() {
+			BasicXmlStream.addOnetimePacketListener(q, new PacketListener() {
 
 				public void packetReceived(Element e) {
 					Element statusEl = e.getPath(new String[] {

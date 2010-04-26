@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: ResourceIDs.java 2034 2010-03-26 17:11:34Z luca $
 */
 
 /**
@@ -116,6 +116,9 @@ public class ResourceIDs {
 	public static final int STR_FORWARDED_TEXT = 110;
 	public static final int STR_PARTICIPANTS = 111;
 	public static final int STR_DISPLAYED_NAME = 112;
+	public static final int STR_AUTOMATIC = 113;
+	public static final int STR_MANUAL = 114;
+	public static final int STR_OK = 115;
 
 	public static final int STR_JABBER_ID = 200;
 	public static final int STR_EMAIL_ADDRESS = 202;

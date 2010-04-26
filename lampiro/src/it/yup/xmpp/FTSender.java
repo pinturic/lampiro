@@ -267,7 +267,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 			public void packetReceived(Element e) {
 				isAccepted(e);
 				if (terminateReg != null) {
-					BasicXmlStream.removeEventListener(terminateReg);
+					BasicXmlStream.removePacketListener(terminateReg);
 					terminateReg = null;
 				}
 			}
@@ -280,7 +280,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 				new String[] { XMPPClient.ACTION },
 				new String[] { FTSender.SESSION_TERMINATE });
 		eqChild.child = new EventQuery(FTSender.DECLINE, null, null);
-		terminateReg = BasicXmlStream.addEventListener(eq, terminateListener);
+		terminateReg = BasicXmlStream.addPacketListener(eq, terminateListener);
 
 		xmppClient.sendIQ(sessionInitiateIq, this);
 
@@ -295,7 +295,7 @@ public class FTSender extends IQResultListener implements PacketListener {
 				XMPPClient.ACTION, FTSender.SID }, new String[] {
 				XMPPClient.JINGLE, FTSender.SESSION_ACCEPT, this.jingleSid });
 
-		BasicXmlStream.addOnetimeEventListener(eq, this);
+		BasicXmlStream.addOnetimePacketListener(eq, this);
 
 		//		Iq initiateInteraction = new Iq(this.to, Iq.T_SET);
 		//		Element open = initiateInteraction.addElement(XMPPClient.NS_IBB, OPEN);

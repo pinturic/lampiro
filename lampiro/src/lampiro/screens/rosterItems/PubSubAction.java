@@ -14,19 +14,24 @@ import lampiro.screens.ContactInfoScreen;
 import lampiro.screens.HandleMucScreen;
 import lampiro.screens.MessageComposerScreen;
 import lampiro.screens.RosterScreen;
+import lampiro.screens.WaitScreen;
 
 import it.yup.ui.UICanvas;
+import it.yup.ui.UIScreen;
+import it.yup.util.EventDispatcher;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
 import it.yup.xml.Element;
+import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmpp.CommandExecutor;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Presence;
 
-public class PubSubAction {
+public class PubSubAction implements CommandExecutorListener {
 
 	public static final int COMMAND = 0;
 	public static final int ROSTER = 1;
@@ -37,6 +42,9 @@ public class PubSubAction {
 	public static final int PUBSUB = 6;
 
 	private static ResourceManager rm = ResourceManager.getManager();
+	
+	private EventQueryRegistration eqr = null;
+	private WaitScreen ws = null;
 
 	public static PubSubAction parse(String text) {
 		Vector header = Utils.tokenize(text, ':');
@@ -90,14 +98,17 @@ public class PubSubAction {
 		return (String) this.parameters.get(par);
 	}
 
-	public void execute() {
+	public void execute(UIScreen currentScreen) {
 		switch (this.action) {
 			case PubSubAction.COMMAND:
 
 				CommandExecutor cmdEx = null;
 				String[] selCmd = new String[] { this.get(XMPPClient.NODE) };
-
-				cmdEx = new CommandExecutor(selCmd, this.jid, null);
+				ws = new WaitScreen(UICanvas.getInstance()
+						.getCurrentScreen().getTitle(), currentScreen);
+				eqr = EventDispatcher.addDelayedListener(ws, true);
+				cmdEx = new CommandExecutor(selCmd, this.jid,this);
+				UICanvas.getInstance().open(ws, true);
 				RosterScreen.getInstance()._handleTask(cmdEx);
 				cmdEx.setupCommand();
 
@@ -109,10 +120,10 @@ public class PubSubAction {
 						HandleMucScreen.HMC_CONSTANTS.JOIN_NOW);
 				cms.infoLabel.setText(rm
 						.getString(ResourceIDs.STR_GROUP_CHAT_INVITATION));
-						
-//						+ " "
-//						+ XMPPClient.getInstance().getRoster().getContactByJid(
-//								UIUIDReader.UID_JID) + "?");
+
+				//						+ " "
+				//						+ XMPPClient.getInstance().getRoster().getContactByJid(
+				//								UIUIDReader.UID_JID) + "?");
 				cms.muc_name_field.setText(Contact.user(jid));
 				cms.menuAction(null, cms.cmd_save);
 				break;
@@ -125,6 +136,7 @@ public class PubSubAction {
 			case PubSubAction.SEND_MESSAGE:
 				Contact user = XMPPClient.getInstance().getRoster()
 						.getContactByJid(jid);
+				if (user == null) return;
 				String fullJid = user.jid;
 				Object subject = parameters.get("subject");
 				Object body = parameters.get("body");
@@ -164,6 +176,15 @@ public class PubSubAction {
 						.getInstance().my_jid));
 				XMPPClient.getInstance().sendIQ(iq, null);
 				break;
+		}
+	}
+
+	public void executed(Object screen) {
+		if (eqr != null) {
+			if (ws != null) ((UIScreen) screen).setReturnScreen(ws
+					.getReturnScreen());
+			EventDispatcher.dispatchDelayed(eqr, this);
+			eqr = null;
 		}
 	}
 

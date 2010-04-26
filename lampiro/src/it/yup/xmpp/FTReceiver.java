@@ -5,8 +5,6 @@
 */
 package it.yup.xmpp;
 
-import java.io.ByteArrayOutputStream;
-
 import org.bouncycastle.util.encoders.Base64;
 
 //#mdebug
@@ -141,7 +139,7 @@ public class FTReceiver implements PacketListener {
 			try {
 				// when finishing file transfer 
 				// the registration is removed by myself
-				BasicXmlStream.removeEventListener(dataListenerEq);
+				BasicXmlStream.removePacketListener(dataListenerEq);
 				// #mdebug 
 //@				Logger.log("File received kb: " + decodedData.length);
 //@				// System.out.println(decString);
@@ -235,7 +233,7 @@ public class FTReceiver implements PacketListener {
 		eq.child = new EventQuery(FTSender.JINGLE, new String[] { "xmlns",
 				XMPPClient.ACTION }, new String[] { XMPPClient.JINGLE,
 				FTSender.SESSION_INITIATE });
-		BasicXmlStream.addEventListener(eq, this);
+		BasicXmlStream.addPacketListener(eq, this);
 	}
 
 	public void packetReceived(Element e) {
@@ -269,7 +267,7 @@ public class FTReceiver implements PacketListener {
 		eq.child = new EventQuery(XMPPClient.DATA,
 				new String[] { FTSender.SID }, new String[] { transport
 						.getAttribute(FTSender.SID) });
-		EventQueryRegistration eqr = BasicXmlStream.addEventListener(eq, ftrp);
+		EventQueryRegistration eqr = BasicXmlStream.addPacketListener(eq, ftrp);
 		ftrp.dataListenerEq = eqr;
 
 		eq = new EventQuery(Iq.IQ, new String[] { Iq.ATT_FROM, Iq.ATT_TYPE },
@@ -277,7 +275,7 @@ public class FTReceiver implements PacketListener {
 		eq.child = new EventQuery(FTSender.JINGLE, new String[] {
 				XMPPClient.ACTION, "xmlns" }, new String[] {
 				FTSender.SESSION_TERMINATE, XMPPClient.JINGLE });
-		BasicXmlStream.addOnetimeEventListener(eq, ftrp);
+		BasicXmlStream.addOnetimePacketListener(eq, ftrp);
 
 		// file transfer acceptance
 		eh.reqFT(e.getAttribute(Iq.ATT_FROM), ftrp);

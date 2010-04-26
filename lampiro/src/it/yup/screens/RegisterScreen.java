@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: RegisterScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: RegisterScreen.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.screens;
@@ -9,14 +9,14 @@ package it.yup.screens;
 import java.io.IOException;
 import java.io.InputStream;
 import lampiro.LampiroMidlet;
+import it.yup.util.EventDispatcher;
+import it.yup.util.EventListener;
 import it.yup.util.Logger;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
-import it.yup.xmlstream.StreamEventListener;
 import it.yup.xmpp.Config;
 import it.yup.xmpp.XMPPClient;
 
@@ -36,7 +36,7 @@ import javax.microedition.lcdui.StringItem;
 import javax.microedition.lcdui.TextField;
 
 public class RegisterScreen extends Form implements CommandListener,
-		StreamEventListener {
+		EventListener {
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -226,7 +226,7 @@ public class RegisterScreen extends Form implements CommandListener,
 
 					EventQuery qAuth = new EventQuery(EventQuery.ANY_EVENT,
 							null, null);
-					reg = BasicXmlStream.addEventListener(qAuth,
+					reg = EventDispatcher.addEventListener(qAuth,
 							RegisterScreen.this);
 					xmpp.openStream(true);
 
@@ -242,17 +242,17 @@ public class RegisterScreen extends Form implements CommandListener,
 
 	public void gotStreamEvent(String event, Object source) {
 		XMPPClient client = XMPPClient.getInstance();
-		if (BasicXmlStream.STREAM_ERROR.equals(event)
-				|| BasicXmlStream.CONNECTION_FAILED.equals(event)
-				|| BasicXmlStream.CONNECTION_LOST.equals(event)) {
+		if (EventDispatcher.STREAM_ERROR.equals(event)
+				|| EventDispatcher.CONNECTION_FAILED.equals(event)
+				|| EventDispatcher.CONNECTION_LOST.equals(event)) {
 
 			reg.remove();
 			client.closeStream();
 
 			String description = null;
-			if (BasicXmlStream.CONNECTION_FAILED.equals(event)) {
+			if (EventDispatcher.CONNECTION_FAILED.equals(event)) {
 				description = "connection failed";
-			} else if (BasicXmlStream.CONNECTION_LOST.equals(event)) {
+			} else if (EventDispatcher.CONNECTION_LOST.equals(event)) {
 				description = "connection lost";
 			} else {
 				description = (String) source;
@@ -262,7 +262,7 @@ public class RegisterScreen extends Form implements CommandListener,
 					Config.ALERT_CONNECTION, description);
 			placeItems();
 
-		} else if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+		} else if (EventDispatcher.STREAM_INITIALIZED.equals(event)) {
 			reg.remove();
 			client.stream_authenticated();
 		}

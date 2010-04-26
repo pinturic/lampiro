@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Config.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Config.java 2065 2010-04-20 17:03:56Z luca $
 */
 
 package it.yup.xmpp;
@@ -22,7 +22,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
@@ -38,19 +37,19 @@ public class Config {
 
 	public static String CLIENT_ADDRESS = "http://lampiro.bluendo.com ";
 
-	private static String version = "10.3";
+	private static String version = "10.4";
 
 	public static String lang =
 	// #if LANG = "en"
 	"en"
 	// #elif LANG = "it"
-	//@		 "it"
+	//@	"it"
 	// #elif LANG = "es"
 	//@	"es"
 	// #elif LANG = "ru"
 	//@	"ru"
 	// #else 
-	//@	 lang = "en"
+	//@		 lang = "en"
 	// #endif
 	;
 
@@ -267,6 +266,7 @@ public class Config {
 		if (instance == null) {
 			instance = new Config();
 			instance.loadFromStorage();
+			instance.loadCapabilities();
 		}
 		return instance;
 	}
@@ -380,7 +380,6 @@ public class Config {
 				+ Config.CLIENT_ADDRESS + ")");
 		setDefault(Config.LAST_PRESENCE_SHOW, Presence.SHOW_ONLINE);
 		setDefault(Config.COLOR, "0");
-		saveToStorage();
 	}
 
 	/**
@@ -396,6 +395,7 @@ public class Config {
 		String server = null;
 		String email = null;
 		String connectingServer = null;
+		String uid = null;
 		if (hard == false) {
 			cfg = Config.getInstance();
 			try {
@@ -404,6 +404,7 @@ public class Config {
 				password = cfg.getProperty(Config.PASSWORD);
 				email = cfg.getProperty(Config.EMAIL);
 				connectingServer = cfg.getProperty(Config.CONNECTING_SERVER);
+				uid = cfg.getProperty(Config.UUID);
 			} catch (Exception e) {
 				resetStorage(true);
 				return;
@@ -417,6 +418,7 @@ public class Config {
 			cfg.setProperty(Config.SERVER, server);
 			cfg.setProperty(Config.EMAIL, email);
 			cfg.setProperty(Config.CONNECTING_SERVER, connectingServer);
+			cfg.setProperty(Config.UUID, uid);
 		}
 		// reload a new rms since it has to be cleaned
 		rms = new RMSIndex(RMS_NAME);
@@ -490,97 +492,56 @@ public class Config {
 		}
 	}
 
+	public synchronized void loadCapabilities() {
+		byte[] capsRaw = this.getData(Utils.getBytesUtf8(KNOWN_CAPS));
+		Element el = null;
+		try {
+			el = BProcessor.parse(capsRaw);
+			Element[] children = el.getChildren();
+			for (int i = 0; i < children.length; i++) {
+				Element element = children[i];
+				String tempNode = element.getAttribute(XMPPClient.FULL_NODE);
+				cachedCaps.put(tempNode, element);
+			}
+		} catch (Exception e) {
+			// #mdebug
+			//@			Logger.log("Error in loading capabilities: received packet: "
+			//@					+ e.getClass(), Logger.DEBUG);
+			// #enddebug
+			// reset the capabilities
+			cachedCaps.clear();
+			el = new Element(XMPPClient.ITEMS, KNOWN_CAPS);
+			capsRaw = BProcessor.toBinary(el);
+			this.setData(Utils.getBytesUtf8(KNOWN_CAPS), capsRaw);
+			return;
+		}
+
+	}
+
 	public synchronized void saveCapabilities(String node, String ver,
 			Element query) {
 		String combi = node + ver;
 		// should not happen
 		if (cachedCaps.contains(combi)) return;
-		byte[] capsRaw = this.getData(KNOWN_CAPS.getBytes());
-		if (capsRaw == null) capsRaw = new byte[0];
 
-		//read the main record 
-		DataInputStream is = new DataInputStream(new ByteArrayInputStream(
-				capsRaw));
-		int capCount = 0;
-		try {
-			while (is.available() > 0) {
-				is.readUTF();
-				is.readUTF();
-				capCount++;
-			}
-		} catch (IOException e) {
-			// #mdebug
-			//@			Logger.log("Error in getting capabilities: received packet: "
-			//@					+ e.getClass(), Logger.DEBUG);
-			// #enddebug
-			// reset the capabilities 
-			this.setData(KNOWN_CAPS.getBytes(), "".getBytes());
-			return;
+		Element el = new Element(XMPPClient.ITEMS, KNOWN_CAPS);
+		query.setAttribute(XMPPClient.FULL_NODE, combi);
+		cachedCaps.put(combi, query);
+		Enumeration en = cachedCaps.keys();
+		while (en.hasMoreElements()) {
+			String tempNode = (String) en.nextElement();
+			Element tempEl = (Element) cachedCaps.get(tempNode);
+			el.addElement(tempEl);
 		}
-		// save the new cap
-		String newCapKey = CAPS_PREFIX + capCount;
-		// #mdebug
-		//@
-		// #enddebug
-		byte[] newCapData = BProcessor.toBinary(query);
-		this.setData(newCapKey.getBytes(), newCapData);
 
-		// add the new cap
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		DataOutputStream os = new DataOutputStream(baos);
-		try {
-			os.write(capsRaw);
-			os.writeUTF(combi);
-			os.writeUTF(newCapKey);
-		} catch (IOException e) {
-			// should not ever appear
-			// #mdebug
-			//@			Logger.log("Error in saving new capability" + e.getClass(),
-			//@					Logger.DEBUG);
-			// #enddebug
-		}
-		this.setData(KNOWN_CAPS.getBytes(), baos.toByteArray());
-		this.cachedCaps.put(combi, query);
+		byte[] capsRaw = BProcessor.toBinary(el);
+		this.setData(Utils.getBytesUtf8(KNOWN_CAPS), capsRaw);
 	}
 
 	public synchronized Element getCapabilities(String node, String ver) {
 		String combi = node + ver;
-
 		Element cachedCap = (Element) cachedCaps.get(combi);
-		if (cachedCap != null) return cachedCap;
-
-		// load the capabilities 
-		byte[] capsRaw = this.getData(KNOWN_CAPS.getBytes());
-		if (capsRaw == null) return null;
-
-		//read the main record 
-		DataInputStream is = new DataInputStream(new ByteArrayInputStream(
-				capsRaw));
-		String capCode = null;
-		String ithCap = null;
-		String tempCode;
-		try {
-			while (is.available() > 0) {
-				ithCap = is.readUTF();
-				tempCode = is.readUTF();
-				if (ithCap.equals(combi)) {
-					capCode = tempCode;
-					break;
-				}
-			}
-		} catch (IOException e) {
-			// #mdebug
-			//@			Logger.log("Error in getting capabilities: received packet: "
-			//@					+ e.getClass(), Logger.DEBUG);
-			// #enddebug
-			return null;
-		}
-		if (capCode == null) return null;
-		byte capData[] = this.getData(Utils.getBytesUtf8(capCode));
-		Element decodedPacket = BProcessor.parse(capData);
-		cachedCaps.put(combi, decodedPacket);
-
-		return decodedPacket;
+		return cachedCap;
 	}
 
 }

@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Roster.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.xmpp;
@@ -193,7 +193,7 @@ public class Roster implements PacketListener {
 				if (c != null && c instanceof MUC == false) {
 					contacts.remove(c.jid);
 					if (client.getXmppListener() != null) client
-							.getXmppListener().removeContact(c);
+							.getXmppListener().removeContact(c, false);
 				}
 				MUC muc = createMuc(jid, Contact.user(jid), nick, pwd,
 						lampiroAutoJoin);
@@ -214,12 +214,12 @@ public class Roster implements PacketListener {
 			EventQuery x = new EventQuery("x", new String[] { "xmlns" },
 					new String[] { XMPPClient.NS_ROSTERX });
 			q.child = x;
-			BasicXmlStream.addEventListener(q, this);
+			BasicXmlStream.addPacketListener(q, this);
 
 			q = new EventQuery("iq", new String[] { Iq.ATT_TYPE },
 					new String[] { Iq.T_SET });
 			q.child = x;
-			BasicXmlStream.addEventListener(q, this);
+			BasicXmlStream.addPacketListener(q, this);
 		}
 
 		public void packetReceived(Element e) {
@@ -267,7 +267,7 @@ public class Roster implements PacketListener {
 				new String[] { "set" });
 		eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
 				new String[] { XMPPClient.NS_IQ_ROSTER });
-		BasicXmlStream.addEventListener(eq, this);
+		BasicXmlStream.addPacketListener(eq, this);
 		this.rosterX = new RosterX();
 	}
 
@@ -386,7 +386,7 @@ public class Roster implements PacketListener {
 		RosterIqListener rosterListener = new RosterIqListener(
 				RosterIqListener.ROSTER);
 		rosterListener.go_online = go_online;
-		client.sendIQ(iq_roster, rosterListener,240000);
+		client.sendIQ(iq_roster, rosterListener, 240000);
 	}
 
 	public void retrieveBookmarks() {
@@ -397,7 +397,7 @@ public class Roster implements PacketListener {
 		query.addElement(XMPPClient.NS_STORAGE_LAMPIRO, XMPPClient.STORAGE);
 		IQResultListener bookmarkListener = new RosterIqListener(
 				RosterIqListener.BOOKMARK);
-		client.sendIQ(iq_bookMarks, bookmarkListener,240000);
+		client.sendIQ(iq_bookMarks, bookmarkListener, 240000);
 	}
 
 	/**
@@ -451,7 +451,7 @@ public class Roster implements PacketListener {
 		Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
 		Element item = query.addElement(XMPPClient.NS_IQ_ROSTER, "item");
 		item.setAttribute("jid", c.jid);
-		item.setAttribute("subscription", "remove");
+		item.setAttribute(XMPPClient.SUBSCRIPTION, XMPPClient.REMOVE);
 		client.sendPacket(iq_roster);
 		// recreateGroups();
 	}
@@ -491,7 +491,7 @@ public class Roster implements PacketListener {
 					if (contactToRemove.isVisible() == false /*ps == null || ps.length == 0*/) {
 						if (client.getXmppListener() != null) client
 								.getXmppListener().removeContact(
-										contactToRemove);
+										contactToRemove, false);
 					} else {
 						newContacts.put(contactToRemove.jid, contactToRemove);
 						oldUnRosterContacts.addElement(contactToRemove);
@@ -521,7 +521,7 @@ public class Roster implements PacketListener {
 		if (c == null) {
 			Element serverEl = new Element("", "serverEl");
 			serverEl.setAttributes(new String[] { Iq.ATT_TO, "jid", "name",
-					"subscription" }, new String[] { me.my_jid, myDomain,
+					XMPPClient.SUBSCRIPTION }, new String[] { me.my_jid, myDomain,
 					"Jabber Server", Contact.SUB_BOTH });
 			updateRosterItem(serverEl);
 			/// create a a fictitious presence
@@ -556,10 +556,10 @@ public class Roster implements PacketListener {
 		Contact c = getContactByJid(jid);
 		if (c == null) {
 			c = new Contact(jid, item.getAttribute("name"), item
-					.getAttribute("subscription"), groups);
+					.getAttribute(XMPPClient.SUBSCRIPTION), groups);
 		} else {
 			// contact found, just update
-			c.subscription = item.getAttribute("subscription");
+			c.subscription = item.getAttribute(XMPPClient.SUBSCRIPTION);
 			String name = item.getAttribute("name");
 			if (name != null) {
 				c.name = name;
@@ -573,13 +573,13 @@ public class Roster implements PacketListener {
 		}
 
 		// XXX not sure that is completely correct...
-		String subscription = item.getAttribute("subscription");
-		if (subscription != null && subscription.compareTo("remove") == 0) {
+		String subscription = item.getAttribute(XMPPClient.SUBSCRIPTION);
+		if (XMPPClient.REMOVE.equals(subscription)) {
 			// if the user has removed me from roster
 			// there is nothing to do remove contacts and nothing all
 			contacts.remove(c.jid);
 			if (client.getXmppListener() != null) client.getXmppListener()
-					.removeContact(c);
+					.removeContact(c, true);
 			return;
 		}
 
@@ -686,7 +686,7 @@ public class Roster implements PacketListener {
 
 		Iq iq = new Iq(c.jid, Iq.T_GET);
 		iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-		XMPPClient.getInstance().sendIQ(iq, gw,240000);
+		XMPPClient.getInstance().sendIQ(iq, gw, 240000);
 	}
 
 	public Contact getContactByJid(String jid) {
@@ -804,7 +804,7 @@ public class Roster implements PacketListener {
 		if (serverStorage == true) {
 			Iq iq = new Iq(null, Iq.T_SET);
 			iq.addElement(privateStorage);
-			XMPPClient.getInstance().sendIQ(iq, null,240000);
+			XMPPClient.getInstance().sendIQ(iq, null, 240000);
 		}
 
 	}

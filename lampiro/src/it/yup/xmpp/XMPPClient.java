@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: XMPPClient.java 2055 2010-04-12 10:22:05Z luca $
 */
 
 package it.yup.xmpp;
@@ -26,7 +26,6 @@ import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
 import it.yup.xmlstream.SocketStream;
-import it.yup.xmlstream.StreamEventListener;
 
 
 import it.yup.xmpp.packets.DataForm;
@@ -36,6 +35,8 @@ import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
 import it.yup.util.CountInputStream;
 import it.yup.util.CountOutputStream;
+import it.yup.util.EventDispatcher;
+import it.yup.util.EventListener;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -46,14 +47,21 @@ import org.bouncycastle.util.encoders.Base64;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Image;
 
-public class XMPPClient implements StreamEventListener {
+public class XMPPClient implements EventListener {
 
 	/*
 	 * Few methods used to communicate to the application of xmpp events 
 	 */
 	public interface XmppListener {
 
-		void removeContact(Contact c);
+		/**
+		 * Removes the contact from the roster; the contact may be removed for many reasons 
+		 * (temporary modifications, contact to MUC upgrade, roster recreation, unsubscription )
+		 * 
+		 * @param c the contact that has been removed
+		 * @param unsubscribed true if the contact has unsibscribed
+		 */
+		void removeContact(Contact c, boolean unsubscribed);
 
 		void removeAllContacts();
 
@@ -67,9 +75,6 @@ public class XMPPClient implements StreamEventListener {
 
 		void askSubscription(Contact u);
 
-		void handleCommand(Contact c, String preferredResource,
-				Object optionalArguments);
-
 		void connectionLost();
 
 		void showAlert(AlertType type, int titleCode, int textCode,
@@ -78,7 +83,7 @@ public class XMPPClient implements StreamEventListener {
 		void handleTask(Task task);
 
 		Object handleDataForm(DataForm df, byte type, DataFormListener dfl,
-				int cmds, Object optionalArguments);
+				int cmds);
 
 
 		void showCommand(Object screen);
@@ -86,7 +91,6 @@ public class XMPPClient implements StreamEventListener {
 		void rosterRetrieved();
 
 		void handlePresenceError(Presence presence);
-
 	}
 
 	private Config cfg = Config.getInstance();
@@ -279,6 +283,9 @@ public class XMPPClient implements StreamEventListener {
 	public static String MEDIA = "media";
 	public static String TEXT = "text";
 	public static String CODE = "code";
+	public static String REMOVE = "remove";
+	public static String SUBSCRIPTION = "subscription";
+	public static String FULL_NODE = "fullnode";
 
 
 	public static String[][] errorCodes = new String[][] {
@@ -508,11 +515,11 @@ public class XMPPClient implements StreamEventListener {
 		if (register) {
 
 			EventQuery qReg = new EventQuery(
-					BasicXmlStream.STREAM_ACCOUNT_REGISTERED, null, null);
+					EventDispatcher.STREAM_ACCOUNT_REGISTERED, null, null);
 			/*
 			 * The registration used to be notified of the registration
 			 */
-			BasicXmlStream.addEventListener(qReg, this);
+			EventDispatcher.addEventListener(qReg, this);
 
 			accountRegistration = new AccountRegistration();
 			xmlStream.addInitializer(accountRegistration, 0);
@@ -543,12 +550,12 @@ public class XMPPClient implements StreamEventListener {
 				+ cfg.getProperty(Config.SERVER) + "/" + resource, cfg
 				.getProperty(Config.PASSWORD));
 
-		EventQuery qAuth = new EventQuery(BasicXmlStream.STREAM_INITIALIZED,
+		EventQuery qAuth = new EventQuery(EventDispatcher.STREAM_INITIALIZED,
 				null, null);
 		/*
 		 * The registration used to be notified of the authentication
 		 */
-		BasicXmlStream.addEventListener(qAuth, this);
+		EventDispatcher.addEventListener(qAuth, this);
 
 
 		if (!connection.isOpen()) {
@@ -563,44 +570,44 @@ public class XMPPClient implements StreamEventListener {
 	}
 
 	public void gotStreamEvent(String event, Object source) {
-		if (BasicXmlStream.STREAM_INITIALIZED.equals(event)) {
+		if (EventDispatcher.STREAM_INITIALIZED.equals(event)) {
 
 			// all these registration are made here 
 			// Register the handler for incoming messages
 			EventQuery eq = new EventQuery(Message.MESSAGE, null, null);
 			eq.child = new EventQuery(Message.BODY, null, null);
-			BasicXmlStream.addEventListener(eq, new MessageHandler(false));
+			BasicXmlStream.addPacketListener(eq, new MessageHandler(false));
 
 			// a handler only for error type messages
 			eq = new EventQuery(Message.MESSAGE,
 					new String[] { Message.ATT_TYPE },
 					new String[] { Message.ERROR });
-			BasicXmlStream.addEventListener(eq, new MessageHandler(true));
+			BasicXmlStream.addPacketListener(eq, new MessageHandler(true));
 
 			// Register the presence handler
 			eq = new EventQuery(Presence.PRESENCE, null, null);
-			BasicXmlStream.addEventListener(eq, new PresenceHandler());
+			BasicXmlStream.addPacketListener(eq, new PresenceHandler());
 
 			// Register the disco handler
 			eq = new EventQuery(Iq.IQ, new String[] { "type" },
 					new String[] { "get" });
 			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
 					new String[] { NS_IQ_DISCO_INFO });
-			BasicXmlStream.addEventListener(eq, new DiscoHandler());
+			BasicXmlStream.addPacketListener(eq, new DiscoHandler());
 
 			// Register the UUID handler
 			eq = new EventQuery(Iq.IQ, new String[] { "type" },
 					new String[] { "get" });
 			eq.child = new EventQuery(XMPPClient.UUID,
 					new String[] { "xmlns" }, new String[] { NS_UUID });
-			BasicXmlStream.addEventListener(eq, new UUIDHandler());
+			BasicXmlStream.addPacketListener(eq, new UUIDHandler());
 
 			// Register the disco handler
 			eq = new EventQuery(Iq.IQ, new String[] { "type" },
 					new String[] { "get" });
 			eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
 					new String[] { NS_JABBER_VERSION });
-			BasicXmlStream.addEventListener(eq, new PacketListener() {
+			BasicXmlStream.addPacketListener(eq, new PacketListener() {
 
 				public void packetReceived(Element e) {
 					Iq reply = Utils.easyReply(e);
@@ -623,11 +630,11 @@ public class XMPPClient implements StreamEventListener {
 			eq = new EventQuery(Message.MESSAGE, null, null);
 			eq.child = new EventQuery(DataForm.X, new String[] { "xmlns" },
 					new String[] { DataForm.NAMESPACE });
-			BasicXmlStream.addEventListener(eq, dh);
+			BasicXmlStream.addPacketListener(eq, dh);
 			eq = new EventQuery(Iq.IQ, null, null);
 			eq.child = new EventQuery(DataForm.X, new String[] { "xmlns" },
 					new String[] { DataForm.NAMESPACE });
-			BasicXmlStream.addEventListener(eq, dh);
+			BasicXmlStream.addPacketListener(eq, dh);
 
 			//			/* register handler for ad hoc command announcements */
 			//			PacketListener ashc_listener = new PacketListener() {
@@ -647,7 +654,7 @@ public class XMPPClient implements StreamEventListener {
 			roster.streamInitialized();
 
 			stream_authenticated();
-		} else if (BasicXmlStream.STREAM_ACCOUNT_REGISTERED.equals(event)) {
+		} else if (EventDispatcher.STREAM_ACCOUNT_REGISTERED.equals(event)) {
 			xmlStream.removeInitializer(accountRegistration);
 		}
 	}
@@ -696,9 +703,9 @@ public class XMPPClient implements StreamEventListener {
 		valid_stream = true;
 
 		// Listen for lost connections
-		lostConnReg = BasicXmlStream.addEventListener(new EventQuery(
-				BasicXmlStream.STREAM_TERMINATED, null, null),
-				new StreamEventListener() {
+		lostConnReg = EventDispatcher.addEventListener(new EventQuery(
+				EventDispatcher.STREAM_TERMINATED, null, null),
+				new EventListener() {
 
 					public void gotStreamEvent(String event, Object source) {
 						if (rosterRetrieveTask != null) rosterRetrieveTask
@@ -708,7 +715,7 @@ public class XMPPClient implements StreamEventListener {
 						if (xmppListener != null) xmppListener.connectionLost();
 						showAlert(AlertType.ERROR, Config.ALERT_CONNECTION,
 								Config.ALERT_CONNECTION, null);
-						BasicXmlStream.removeEventListener(lostConnReg);
+						EventDispatcher.removeEventListener(lostConnReg);
 						/* XXX: should close all screens and open the RegisterScreen */
 					}
 				});
@@ -777,7 +784,7 @@ public class XMPPClient implements StreamEventListener {
 
 			IQResultListener resultListener = new XmppIqListener(
 					XmppIqListener.UUID);
-			this.sendIQ(UUIDReq, resultListener,240000);
+			this.sendIQ(UUIDReq, resultListener, 240000);
 		}
 	}
 
@@ -793,7 +800,7 @@ public class XMPPClient implements StreamEventListener {
 		XmppIqListener resultListener = new XmppIqListener(
 				XmppIqListener.TRUSTED_SERVICES);
 
-		this.sendIQ(systemConfigIq, resultListener,240000);
+		this.sendIQ(systemConfigIq, resultListener, 240000);
 	}
 
 	private String getCapVer() {
@@ -855,7 +862,7 @@ public class XMPPClient implements StreamEventListener {
 					groups[j] = group_elements[j].getText();
 				}
 				u = new Contact(Contact.userhost(jid), p.getAttribute("name"),
-						p.getAttribute("subscription"), groups);
+						p.getAttribute(XMPPClient.SUBSCRIPTION), groups);
 				roster.contacts.put(Contact.userhost(u.jid), u);
 			}
 
@@ -1184,8 +1191,7 @@ public class XMPPClient implements StreamEventListener {
 	 *            when true show the command list screen
 	 * @param optionalArguments 
 	 */
-	public void handleClientCommands(Element e, boolean show,
-			Object optionalArguments) {
+	public void handleClientCommands(Element e) {
 		String from = e.getAttribute(Stanza.ATT_FROM);
 		if (from == null) return;
 		Contact c = roster.getContactByJid(from);
@@ -1197,11 +1203,6 @@ public class XMPPClient implements StreamEventListener {
 			for (int i = 0; i < items.length; i++) {
 				c.cmdlist[i][0] = items[i].getAttribute(NODE);
 				c.cmdlist[i][1] = items[i].getAttribute("name");
-			}
-
-			if (show && this.xmppListener != null) {
-				xmppListener.updateContact(c, Contact.CH_TASK_NEW);
-				xmppListener.handleCommand(c, from, optionalArguments);
 			}
 		} // XXX we could add an alert if it's empty and we have to show
 	}

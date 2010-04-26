@@ -1,11 +1,12 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: AccountRegistration.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: AccountRegistration.java 2039 2010-03-31 07:29:31Z luca $
 */
 
 package it.yup.xmlstream;
 
+import it.yup.util.EventDispatcher;
 import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.packets.Iq;
@@ -37,13 +38,13 @@ public class AccountRegistration extends Initializer implements PacketListener {
         EventQuery registerResult = new EventQuery("iq", 
         		new String[]{ Stanza.ATT_ID }, 
         		new String[]{ iq_register.getAttribute(Stanza.ATT_ID) });
-        BasicXmlStream.addOnetimeEventListener(registerResult, this);
+        BasicXmlStream.addOnetimePacketListener(registerResult, this);
         stream.send(iq_register, -1);
 	}
 
 	public void packetReceived(Element e) {
 		if(e.getAttribute("type").equals(Iq.T_RESULT)) {
-			stream.dispatchEvent(BasicXmlStream.STREAM_ACCOUNT_REGISTERED, null);
+			EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ACCOUNT_REGISTERED, null);
 			stream.nextInitializer();
 		} else {
 			String errmsg = "Error creating account";
@@ -55,7 +56,7 @@ public class AccountRegistration extends Initializer implements PacketListener {
 					errmsg = cld.name;
 				}
 			}
-			stream.dispatchEvent(BasicXmlStream.STREAM_ERROR, errmsg);
+			EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR, errmsg);
 		}
 	}
 

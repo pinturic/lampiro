@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIPanel.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UIPanel.java 2033 2010-03-26 16:33:26Z luca $
 */
 
 package it.yup.ui;
@@ -40,7 +40,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 
 	private int reverseColor = UIUtils.colorize(UIConfig.bg_color, -10);
 
-	private boolean needScrollbar = false;
+	boolean needScrollbar = false;
 
 	/*
 	 * If it is equal to true the panel support "roll up" and "roll down"
@@ -132,9 +132,9 @@ public class UIPanel extends UIItem implements UIIContainer {
 					delta += ((UIItem) items.elementAt(i)).getHeight(g);
 				}
 				do {
-					firstVisible++;
 					delta -= ((UIItem) items.elementAt(firstVisible))
 							.getHeight(g);
+					firstVisible++;
 				} while (delta > 0 && firstVisible < this.items.size() - 1);
 				for (int i = firstVisible; i < this.items.size(); i++) {
 					((UIItem) items.elementAt(i)).setDirty(true);
@@ -196,20 +196,20 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 *            the real height of this panel
 	 */
 	protected void drawScrollBar(Graphics g, int w, int h, int rh) {
-		drawScrollBarItems(g, w, h, rh, items, firstVisible, lastVisible);
+		drawScrollBarItems(g, w, h, rh, firstVisible, lastVisible, items.size());
 	}
 
 	protected void drawScrollBarItems(Graphics g, int w, int h, int rh,
-			Vector drawItems, int firstItem, int lastItem) {
+			int firstItem, int lastItem, int size) {
 		int oc = g.getColor();
 		g.setColor(UIConfig.scrollbar_bg);
 		g.translate(w - UIConfig.scrollbarWidth, 0);
 		g.fillRect(0, 0, UIConfig.scrollbarWidth, h);
 
 		/* calculate y and height of scrollbar */
-		int sy = h * firstItem / drawItems.size();
+		int sy = h * firstItem / size;
 		int sh = (h * h) / rh;
-		if (sy + sh > h || lastItem == drawItems.size() - 1) {
+		if (sy + sh > h || lastItem == size - 1) {
 			sy = h - sh;
 		}
 
@@ -230,7 +230,6 @@ public class UIPanel extends UIItem implements UIIContainer {
 		this.height = clippedHeight;
 		return this.height;
 		// otherwise my last known height
-
 	}
 
 	public void setDirty(boolean _dirty) {
@@ -511,7 +510,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	}
 
 	/**
-	 * Selection status change. Whene select becomes true, select first item if
+	 * Selection status change. When select becomes true, select first item if
 	 * no item has been selected. De-select last selected item if Panel gets
 	 * de-selected.
 	 * 
@@ -606,8 +605,11 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 * @param idx
 	 *            The item index to remove
 	 */
-	public void removeItemAt(int idx) {
-		if (idx < 0 || idx > items.size()) { return; }
+	public UIItem removeItemAt(int idx) {
+		if (idx < 0 || idx > items.size()) { return null; }
+		if (idx < firstVisible) firstVisible--;
+		if (idx < lastVisible) lastVisible--;
+
 		if (selectedIdx > idx) {
 			/* clear selection */
 			selectedIdx -= 1;
@@ -634,6 +636,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 			}
 		}
 		this.dirty = true;
+		return ithItem;
 	}
 
 	/**

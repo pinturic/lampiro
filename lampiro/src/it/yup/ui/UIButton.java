@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIButton.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UIButton.java 2030 2010-03-25 14:23:31Z luca $
 */
 
 /**
@@ -28,7 +28,7 @@ public class UIButton extends UILabel {
 	private int buttonHPadding = 2;
 
 	private int buttonColor = -1;
-	
+
 	/**
 	 * @param text
 	 * @param screen
@@ -61,9 +61,9 @@ public class UIButton extends UILabel {
 		}
 		return false;
 	}
-	
+
 	public int getSelectedColor() {
-		return selectedColor ;
+		return selectedColor;
 	}
 
 	protected void paint(Graphics g, int w, int h) {
@@ -74,7 +74,7 @@ public class UIButton extends UILabel {
 		this.height = this.getHeight(g);
 		this.width = usedFont.stringWidth(text) + 8 + 2 * buttonHPadding;
 
-		if (this.wrappable == true && this.getTextLines() == null) {
+		if (this.wrappable == true && textLines == null) {
 			int availableWidth = w - 8 - 2 * buttonHPadding;
 			computeTextLines(usedFont, availableWidth);
 			// if h is lower then 0 it means
@@ -214,7 +214,11 @@ public class UIButton extends UILabel {
 	 * {@inheritDoc}
 	 */
 	public int getHeight(Graphics g) {
-		return super.getHeight(g) + 8;
+		int marginSpace = (8 + 2 * buttonHPadding);
+		this.width -= marginSpace;
+		int superHeight = super.getHeight(g) + 8;
+		this.width += marginSpace;
+		return superHeight;
 	}
 
 	public void setButtonHPadding(int hPadding) {

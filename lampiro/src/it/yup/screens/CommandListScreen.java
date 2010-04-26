@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandListScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: CommandListScreen.java 2047 2010-04-06 20:24:41Z luca $
 */
 
 package it.yup.screens;
@@ -58,4 +58,5 @@ public class CommandListScreen extends List implements CommandListener {
 			return;
 		}
 	}
+
 }

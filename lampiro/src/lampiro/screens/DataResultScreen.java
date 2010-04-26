@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: DataResultScreen.java 2056 2010-04-13 17:51:13Z luca $
 */
 
 /**
@@ -42,8 +42,10 @@ public class DataResultScreen extends UIScreen {
 	private UILabel cmd_close = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
 			.toUpperCase());
 	// these are for <reported/> items
-	private UILabel cmd_prev = new UILabel(rm.getString(ResourceIDs.STR_PREV));
-	private UILabel cmd_next = new UILabel(rm.getString(ResourceIDs.STR_NEXT));
+	private UILabel cmd_prev = new UILabel(rm.getString(ResourceIDs.STR_PREV)
+			.toUpperCase());
+	private UILabel cmd_next = new UILabel(rm.getString(ResourceIDs.STR_NEXT)
+			.toUpperCase());
 
 	/** The result to show. The value -1 means possible instructions */
 	private int pos = 0;
@@ -142,6 +144,7 @@ public class DataResultScreen extends UIScreen {
 					UILabel objLabel = new UILabel(UICanvas
 							.getUIImage("/icons/loading.png"));
 					objLabel.setAnchorPoint(Graphics.HCENTER);
+					objLabel.setFocusable(true);
 					mainPanel.addItem(objLabel);
 					MediaRetrieveListener mrl = new MediaRetrieveListener(this,
 							objLabel);
@@ -171,12 +174,13 @@ public class DataResultScreen extends UIScreen {
 		//int start = df.instructions == null ? 0 : -1;
 		int start = 0;
 		if (pos > start) {
-			menu.insert(1, cmd_prev);
+			//menu.insert(1, cmd_prev);
+			menu.append(cmd_prev);
 		}
 		if (pos < df.results.size() - 1) {
-			menu.insert(1, cmd_next);
+			menu.append(cmd_next);
 		}
-
+		this.askRepaint();
 	}
 
 	public boolean keyPressed(int kc) {

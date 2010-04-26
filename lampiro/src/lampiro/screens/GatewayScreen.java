@@ -26,8 +26,10 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
+import it.yup.util.EventDispatcher;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.XMPPClient;
@@ -165,13 +167,12 @@ public class GatewayScreen extends UIScreen {
 	private void openRegisterScreen(UIItem cmd) {
 
 		String from = (String) cmd.getStatus();
-
-		SimpleWaitScreen rws = new SimpleWaitScreen(rm
-				.getString(ResourceIDs.STR_REGISTER));
-		rs.setWaitingDF(rws);
-		UICanvas.getInstance().open(rws, true, RosterScreen.getInstance());
-
-		RosterScreen.RegisterHandler rh = rs.new RegisterHandler();
+		
+		WaitScreen ws = new WaitScreen(this.getTitle(), null);
+		EventQueryRegistration eqr = EventDispatcher.addDelayedListener(ws, true);
+		RosterScreen.RegisterHandler rh = rs.new RegisterHandler(eqr);
+		UICanvas.getInstance().open(ws, true);
+		
 		Iq iq = new Iq(from, Iq.T_GET);
 		iq.addElement(XMPPClient.IQ_REGISTER, Iq.QUERY);
 		// from this point on all the subscription 

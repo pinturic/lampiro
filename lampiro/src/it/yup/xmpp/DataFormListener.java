@@ -5,6 +5,8 @@
 */
 package it.yup.xmpp;
 
+import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
+
 /**
  * This interface is used to notify of an action that the user invoked on
  * the form.
@@ -34,7 +36,17 @@ public interface DataFormListener {
 	 * @return "true" it the listener is going to have a reply (e.g. iq will have a reply
 	 * while message not)           
 	 */
-	public boolean execute(int cmd);
+	public void execute(int cmd);
 	
 	public String getFrom ();
+
+	/*
+	 * sets a delayed query registration 
+	 */
+	public void setCel(CommandExecutorListener cel);
+
+	/*
+	 * True if the dfl need to wait for a response
+	 */
+	public boolean needWaiting(int comm);
 }

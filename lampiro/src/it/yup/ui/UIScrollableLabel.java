@@ -78,7 +78,7 @@ public class UIScrollableLabel extends UILabel {
 		this.lines = lines;
 	}
 
-	public void computeTextLines(Font usedFont, int w) {
+	protected void computeTextLines(Font usedFont, int w) {
 		super.computeTextLines(usedFont, w);
 		this.hiddenLines.removeAllElements();
 		while (this.textLines.size() > lines) {
