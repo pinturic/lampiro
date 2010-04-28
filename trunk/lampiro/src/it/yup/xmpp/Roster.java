@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 2039 2010-03-31 07:29:31Z luca $
+ * $Id: Roster.java 2069 2010-04-27 21:12:31Z luca $
 */
 
 package it.yup.xmpp;
@@ -52,6 +52,10 @@ public class Roster implements PacketListener {
 			switch (LISTENER_TYPE) {
 				case BOOKMARK:
 					serverStorage = false;
+					break;
+					
+				case ROSTER:
+					setupRoster(e);
 					break;
 
 				default:
@@ -382,7 +386,9 @@ public class Roster implements PacketListener {
 		//ask the roster and after the bookmarks
 		Iq iq_roster = new Iq(null, Iq.T_GET);
 		Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
-		query.setAttribute("ver", this.rosterVersion);
+		if (client.xmlStream.hasFeature(XMPPClient.NS_ROSTERVER)) {
+			query.setAttribute("ver", this.rosterVersion);
+		}
 		RosterIqListener rosterListener = new RosterIqListener(
 				RosterIqListener.ROSTER);
 		rosterListener.go_online = go_online;
@@ -521,8 +527,8 @@ public class Roster implements PacketListener {
 		if (c == null) {
 			Element serverEl = new Element("", "serverEl");
 			serverEl.setAttributes(new String[] { Iq.ATT_TO, "jid", "name",
-					XMPPClient.SUBSCRIPTION }, new String[] { me.my_jid, myDomain,
-					"Jabber Server", Contact.SUB_BOTH });
+					XMPPClient.SUBSCRIPTION }, new String[] { me.my_jid,
+					myDomain, "Jabber Server", Contact.SUB_BOTH });
 			updateRosterItem(serverEl);
 			/// create a a fictitious presence
 			Presence p = new Presence(me.my_jid, Presence.T_SUBSCRIBED,

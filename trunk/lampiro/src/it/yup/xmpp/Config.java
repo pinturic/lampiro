@@ -37,7 +37,7 @@ public class Config {
 
 	public static String CLIENT_ADDRESS = "http://lampiro.bluendo.com ";
 
-	private static String version = "10.4";
+	private static String version = "10.4.1";
 
 	public static String lang =
 	// #if LANG = "en"
@@ -240,7 +240,7 @@ public class Config {
 	public static final short CAMERA_RESOLUTION = 0x0026;
 
 	/** the bluendo assistent */
-	public static final String LAMPIRO_AGENT = "lampiro@golem.jabber.bluendo.com";
+	public static final String CLIENT_AGENT = "lampiro@golem.jabber.bluendo.com";
 
 	/** maximum wait time for a packet (should we let configure this ) */
 	public static final int TIMEOUT = -1;
@@ -380,6 +380,7 @@ public class Config {
 				+ Config.CLIENT_ADDRESS + ")");
 		setDefault(Config.LAST_PRESENCE_SHOW, Presence.SHOW_ONLINE);
 		setDefault(Config.COLOR, "0");
+		saveToStorage();
 	}
 
 	/**

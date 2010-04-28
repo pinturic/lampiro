@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPClient.java 2055 2010-04-12 10:22:05Z luca $
+ * $Id: XMPPClient.java 2070 2010-04-27 23:38:01Z luca $
 */
 
 package it.yup.xmpp;
@@ -122,7 +122,7 @@ public class XMPPClient implements EventListener {
 	public String my_jid;
 
 	/** the used XmlStream */
-	private BasicXmlStream xmlStream = null;
+	protected BasicXmlStream xmlStream = null;
 
 	/** The actual connection with the Server */
 	private BaseChannel connection = null;
@@ -235,6 +235,7 @@ public class XMPPClient implements EventListener {
 	public static String NS_MUC_USER = "http://jabber.org/protocol/muc#user";
 	public static String NS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
 	public static String NS_NICK = "http://jabber.org/protocol/nick";
+	public static String NS_ROSTERVER = "urn:xmpp:features:rosterver";
 	public static String NS_STORAGE_LAMPIRO = "storage:lampiro";
 	public static String NS_VCARD_UPDATE = "vcard-temp:x:update";
 	public static String NS_UUID = "urn:bluendo:uuid:0";
@@ -272,7 +273,11 @@ public class XMPPClient implements EventListener {
 	public static String ITEMS = "items";
 	public static String ITEM = "item";
 	public static String NODE = "node";
-	public static String LAMPIRO_CONFIG = "lampiro_config";
+	public static String CLIENT_CONFIG =
+	// #ifndef GLIDER 
+			"lampiro"
+	// #endif
+			+ "_config";
 	public static String EVENT = "event";
 	public static String COMMAND = "command";
 	public static String ACTION = "action";
@@ -776,7 +781,8 @@ public class XMPPClient implements EventListener {
 		// check the trusted services
 		String myUid = cfg.getProperty(Config.UUID, "-1");
 		if (myUid.equals("-1")) {
-			Iq UUIDReq = new Iq(Config.LAMPIRO_AGENT + "/lampiro", Iq.T_SET);
+			Iq UUIDReq = new Iq(Config.CLIENT_AGENT + "/"
+					+ Config.CLIENT_NAME.toLowerCase(), Iq.T_SET);
 			Element command = UUIDReq.addElement(XMPPClient.NS_COMMANDS,
 					XMPPClient.COMMAND);
 			command.setAttribute("node", "uuid_gen");
@@ -793,10 +799,11 @@ public class XMPPClient implements EventListener {
 	 */
 	private void checkTrustedServices() {
 		// check the trusted services
-		Iq systemConfigIq = new Iq(Config.LAMPIRO_AGENT, Iq.T_GET);
+		Iq systemConfigIq = new Iq(Contact.domain(Config.CLIENT_AGENT),
+				Iq.T_GET);
 		Element pubsub = systemConfigIq.addElement(NS_PUBSUB, PUBSUB);
 		Element items = pubsub.addElement(null, ITEMS);
-		items.setAttribute(NODE, LAMPIRO_CONFIG);
+		items.setAttribute(NODE, CLIENT_CONFIG);
 		XmppIqListener resultListener = new XmppIqListener(
 				XmppIqListener.TRUSTED_SERVICES);
 
@@ -927,7 +934,7 @@ public class XMPPClient implements EventListener {
 			// subscription handling
 			if (Contact.SUB_BOTH.equals(u.subscription)
 					|| Contact.SUB_TO.equals(u.subscription)
-					|| Config.LAMPIRO_AGENT.equals(Contact.userhost(jid))) {
+					|| Config.CLIENT_AGENT.equals(Contact.userhost(jid))) {
 				// subscribe received: if already granted, I don't ask anything
 				Presence pmsg = new Presence();
 				pmsg.setAttribute(Stanza.ATT_TO, u.jid);
@@ -1059,7 +1066,7 @@ public class XMPPClient implements EventListener {
 			if (config != null) {
 				Element[] items = config.getChildrenByNameAttrs(NS_PUBSUB,
 						ITEMS, new String[] { NODE },
-						new String[] { LAMPIRO_CONFIG });
+						new String[] { CLIENT_CONFIG });
 				if (items.length > 0) {
 					Element[] gateways = items[0].getChildrenByNameAttrs(null,
 							ITEM, new String[] { "id" },
@@ -1078,7 +1085,7 @@ public class XMPPClient implements EventListener {
 		 */
 		private void saveAndAskRoster(String myUid) {
 			// with a wrong myUID i use a default one
-			if (myUid == null) myUid = System.currentTimeMillis() + "";
+			if (myUid == null) myUid = -1 + "";
 			cfg.setProperty(Config.UUID, myUid);
 			cfg.saveToStorage();
 			// i go online and ask roster after having the UUID
