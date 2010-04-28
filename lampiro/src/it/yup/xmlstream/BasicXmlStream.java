@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 2039 2010-03-31 07:29:31Z luca $
+ * $Id: BasicXmlStream.java 2069 2010-04-27 21:12:31Z luca $
 */
 
 package it.yup.xmlstream;
@@ -26,7 +26,6 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
-
 
 public abstract class BasicXmlStream implements TransportListener,
 		EventListener {
@@ -70,9 +69,9 @@ public abstract class BasicXmlStream implements TransportListener,
 	protected BasicXmlStream() {
 		// prepare the default initializers
 		// #ifdef TLS
-//@				if (XMPPClient.getInstance().addTLS){
-//@				initializers.addElement(new TLSInitializer());
-//@		}
+		//@				if (XMPPClient.getInstance().addTLS){
+		//@				initializers.addElement(new TLSInitializer());
+		//@		}
 		// #endif
 		// #ifdef COMPRESSION    
 //@		if (XMPPClient.getInstance().addCompression) {
@@ -398,6 +397,10 @@ public abstract class BasicXmlStream implements TransportListener,
 
 	public void removeInitializer(Initializer initializer) {
 		this.initializers.removeElement(initializer);
+	}
+
+	public boolean hasFeature(String feature) {
+		return features.containsKey(feature) ? true : false;
 	}
 
 	/**
