@@ -917,8 +917,8 @@ public class RosterScreen extends UIScreen implements PacketListener,
 
 	private RosterScreen() {
 // #ifndef GLIDER
-																defaultContacts.addElement(new Object[] { Config.LAMPIRO_AGENT,
-																		"Lampiro Agent" });
+	 defaultContacts.addElement(new Object[] { Config.CLIENT_AGENT,
+		 "Lampiro Agent" });
 		// #endif
 		UIHLayout buttonLayout = new UIHLayout(2);
 		buttonLayout.setGroup(false);
