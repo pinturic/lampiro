@@ -17,13 +17,13 @@ import java.io.Reader;
 public class UTFReader extends Reader {
 
 	private InputStream is;
-	private byte buf[];
-	private int offset = -1;
-	private int available = -1;
+//	private byte buf[];
+//	private int offset = -1;
+//	private int available = -1;
 	
 	public UTFReader(InputStream is) {
 		this.is = is;
-		this.buf = new byte[512];
+//		this.buf = new byte[512];
 	}
 
 	public void close() throws IOException {

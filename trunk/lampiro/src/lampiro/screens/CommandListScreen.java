@@ -1,11 +1,13 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandListScreen.java 2056 2010-04-13 17:51:13Z luca $
+ * $Id: CommandListScreen.java 2336 2010-11-17 11:00:12Z luca $
 */
 
 package lampiro.screens;
 
+import it.yup.dispatch.EventDispatcher;
+import it.yup.dispatch.EventQueryRegistration;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIHLayout;
@@ -15,13 +17,13 @@ import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UIUtils;
-import it.yup.util.EventDispatcher;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
-import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmpp.CommandExecutor;
 import it.yup.xmpp.Contact;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
+
 
 /**
  * XXX: maybe not necessary anymore with submenus
@@ -120,8 +122,12 @@ public class CommandListScreen extends UIScreen implements
 			String[] selCmd = (String[]) item.getStatus();
 			ws = new WaitScreen(this.getTitle(), this.getReturnScreen());
 			eqr = EventDispatcher.addDelayedListener(ws, true);
-			CommandExecutor cmdEx = new CommandExecutor(selCmd, chosenResource,
-					this);
+			CommandExecutor cmdEx = null;
+			XMPPClient client = XMPPClient.getInstance();
+// #ifndef BLUENDO_SECURE
+						cmdEx = new CommandExecutor(client.getRoster(), selCmd,
+								chosenResource, this);
+			// #endif
 			UICanvas.getInstance().open(ws, true);
 			RosterScreen.getInstance()._handleTask(cmdEx);
 			cmdEx.setupCommand();
@@ -136,5 +142,9 @@ public class CommandListScreen extends UIScreen implements
 			EventDispatcher.dispatchDelayed(eqr, this);
 			eqr = null;
 		}
+	}
+
+	public boolean askClose() {
+		return false;
 	}
 }

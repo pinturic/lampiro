@@ -25,7 +25,7 @@
 25	Siguiente
 26	Registrar
 27	Un campo obligatorio tiene que ser rellenado antes de continuar
-28	Jabber ID
+28	Autoreconexión
 29	Informaciones
 30	Atención
 31	Ocultar
@@ -87,6 +87,8 @@
 87	from
 88	unknown
 89	none
+90	¿Quieres conectarte de nuevo?
+91	Habilitar
 100	Escribir mensaje
 101	Chatear con
 102	Vaciar chat
@@ -104,7 +106,8 @@
 114	Manual
 115	OK
 200	Jabber ID
-202	Dirección de correo electrónico (opcional)
+201	opcional
+202	Dirección de correo electrónico
 203	Crear una nueva cuenta
 204	Login del Lampiro
 205	Error en el registro
@@ -231,6 +234,8 @@
 758	Anular el registro de la red
 759	Sesiones activas
 760	Cambiar nome grupo
+761	Nueva versión
+762	Esta versión de Lampiro es vieja. Por favor, actualizar desde el sitio de descarga.
 800	Imposta el status
 801	Seleccion el estado
 802	Mensaje de estado
@@ -280,6 +285,7 @@
 1226	Alta <640x480>
 1227	Muy Alto <1024x768>
 1228	Error de acceso a la cámara
+1229	Tamaño del texto del menu
 1300	nuevas news
 1301	Número de noticias guardadas
 1302	Marcar como no leídos

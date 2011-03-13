@@ -1,21 +1,21 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIRadioButtons.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UIRadioButtons.java 2325 2010-11-15 20:07:28Z luca $
 */
 
 package it.yup.ui;
 
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 
 public class UIRadioButtons extends UIVLayout {
 
 	private int chechedIndex = 0;
 
 	private class UIRadioButton extends UILabel {
-		public UIRadioButton(Image img, String text) {
+		public UIRadioButton(UIImage img, String text) {
 			super(img, text);
 
 		}
@@ -46,7 +46,7 @@ public class UIRadioButtons extends UIVLayout {
 		super(stringItems.length, 0);
 		int buttonNumber = stringItems.length;
 		for (int i = 0; i < buttonNumber; i++) {
-			Image img = (i == 0 ? UICanvas
+			UIImage img = (i == 0 ? UICanvas
 					.getUIImage("/icons/radio_checked.png") : UICanvas
 					.getUIImage("/icons/radio_unchecked.png"));
 			UILabel ulb = new UIRadioButton(img, stringItems[i]);
@@ -57,12 +57,12 @@ public class UIRadioButtons extends UIVLayout {
 		this.focusable = true;
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		this.getHeight(g);
 		super.paint(g, w, h);
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		int itemHeight = this.layoutItems[0].getHeight(g);
 		this.height = itemHeight * this.layoutItems.length;
 		return this.height;
@@ -75,7 +75,7 @@ public class UIRadioButtons extends UIVLayout {
 	public boolean keyPressed(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
 		boolean keepSelection = false;
-		if (ga == Canvas.FIRE && this.selectedIndex >= 0
+		if (ga == UICanvas.FIRE && this.selectedIndex >= 0
 		//				&& this.chechedIndex != selectedIndex
 		) {
 			if (this.chechedIndex >= 0) {

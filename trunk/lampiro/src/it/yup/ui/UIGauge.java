@@ -1,20 +1,21 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIGauge.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: UIGauge.java 2325 2010-11-15 20:07:28Z luca $
+ */
 
 /**
  * 
  */
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+
 import java.util.TimerTask;
 
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Gauge;
-import javax.microedition.lcdui.Graphics;
 
 /**
  * Re-implementation of the {@link Gauge} class using our library. Differences:
@@ -88,20 +89,22 @@ public class UIGauge extends UIItem {
 	 * 
 	 * @see it.yup.ui.UIItem#paint(javax.microedition.lcdui.Graphics, int, int)
 	 */
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		/* get gfx state */
 		int oc = g.getColor();
-		Font of = g.getFont();
+		UIFont of = g.getFont();
 		/* clear area */
 		int tempBgColor = (getBg_color() >= 0 ? getBg_color()
 				: UIConfig.bg_color);
-		g.setColor(tempBgColor);
-		g.fillRect(0, 0, w, h);
+		if (getBg_color() != UIItem.TRANSPARENT_COLOR) {
+			g.setColor(tempBgColor);
+			g.fillRect(0, 0, w, h);
+		}
 
 		/* draw title (XXX: should clip or put ...) */
 		g.setColor(UIConfig.fg_color);
 		g.setFont(UIConfig.gauge_body);
-		g.drawString(label, 1, 1, Graphics.LEFT | Graphics.TOP);
+		g.drawString(label, 1, 1, UIGraphics.LEFT | UIGraphics.TOP);
 
 		/* border around progress (black) */
 		g.setColor(UIConfig.header_bg);
@@ -157,7 +160,7 @@ public class UIGauge extends UIItem {
 		if (!modifiable || maxValue == Gauge.INDEFINITE) { return keepFocus; }
 
 		switch (UICanvas.getInstance().getGameAction(key)) {
-			case Canvas.LEFT:
+			case UICanvas.LEFT:
 				keepFocus = true;
 				if (value > 0) {
 					value--;
@@ -165,7 +168,7 @@ public class UIGauge extends UIItem {
 				dirty = true;
 				askRepaint();
 				break;
-			case Canvas.RIGHT:
+			case UICanvas.RIGHT:
 				keepFocus = true;
 				if (value < maxValue) {
 					value++;
@@ -182,8 +185,8 @@ public class UIGauge extends UIItem {
 	 * 
 	 * @see it.yup.ui.UIItem#getHeight(javax.microedition.lcdui.Graphics)
 	 */
-	public int getHeight(Graphics g) {
-		Font fnt = UIConfig.gauge_body;
+	public int getHeight(UIGraphics g) {
+		UIFont fnt = UIConfig.gauge_body;
 		/* text row + border(s) + space(s) + gauge */
 		int mh = fnt.getHeight();
 		mh += 20;
@@ -264,8 +267,8 @@ public class UIGauge extends UIItem {
 			this.ticker.cancel();
 		} catch (Exception e) {
 			// #mdebug 
-//@			System.out.println("Cancelling ticker");
-//@			e.printStackTrace();
+			System.out.println("Cancelling ticker");
+			e.printStackTrace();
 			// #enddebug
 		}
 	}
@@ -278,7 +281,7 @@ public class UIGauge extends UIItem {
 		}
 	}
 
-		/**
+	/**
 	 * @return the current maximum value
 	 */
 	public int getMaxValue() {
@@ -317,21 +320,20 @@ public class UIGauge extends UIItem {
 		public void run() {
 			if (behaviour == Gauge.CONTINUOUS_RUNNING) {
 				/* ticks in blocks of 10% */
-				UICanvas.lock();
-				try {
-					value += 10;
-					if (value > 100) {
-						value = offset;
+				synchronized (UICanvas.getLock()) {
+					try {
+						value += 10;
+						if (value > 100) {
+							value = offset;
+						}
+						dirty = true;
+						askRepaint();
+					} catch (Exception e) {
+						// #mdebug 
+						System.out.println("Repainting gauge");
+						e.printStackTrace();
+						// #enddebug
 					}
-					dirty = true;
-					askRepaint();
-				} catch (Exception e) {
-					// #mdebug 
-//@					System.out.println("Repainting gauge");
-//@					e.printStackTrace();
-					// #enddebug
-				} finally {
-					UICanvas.unlock();
 				}
 			}
 		}

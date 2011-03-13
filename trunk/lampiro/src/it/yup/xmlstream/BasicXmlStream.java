@@ -1,39 +1,36 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: BasicXmlStream.java 2069 2010-04-27 21:12:31Z luca $
+ * $Id: BasicXmlStream.java 2445 2011-02-04 11:53:30Z luca $
 */
 
 package it.yup.xmlstream;
 
+import it.yup.dispatch.EventDispatcher;
+import it.yup.dispatch.EventQuery;
+import it.yup.dispatch.EventQueryRegistration;
+import it.yup.dispatch.ListenerRegistration;
 import it.yup.transport.TransportListener;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
-//#enddebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 import it.yup.xml.Element;
-import it.yup.xmpp.Contact;
-import it.yup.xmpp.XMPPClient;
-import it.yup.xmpp.packets.Iq;
-import it.yup.util.EventDispatcher;
-import it.yup.util.EventListener;
-import it.yup.util.ListenerRegistration;
 
-import java.util.Date;
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-public abstract class BasicXmlStream implements TransportListener,
-		EventListener {
+public abstract class BasicXmlStream implements TransportListener {
 
 	/*
 	 * The registration for mySelf is used for unmatched stanza registration;
+	 * TODO: this must be turned into special EventQuery for an external listener.
+	 * No action must be taken here, only the application knows waht to do
 	 */
-	private static EventQueryRegistration unmatchedStanzaReg = null;
 
 	/** packets waiting for being sent */
 	protected Vector sendQueue = new Vector(10);
@@ -52,68 +49,73 @@ public abstract class BasicXmlStream implements TransportListener,
 	/** Session jid */
 	public String jid = null;
 	/** Password used for authentication */
-	protected String password = null;
+	public String password = null;
 
 	/**
-	 * Stream features, mapping namespace to relevant dom Element 
+	 * Stream features, mapping namespace to relevant dom Element
 	 */
 	protected Hashtable features = new Hashtable();
 
 	/** Initializers */
 	protected Vector initializers = new Vector();
 
-	/** Iterate through initializers in subsequent {@link BasicXmlStream#nextInitializer()}
-	 * calls */
-	protected Enumeration initializerInterator = null;
+	/**
+	 * Iterate through initializers in subsequent
+	 * {@link BasicXmlStream#nextInitializer()} calls
+	 */
+	protected Enumeration initializerIterator = null;
 
-	protected BasicXmlStream() {
-		// prepare the default initializers
-		// #ifdef TLS
-		//@				if (XMPPClient.getInstance().addTLS){
-		//@				initializers.addElement(new TLSInitializer());
-		//@		}
-		// #endif
-		// #ifdef COMPRESSION    
-//@		if (XMPPClient.getInstance().addCompression) {
-//@			initializers.addElement(new CompressionInitializer());
-//@		}
-//@
-		// #endif    	
-		initializers.addElement(new SASLAuthenticator());
+	private SASLAuthenticator saslAuthenticator;
+
+	/**
+	 * 
+	 * @param initializers
+	 *            : list of additional initializes (eg. TLS and Compression)
+	 */
+	protected BasicXmlStream(Vector _initializers) {
+		if (_initializers != null) {
+			// I don't have addAll;
+			Enumeration en = _initializers.elements();
+			while (en.hasMoreElements()) {
+				Object object = (Object) en.nextElement();
+				initializers.addElement(object);
+			}
+		}
+		saslAuthenticator = new SASLAuthenticator();
+		initializers.addElement(saslAuthenticator);
 		initializers.addElement(new ResourceBinding());
 		initializers.addElement(new SessionOpener());
 
 		eventListeners.removeAllElements();
 		EventDispatcher.removeAllElements();
-		EventQuery eq = new EventQuery(EventDispatcher.UNMATCHED_STANZA, null,
-				null);
-		unmatchedStanzaReg = EventDispatcher.addEventListener(eq, this);
 	}
 
-	/** Initialize the stream 
-	 * @param jid 
-	 * 		jid with or without resource; in the first case the resource is taken as a request 
-	 * 		(the server may override it)
+	/**
+	 * Initialize the stream
+	 * 
+	 * @param jid
+	 *            jid with or without resource; in the first case the resource
+	 *            is taken as a request (the server may override it)
 	 * @param domain
 	 * @param password
 	 * */
-	public abstract void initialize(String jid, String password);
+	public abstract void initialize(String jid, String password, String lang);
 
 	/**
-	 * Send a XMPP packet. It's possible to set a maximum wait time in order to send a packet
-	 * also when cheap connections aren't available.
+	 * Send a XMPP packet. It's possible to set a maximum wait time in order to
+	 * send a packet also when cheap connections aren't available.
 	 * 
 	 * @param packetToSend
-	 * 			the XMPP packet to send
-	 * @param maxWait 
-	 * 			maximum time a packet can wait before sending it (-1 for sending it 
-	 * 			only when a cheap connection is available). This paramenter is only for
-	 * 			compatibility with future extensions
+	 *            the XMPP packet to send
+	 * @param maxWait
+	 *            maximum time a packet can wait before sending it (-1 for
+	 *            sending it only when a cheap connection is available). This
+	 *            paramenter is only for compatibility with future extensions
 	 */
 	public void send(Element packetToSend, int maxWait) {
 		// prepare the packet to send
-		packetToSend.queueTime = new Date().getTime();
-		packetToSend.maxWait = maxWait;
+		//		packetToSend.queueTime = new Date().getTime();
+		//		packetToSend.maxWait = maxWait;
 
 		synchronized (sendQueue) {
 			this.sendQueue.addElement(packetToSend);
@@ -121,7 +123,14 @@ public abstract class BasicXmlStream implements TransportListener,
 		tryToSend();
 	}
 
-	/** Restart a stream (used during initialization)*/
+	public void send(String packetToSend, int maxWait) {
+		synchronized (sendQueue) {
+			this.sendQueue.addElement(packetToSend);
+		}
+		tryToSend();
+	}
+
+	/** Restart a stream (used during initialization) */
 	protected abstract void restart();
 
 	protected Vector getPacketsToSend(boolean onlyUrgent) {
@@ -129,20 +138,21 @@ public abstract class BasicXmlStream implements TransportListener,
 
 		synchronized (sendQueue) {
 			if (onlyUrgent) {
+				throw new RuntimeException("not implemented");
 				// try to send the most urgent
-				Enumeration en = sendQueue.elements();
+				//				Enumeration en = sendQueue.elements();
 
 				// the packets due in the next second
-				long aBitLater = (new Date()).getTime() + 1000;
-				while (en.hasMoreElements()) {
-					Element ithPacket = ((Element) en.nextElement());
-					if (ithPacket.maxWait > 0
-							&& (ithPacket.queueTime + 1000 * ithPacket.maxWait) > aBitLater) {
-						packetsToSend.addElement(ithPacket);
-						// this is the first place to look for an error
-						sendQueue.removeElement(ithPacket);
-					}
-				}
+				//				long aBitLater = (new Date()).getTime() + 1000;
+				//				while (en.hasMoreElements()) {
+				//					Element ithPacket = ((Element) en.nextElement());
+				//					if (ithPacket.maxWait > 0
+				//							&& (ithPacket.queueTime + 1000 * ithPacket.maxWait) > aBitLater) {
+				//						packetsToSend.addElement(ithPacket);
+				// this is the first place to look for an error
+				//						sendQueue.removeElement(ithPacket);
+				//					}
+				//				}
 			} else {
 				Enumeration en = sendQueue.elements();
 
@@ -156,16 +166,19 @@ public abstract class BasicXmlStream implements TransportListener,
 		return packetsToSend;
 	}
 
-	/** 
+	/**
 	 * Method starting the send process, only if necessary
 	 * */
 	protected abstract void tryToSend();
 
 	/**
 	 * Add an event listener, it may be a {@link PacketListener}
+	 * 
 	 * @param query
-	 * @param listener an {@link PacketListener}
-	 * @return the registration object that may be used for unregistering the listener
+	 * @param listener
+	 *            an {@link PacketListener}
+	 * @return the registration object that may be used for unregistering the
+	 *         listener
 	 */
 	public static EventQueryRegistration addPacketListener(EventQuery query,
 			PacketListener listener) {
@@ -173,8 +186,10 @@ public abstract class BasicXmlStream implements TransportListener,
 	}
 
 	/**
-	 * Remove an event listener passing the {@link EventQueryRegistration} received from 
-	 * {@link BasicXmlStream#addOnetimePacketListener(EventQuery, Object)} 
+	 * Remove an event listener passing the {@link EventQueryRegistration}
+	 * received from
+	 * {@link BasicXmlStream#addOnetimePacketListener(EventQuery, Object)}
+	 * 
 	 * @param registration
 	 */
 	public static void removePacketListener(EventQueryRegistration registration) {
@@ -182,11 +197,14 @@ public abstract class BasicXmlStream implements TransportListener,
 	}
 
 	/**
-	 * Add an event listener that can be fired only one, it may be  a 
-	 * {@link PacketListener} 
+	 * Add an event listener that can be fired only one, it may be a
+	 * {@link PacketListener}
+	 * 
 	 * @param query
-	 * @param listener either a {@link PacketListener} 
-	 * @return the registration object that may be used for unregistering the listener
+	 * @param listener
+	 *            either a {@link PacketListener}
+	 * @return the registration object that may be used for unregistering the
+	 *         listener
 	 */
 	public static EventQueryRegistration addOnetimePacketListener(
 			EventQuery query, PacketListener listener) {
@@ -205,6 +223,7 @@ public abstract class BasicXmlStream implements TransportListener,
 
 	/**
 	 * Call the packet listeners registered for this packet
+	 * 
 	 * @param stanza
 	 */
 	protected void promotePacket(Element stanza) {
@@ -218,29 +237,33 @@ public abstract class BasicXmlStream implements TransportListener,
 			//    		Uncomment for logging the number of listeners
 			//System.out.println("---->" + eventListeners.size());
 
-			Enumeration enPacketListener = null;
+			ListenerRegistration[] lsrs;
 			synchronized (eventListeners) {
-				enPacketListener = eventListeners.elements();
+				lsrs = new ListenerRegistration[eventListeners.size()];
+				eventListeners.copyInto(lsrs);
 			}
-			while (enPacketListener.hasMoreElements()) {
-				ListenerRegistration listenerData = (ListenerRegistration) enPacketListener
-						.nextElement();
 
-				//Uncomment for dumping registered listeners
-				//				    			EventQuery q = listenerData.query;
-				//				    			String tab = ">>";
-				//				    			while(q!=null) {
-				//				    				System.out.println(tab + q.event);
-				//				    				if(q.tagAttrNames != null) {
-				//				    					for(int i=0; i<q.tagAttrNames.length; i++) {
-				//				    						System.out.println(tab +">" + q.tagAttrNames[i] +": " + q.tagAttrValues[i]);
-				//				    					}
-				//				    				}
-				//				    				q = q.child;
-				//				
-				//				    				tab += ">>";
-				//				
-				//				    			}
+			//			Log.d("xmpp", ">>" + new String(stanza.toXml()));
+
+			for (int i = 0; i < lsrs.length; i++) {
+				ListenerRegistration listenerData = lsrs[i];
+				// Uncomment for dumping registered listeners
+				//				EventQuery q = listenerData.query;
+				//				String tab = ">>";
+				//				while(q!=null) {
+				//					//System.out.println(tab + q.event);
+				//					Log.d("xmpp", tab + q.event);
+				//					if(q.tagAttrNames != null) {
+				//						for(int j=0; j<q.tagAttrNames.length; j++) {
+				////							System.out.println(tab +">" + q.tagAttrNames[j] +": " + q.tagAttrValues[j]);
+				//							Log.d("xmpp", tab + ">" + q.tagAttrNames[j] +": " + q.tagAttrValues[j]);
+				//						}
+				//					}
+				//					q = q.child;
+				//
+				//					tab += ">>";
+				//
+				//				}
 
 				if (areMatching(stanza, listenerData.query)) {
 					// #ifdef TIMING    				
@@ -267,10 +290,10 @@ public abstract class BasicXmlStream implements TransportListener,
 		} catch (RuntimeException e) {
 			// XXX don't knwow if here we must do something like closing the stream
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log(new String(stanza.toXml()));
-//@			Logger.log("[BasicXmlStream::promotePacket] RuntimeException: "
-//@					+ e.getClass().getName() + "\n" + e.getMessage());
+			e.printStackTrace();
+			Logger.log(new String(stanza.toXml()));
+			Logger.log("[BasicXmlStream::promotePacket] RuntimeException: "
+					+ e.getClass().getName() + "\n" + e.getMessage());
 			// #enddebug
 		}
 		if (matched == false) {
@@ -279,17 +302,18 @@ public abstract class BasicXmlStream implements TransportListener,
 						stanza);
 			} catch (Exception e) {
 				// #mdebug
-//@				e.printStackTrace();
-//@				Logger.log(new String(stanza.toXml()));
-//@				Logger.log("[BasicXmlStream::promotePacket] RuntimeException: "
-//@						+ e.getClass().getName() + "\n" + e.getMessage());
+				e.printStackTrace();
+				Logger.log(new String(stanza.toXml()));
+				Logger.log("[BasicXmlStream::promotePacket] RuntimeException: "
+						+ e.getClass().getName() + "\n" + e.getMessage());
 				// #enddebug
 			}
 		}
 	}
 
 	/**
-	 * Verify if a packet matches a query 
+	 * Verify if a packet matches a query
+	 * 
 	 * @param receivedPacket
 	 * @param query
 	 * @return
@@ -332,35 +356,14 @@ public abstract class BasicXmlStream implements TransportListener,
 		return true;
 	}
 
-	public void gotStreamEvent(String event, Object source) {
-		if (event.equals(EventDispatcher.UNMATCHED_STANZA)
-				&& source instanceof Element) {
-			Element sSource = (Element) source;
-			if (sSource.name.equals(Iq.IQ)) {
-				String type = sSource.getAttribute(Iq.ATT_TYPE);
-				if (type.equals(Iq.T_GET) || type.equals(Iq.T_SET)) {
-					Element replyIq = new Element(sSource);
-					replyIq.setAttribute(Iq.ATT_TO, replyIq
-							.getAttribute(Iq.ATT_FROM));
-					replyIq.delAttribute(Iq.ATT_FROM);
-					replyIq.setAttribute(Iq.ATT_TYPE, Iq.T_ERROR);
-					Element error = replyIq.addElement(null, Iq.T_ERROR);
-					error.setAttribute(Iq.ATT_TYPE, "cancel");
-					error.addElement("urn:ietf:params:xml:ns:xmpp-stanzas",
-							"feature-not-implemented");
-					XMPPClient.getInstance().sendPacket(replyIq);
-				}
-			}
-		}
-	}
-
 	/**
 	 * Start the feature chain
+	 * 
 	 * @param features
 	 */
 	protected void processFeatures(Element features[]) {
 		this.features.clear();
-		this.initializerInterator = null;
+		this.initializerIterator = null;
 		for (int i = 0; i < features.length; i++) {
 			this.features.put(features[i].uri, features[i]);
 		}
@@ -370,18 +373,18 @@ public abstract class BasicXmlStream implements TransportListener,
 		while (en.hasMoreElements()) {
 			workingInitializers.addElement(en.nextElement());
 		}
-		initializerInterator = workingInitializers.elements();
+		initializerIterator = workingInitializers.elements();
 		nextInitializer();
 	}
 
 	/**
-	 * Call the next stream initialiazer.
-	 * Dispatch {@link XmlStream#STREAM_INITIALIZATION_FINISHED} when all the 
+	 * Call the next stream initialiazer. Dispatch
+	 * {@link XmlStream#STREAM_INITIALIZATION_FINISHED} when all the
 	 * initializers have been processed
 	 */
 	public void nextInitializer() {
-		while (initializerInterator.hasMoreElements()) {
-			Initializer initializer = (Initializer) initializerInterator
+		while (initializerIterator.hasMoreElements()) {
+			Initializer initializer = (Initializer) initializerIterator
 					.nextElement();
 			if (initializer.matchFeatures(features)) {
 				initializer.start(this);
@@ -404,7 +407,7 @@ public abstract class BasicXmlStream implements TransportListener,
 	}
 
 	/**
-	 *	Initializer that binds a resource
+	 * Initializer that binds a resource
 	 */
 	private class ResourceBinding extends Initializer implements PacketListener {
 
@@ -414,9 +417,16 @@ public abstract class BasicXmlStream implements TransportListener,
 
 		public void start(BasicXmlStream xmlStream) {
 			this.stream = xmlStream;
-			Iq iq = new Iq(null, "set");
+			Element iq = new Element("jabber:client", "iq");
+			iq.setAttribute("type", "set");
+			iq.setAttribute("id", "bind_1");
 			Element bind = new Element(namespace, "bind");
-			String s = Contact.resource(xmlStream.jid);
+
+			String s = null;
+			int spos = jid.indexOf('/');
+			if (spos > 0) {
+				s = jid.substring(spos + 1);
+			}
 			if (s != null) {
 				bind.addElementAndContent(namespace, "resource", s);
 			}
@@ -428,7 +438,7 @@ public abstract class BasicXmlStream implements TransportListener,
 		}
 
 		public void packetReceived(Element e) {
-			if (Iq.T_RESULT.equals(e.getAttribute("type"))) {
+			if ("result".equals(e.getAttribute("type"))) {
 				Element bind = e.getChildByName(null, "bind");
 				Element jid = null;
 				if (bind != null
@@ -445,7 +455,7 @@ public abstract class BasicXmlStream implements TransportListener,
 
 	}
 
-	/** 
+	/**
 	 * Initialiazer that opens a session
 	 * */
 	private class SessionOpener extends Initializer implements PacketListener {
@@ -456,7 +466,9 @@ public abstract class BasicXmlStream implements TransportListener,
 
 		public void start(BasicXmlStream xmlStream) {
 			this.stream = xmlStream;
-			Iq iq = new Iq(null, "set");
+			Element iq = new Element("jabber:client", "iq");
+			iq.setAttribute("type", "set");
+			iq.setAttribute("id", "session_1");
 			Element session = new Element(namespace, "session");
 			iq.addElement(session);
 			EventQuery q = new EventQuery("iq", new String[] { "id" },
@@ -473,5 +485,14 @@ public abstract class BasicXmlStream implements TransportListener,
 						"cannot start session");
 			}
 		}
+	}
+
+	public void send(Element e) {
+		this.send(e, -1);
+	}
+
+	public void setSaslMechanisms(String[] mechanisms) {
+		if (this.saslAuthenticator != null) saslAuthenticator
+				.setMechanisms(mechanisms);
 	}
 }

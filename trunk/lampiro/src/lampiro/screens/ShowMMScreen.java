@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: ShowMMScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
@@ -18,19 +18,20 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIImage;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger; 
-//@
-//#enddebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmpp.Config;
+import it.yup.client.Config;
+import it.yup.xmpp.XmppConstants;
 
-import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
 import javax.microedition.media.Manager;
 import javax.microedition.media.Player;
@@ -53,13 +54,13 @@ public class ShowMMScreen extends UIScreen {
 	protected UITextField fileNameTextField;
 
 	protected UITextField fileDescTextField;
-	
+
 	/*
-	 * The default file description used; in case it is not modified the default file description is
-	 * not sent
-	 *  
+	 * The default file description used; in case it is not modified the default
+	 * file description is not sent
 	 */
-	String defaultFileDescription = "<" + rm.getString(ResourceIDs.STR_DESC) + ">";
+	String defaultFileDescription = "<" + rm.getString(ResourceIDs.STR_DESC)
+			+ ">";
 
 	protected UIButton cmd_save = new UIButton(rm
 			.getString(ResourceIDs.STR_SAVE));
@@ -73,7 +74,7 @@ public class ShowMMScreen extends UIScreen {
 
 	protected byte[] fileData;
 
-	private String fileType;
+	String fileType;
 
 	/*
 	 * The name of the file to show
@@ -87,10 +88,10 @@ public class ShowMMScreen extends UIScreen {
 	public static int getFileType(String fileName) {
 		Vector tokens = Utils.tokenize(fileName, '.');
 		String fileType = (String) tokens.elementAt(tokens.size() - 1);
-		int mmType = Config.IMG_TYPE;
-		for (int i = 0; i < Config.AUDIO_TYPE; i++) {
+		int mmType = XmppConstants.IMG_TYPE;
+		for (int i = 0; i < XmppConstants.AUDIO_TYPE; i++) {
 			if (fileType.compareTo(Config.audioTypes[i]) == 0) {
-				mmType = Config.AUDIO_TYPE;
+				mmType = XmppConstants.AUDIO_TYPE;
 				break;
 			}
 		}
@@ -116,18 +117,23 @@ public class ShowMMScreen extends UIScreen {
 	}
 
 	private void init() {
-		Image resImg;
+		UIImage resImg;
 		int count = AlbumScreen.getCount(mmType);
-		if (mmType == Config.IMG_TYPE) {
+		if (fileType == null && fileName != null) {
+			Vector v = Utils.tokenize(fileName, '.');
+			if (v.size() >= 2)
+				fileType = (String) v.elementAt(1);
+		}
+		if (mmType == XmppConstants.IMG_TYPE) {
 			setTitle(rm.getString(ResourceIDs.STR_IMAGE));
-			Image convImage = null;
-			convImage = Image.createImage(fileData, 0, fileData.length);
+			UIImage convImage = null;
+			convImage = UIImage.createImage(fileData, 0, fileData.length);
 			fileNameTextField = new UITextField(rm
 					.getString(ResourceIDs.STR_FILE_NAME), rm
 					.getString(ResourceIDs.STR_IMAGE)
 					+ count + "." + fileType, 255, TextField.ANY);
-			resImg = UIUtils.imageResize(convImage, UICanvas.getInstance()
-					.getWidth() - 10, -1, false);
+			resImg = convImage.imageResize(
+					UICanvas.getInstance().getWidth() - 10, -1, false);
 		} else {
 			setTitle(rm.getString(ResourceIDs.STR_AUDIO));
 			resImg = UICanvas.getUIImage("/icons/mic.png");
@@ -137,8 +143,7 @@ public class ShowMMScreen extends UIScreen {
 					+ count + "." + fileType, 255, TextField.ANY);
 		}
 		fileDescTextField = new UITextField(rm.getString(ResourceIDs.STR_DESC),
-				defaultFileDescription, 255,
-				TextField.ANY);
+				defaultFileDescription, 255, TextField.ANY);
 		if (fileName != null) {
 			fileNameTextField.setText(fileName);
 		}
@@ -156,7 +161,7 @@ public class ShowMMScreen extends UIScreen {
 		uil = new UILabel(resImg, "");
 		uil.setFocusable(true);
 		UIHLayout ehl = UIUtils.easyCenterLayout(uil, resImg.getWidth());
-		if (mmType == Config.AUDIO_TYPE) {
+		if (mmType == XmppConstants.AUDIO_TYPE) {
 			UIMenu sub = new UIMenu("");
 			sub.append(playLabel);
 			uil.setSubmenu(sub);
@@ -167,21 +172,21 @@ public class ShowMMScreen extends UIScreen {
 
 		this.mainPanel.addItem(this.fileNameTextField);
 		this.mainPanel.addItem(this.fileDescTextField);
-		cmd_layout = UIUtils.easyCenterLayout(cmd_save, 70);
+		cmd_layout = UIUtils.easyCenterLayout(cmd_save, 120);
 		this.mainPanel.addItem(cmd_layout);
 	}
 
 	public void menuAction(UIMenu menu, UIItem c) {
 		if (c == cmd_exit) {
 			UICanvas.getInstance().close(this);
-			//UICanvas.getInstance().open(RosterScreen.getInstance(), true);
+			// UICanvas.getInstance().open(RosterScreen.getInstance(), true);
 		} else if (c == this.playLabel) {
 			itemAction(this.uil);
 		}
 	}
 
 	public void itemAction(UIItem c) {
-		if (c == this.uil && this.mmType == Config.AUDIO_TYPE) {
+		if (c == this.uil && this.mmType == XmppConstants.AUDIO_TYPE) {
 			this.playAudio();
 		} else if (c == cmd_save) {
 			AlbumScreen.addAlbum(this.fileData, fileNameTextField.getText(),
@@ -193,28 +198,30 @@ public class ShowMMScreen extends UIScreen {
 	}
 
 	public void showNotify() {
-		//if (mmType == Config.audioType) playAudio();
+		// if (mmType == Config.audioType) playAudio();
 	}
 
 	public synchronized void playAudio() {
-		//#mdebug
-//@				Logger.log("playing audio file");
-		//#enddebug
+		// #mdebug
+		Logger.log("playing audio file");
+		// #enddebug
 		Thread t = new Thread() {
 			public void run() {
 				try {
-					ByteArrayInputStream recordedInputStream = new ByteArrayInputStream(
-							fileData);
-					Player p2 = Manager.createPlayer(recordedInputStream,
-							"audio/" + fileType);
-					p2.prefetch();
-					p2.start();
+					synchronized (UICanvas.getLock()) {
+						ByteArrayInputStream recordedInputStream = new ByteArrayInputStream(
+								fileData);
+						Player p2 = Manager.createPlayer(recordedInputStream,
+								"audio/" + fileType);
+						p2.prefetch();
+						p2.start();
+					}
 				} catch (Exception e) {
-					//#mdebug
-//@										e.printStackTrace();
-//@										Logger.log("In setup video 1" + e.getClass().getName()
-//@												+ "\n" + e.getMessage());
-					//#enddebug
+					// #mdebug
+					e.printStackTrace();
+					Logger.log("In setup video 1" + e.getClass().getName()
+							+ "\n" + e.getMessage());
+					// #enddebug
 				}
 			}
 		};

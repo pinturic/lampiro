@@ -2,28 +2,34 @@
  * See about.html for details about license.
  *
  * $Id: InnerMMScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
-import it.yup.ui.UICanvas;
-import it.yup.ui.UIScreen;
+// #ifndef RIM
+
+import javax.microedition.lcdui.Canvas;
+
+// #endif
 
 //#mdebug
-//@import it.yup.util.Logger;
-//@
-//#enddebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmpp.Config;
+import it.yup.client.Config;
+import it.yup.xmpp.XmppConstants;
+import it.yup.ui.UICanvas;
+import it.yup.ui.UIScreen;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
@@ -34,10 +40,13 @@ import javax.microedition.media.control.RecordControl;
 import javax.microedition.media.control.VideoControl;
 import javax.microedition.media.Control;
 
+
 /*
  * A helper screen for the Multimedia Screen 
  */
-class InnerMMScreen extends Canvas implements CommandListener {
+// #ifndef RIM
+class InnerMMScreen extends Canvas implements CommandListener {	
+// #endif	
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -74,7 +83,7 @@ class InnerMMScreen extends Canvas implements CommandListener {
 
 	private ByteArrayOutputStream output = new ByteArrayOutputStream();
 
-	/* 
+	/*
 	 * A pointer to the correct file type in MMScreen.imageTypes or MMScreen.audioTypes
 	 */
 	private int typeIndex;
@@ -83,6 +92,8 @@ class InnerMMScreen extends Canvas implements CommandListener {
 	 * The default jid for the user to send the multimedia file
 	 */
 	private String fullJid = null;
+
+	private boolean capturing = false;
 
 	public InnerMMScreen(Player player, Control control, int screenType,
 			String contactToSend) {
@@ -94,7 +105,7 @@ class InnerMMScreen extends Canvas implements CommandListener {
 		this.mPlayer = player;
 		this.fullJid = contactToSend;
 
-		if (screenType == Config.IMG_TYPE) {
+		if (screenType == XmppConstants.IMG_TYPE) {
 			//this.setTitle(rm.getString(ResourceIDs.STR_CAPTURE_CAPTION));
 
 			cmd_default = new Command(rm
@@ -119,27 +130,29 @@ class InnerMMScreen extends Canvas implements CommandListener {
 			cmd_capture = new Command(rm.getString(ResourceIDs.STR_CAPTURE)
 					+ " <FIRE>", Command.SCREEN, 1);
 			VideoControl tempVideoControl = (VideoControl) multimediaControl;
+			// #ifndef RIM
 			tempVideoControl.initDisplayMode(VideoControl.USE_DIRECT_VIDEO,
 					this);
 			try {
 				tempVideoControl.setDisplayLocation(2, 2);
 				tempVideoControl.setDisplaySize(width - 4, height - 4);
 			} catch (MediaException me) {
-				// #mdebug
-//@				me.printStackTrace();
-//@				Logger.log("In setup video 1" + me.getClass().getName() + "\n"
-//@						+ me.getMessage());
-				//#enddebug
+			// #mdebug
+				me.printStackTrace();
+				Logger.log("In setup video 1" + me.getClass().getName() + "\n"
+						+ me.getMessage());
+			//#enddebug
 				try {
 					tempVideoControl.setDisplayFullScreen(true);
 				} catch (MediaException me2) {
-					// #mdebug
-//@					me2.printStackTrace();
-//@					Logger.log("In setup video 2" + me2.getClass().getName()
-//@							+ "\n" + me.getMessage());
-					//#enddebug
+			// #mdebug
+					me2.printStackTrace();
+					Logger.log("In setup video 2" + me2.getClass().getName()
+							+ "\n" + me.getMessage());
+			//#enddebug
 				}
 			}
+			// #endif
 			tempVideoControl.setVisible(true);
 		} else {
 			this.setTitle(rm.getString(ResourceIDs.STR_CAPTURE_AUDIO)
@@ -150,28 +163,29 @@ class InnerMMScreen extends Canvas implements CommandListener {
 		}
 		this.addCommand(cmd_capture);
 		this.setCommandListener(this);
-
 	}
 
 	public void commandAction(Command c, Displayable s) {
+		// #ifndef RIM
+		synchronized (UICanvas.getLock()) {
+		// #endif
 		if (c == cmd_exit) {
 			closeScreen();
 		} else if (c == this.cmd_capture) {
 			startCapture();
-
 		} else if (c == this.cmd_stop) {
 			try {
 				((RecordControl) this.multimediaControl).commit();
 				recordedSoundArray = output.toByteArray();
 				this.mPlayer.close();
 				handleMMFile(recordedSoundArray, Config.audioTypes[typeIndex],
-						Config.AUDIO_TYPE);
+						XmppConstants.AUDIO_TYPE);
 			} catch (IOException e) {
 				// #mdebug
-//@				e.printStackTrace();
-//@				Logger.log("In capturing audio" + e.getClass().getName() + "\n"
-//@						+ e.getMessage()
-//@						+ System.getProperty("audio.encodings"));
+				e.printStackTrace();
+				Logger.log("In capturing audio" + e.getClass().getName() + "\n"
+						+ e.getMessage()
+						+ System.getProperty("audio.encodings"));
 				//#enddebug
 			}
 		} else if (c == this.cmd_default) {
@@ -190,24 +204,37 @@ class InnerMMScreen extends Canvas implements CommandListener {
 			this.forcedResolution = 4;
 			this.setTitle(rm.getString(ResourceIDs.STR_CAMERA_HUGE));
 		}
+		// #ifndef RIM
+		}
+		// #endif
 	}
 
 	private void closeScreen() {
 		mPlayer.close();
 		mPlayer = null;
 		multimediaControl = null;
-		UICanvas.display(null);
-		RosterScreen rosterScreen = RosterScreen.getInstance();
-		rosterScreen.setFreezed(false);
-		UICanvas.getInstance().show(rosterScreen);
+		synchronized (UICanvas.getLock()) {
+			UICanvas.display(null);
+			RosterScreen rosterScreen = RosterScreen.getInstance();
+			rosterScreen.setFreezed(false);
+			UICanvas.getInstance().show(rosterScreen);
+		}
 	}
 
 	private void startCapture() {
+		if (capturing == true) {
+			commandAction(this.cmd_stop, null);
+		}
 		this.removeCommand(cmd_capture);
+		capturing = true;
 		new Thread() {
 			public void run() {
-				if (screenType == Config.IMG_TYPE) captureVideo();
-				if (screenType == Config.AUDIO_TYPE) captureAudio();
+				synchronized (UICanvas.getLock()) {
+					if (screenType == XmppConstants.IMG_TYPE)
+						captureVideo();
+					if (screenType == XmppConstants.AUDIO_TYPE)
+						captureAudio();
+				}
 			}
 		}.start();
 	}
@@ -215,7 +242,7 @@ class InnerMMScreen extends Canvas implements CommandListener {
 	public void captureAudio() {
 		try {
 			this.addCommand(cmd_stop);
-
+			this.setTitle(rm.getString(ResourceIDs.STR_STOP) + " <FIRE>");
 			output = new ByteArrayOutputStream();
 			RecordControl recordControl = ((RecordControl) this.multimediaControl);
 			recordControl.setRecordStream(output);
@@ -223,9 +250,9 @@ class InnerMMScreen extends Canvas implements CommandListener {
 			this.mPlayer.start();
 		} catch (Exception e) {
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log("In capturing audio" + e.getClass().getName() + "\n"
-//@					+ e.getMessage() + System.getProperty("audio.encodings"));
+			e.printStackTrace();
+			Logger.log("In capturing audio" + e.getClass().getName() + "\n"
+					+ e.getMessage() + System.getProperty("audio.encodings"));
 			//#enddebug
 		}
 	}
@@ -235,26 +262,27 @@ class InnerMMScreen extends Canvas implements CommandListener {
 		String res = Config.getInstance().getProperty(Config.CAMERA_RESOLUTION,
 				"0");
 		int resInt = Integer.parseInt(res);
-		if (this.forcedResolution > 0) resInt = forcedResolution;
+		if (this.forcedResolution > 0)
+			resInt = forcedResolution;
 		String camResolution = "";
 		switch (resInt) {
-			case 0:
-				camResolution = "";
-				break;
-			case 1:
-				camResolution = appendChar + "width=160&height=120";
-				break;
-			case 2:
-				camResolution = appendChar + "width=320&height=240";
-				break;
-			case 3:
-				camResolution = appendChar + "width=640&height=480";
-				break;
-			case 4:
-				camResolution = appendChar + "width=1024&height=768";
-				break;
-			default:
-				break;
+		case 0:
+			camResolution = "";
+			break;
+		case 1:
+			camResolution = appendChar + "width=160&height=120";
+			break;
+		case 2:
+			camResolution = appendChar + "width=320&height=240";
+			break;
+		case 3:
+			camResolution = appendChar + "width=640&height=480";
+			break;
+		case 4:
+			camResolution = appendChar + "width=1024&height=768";
+			break;
+		default:
+			break;
 		}
 		return camResolution;
 	}
@@ -287,38 +315,42 @@ class InnerMMScreen extends Canvas implements CommandListener {
 				raw = tempVideoControl.getSnapshot(foundType + camResolution);
 			} catch (SecurityException e) {
 				closeScreen();
+				return;
 			} catch (Exception e) {
 				//#mdebug
-//@				e.printStackTrace();
-//@				Logger.log("In capturing image 1" + e.getClass().getName()
-//@						+ "\n" + e.getMessage());
+				e.printStackTrace();
+				Logger.log("In capturing image 1" + e.getClass().getName()
+						+ "\n" + e.getMessage());
 				//#enddebug
 				try {
 					raw = tempVideoControl.getSnapshot(foundType);
 				} catch (SecurityException e2) {
 					closeScreen();
+					return;
 				} catch (Exception e2) {
 					//#mdebug
-//@					e.printStackTrace();
-//@					Logger.log("In capturing image 2" + e.getClass().getName()
-//@							+ "\n" + e.getMessage());
+					e.printStackTrace();
+					Logger.log("In capturing image 2" + e.getClass().getName()
+							+ "\n" + e.getMessage());
 					//#enddebug
 					try {
 						raw = tempVideoControl.getSnapshot(null);
 					} catch (SecurityException e3) {
 						closeScreen();
+						return;
 					} catch (Exception e3) {
 						//#mdebug
-//@						e.printStackTrace();
-//@						Logger.log("In capturing image 2"
-//@								+ e.getClass().getName() + "\n"
-//@								+ e.getMessage());
+						e.printStackTrace();
+						Logger.log("In capturing image 3"
+								+ e.getClass().getName() + "\n"
+								+ e.getMessage());
 						//#enddebug
 						closeScreen();
+						return;
 					}
 				}
 			}
-			handleMMFile(raw, Config.imageTypes[typeIndex], Config.IMG_TYPE);
+			handleMMFile(raw, Config.imageTypes[typeIndex], XmppConstants.IMG_TYPE);
 			// Shut down the player.
 			mPlayer.close();
 			UICanvas.display(null);
@@ -326,9 +358,9 @@ class InnerMMScreen extends Canvas implements CommandListener {
 			multimediaControl = null;
 		} catch (Exception e) {
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log("In capturing image" + e.getClass().getName() + "\n"
-//@					+ e.getMessage());
+			e.printStackTrace();
+			Logger.log("In capturing image" + e.getClass().getName() + "\n"
+					+ e.getMessage());
 			//#enddebug
 		}
 	}
@@ -336,39 +368,45 @@ class InnerMMScreen extends Canvas implements CommandListener {
 	private void handleMMFile(byte[] raw, String type, int mmType) {
 		try {
 			UIScreen handleImageScreen = null;
-			if (RosterScreen.isOnline()) {
-				handleImageScreen = new SendMMScreen(raw, null, type, null,
-						mmType, fullJid);
+			if (raw != null) {
+				if (RosterScreen.isOnline()) {
+					handleImageScreen = new SendMMScreen(raw, null, type, null,
+							mmType, fullJid);
+				} else {
+					handleImageScreen = new ShowMMScreen(raw, type, mmType);
+				}
 			} else {
-				handleImageScreen = new ShowMMScreen(raw, type, mmType);
+				handleImageScreen = RosterScreen.getInstance();
 			}
 			RosterScreen.getInstance().setFreezed(false);
 			UICanvas.getInstance().open(handleImageScreen, true);
 			UICanvas.display(null);
 		} catch (Exception e) {
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log("In handle MM file : " + e.getClass());
+			e.printStackTrace();
+			Logger.log("In handle MM file : " + e.getClass());
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
 	protected void keyPressed(int key) {
-		if (this.getGameAction(key) == Canvas.FIRE) {
+		if (UICanvas.getInstance().getGameAction(key) == UICanvas.FIRE) {
 			startCapture();
 		}
 	}
 
+
 	protected void paint(Graphics g) {
-		if (screenType != Config.IMG_TYPE) { return; }
+		if (screenType != XmppConstants.IMG_TYPE) {
+			return;
+		}
 		int height = getHeight();
 		int width = getWidth();
 		g.setColor(0x000000);
-		g.fillRect(0, 0, width, height);
-
+		g.drawRect(0, 0, width-1, height-1);
 	}
+
+	
 
 	public void setTypeIndex(int typeIndex) {
 		this.typeIndex = typeIndex;
@@ -377,4 +415,5 @@ class InnerMMScreen extends Canvas implements CommandListener {
 	public int getTypeIndex() {
 		return typeIndex;
 	}
+
 }

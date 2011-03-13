@@ -1,24 +1,17 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleDataFormExecutor.java 2056 2010-04-13 17:51:13Z luca $
+ * $Id: SimpleDataFormExecutor.java 2328 2010-11-16 14:11:30Z luca $
 */
 
 package it.yup.xmpp;
 
 import java.util.Date;
 
-// #ifndef UI 
-//@
-//@import javax.microedition.lcdui.Display;
-//@import javax.microedition.lcdui.Displayable;
-//@
-//@
-// #endif
-
 import it.yup.xml.Element;
+import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
-import it.yup.xmpp.XMPPClient.XmppListener;
+import it.yup.xmpp.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
@@ -35,7 +28,16 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	public boolean enableDisplay = false;
 	public boolean enableNew = false;
 
-	public SimpleDataFormExecutor(Element el) {
+	private Roster roster;
+
+	private BasicXmlStream xmlStream;
+
+	private XmppListener xmppListener;
+
+	public SimpleDataFormExecutor(XmppListener xmppListener,BasicXmlStream xmlStream,Roster roster,Element el) {
+		this.xmppListener= xmppListener;
+		this.xmlStream = xmlStream;
+		this.roster=roster;
 		this.form_element = el;
 		this.df = new DataForm(form_element.getChildByName(DataForm.NAMESPACE,
 				DataForm.X));
@@ -53,7 +55,6 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	}
 
 	public void execute(int cmd) {
-		XMPPClient client = XMPPClient.getInstance();
 		boolean send_reply = false;
 
 		switch (cmd) {
@@ -78,10 +79,10 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		if (send_reply) {
 			Stanza reply = buildReply(form_element);
 			reply.addElement(df.getResultElement());
-			client.sendPacket(reply);
+			xmlStream.send(reply);
 		}
 
-		client.updateTask(this);
+		roster.updateTask(this);
 	}
 
 	/**
@@ -110,13 +111,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 		return reply;
 	}
 
-	// #ifdef UI 
 	public void display() {
-		// #endif
-// #ifndef UI
-		//@			public void display(Display disp, Displayable nextDisplay) {
-		// #endif
-
 		Element form = form_element.getChildByName(DataForm.NAMESPACE,
 				DataForm.X);
 
@@ -125,7 +120,6 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 			return;
 		}
 
-		XmppListener xmppListener = XMPPClient.getInstance().getXmppListener();
 		if (xmppListener != null) {
 			Object screen = null;
 			if (df.type == DataForm.TYPE_FORM) {
@@ -173,7 +167,7 @@ public class SimpleDataFormExecutor implements DataFormListener, Task {
 	}
 
 	public void setCel(CommandExecutorListener cel) {
-		
+
 	}
 
 	public boolean needWaiting(int comm) {

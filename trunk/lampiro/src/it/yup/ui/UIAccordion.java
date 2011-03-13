@@ -1,23 +1,23 @@
+// #condition MIDP
+
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
  * $Id: UIAccordion.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-
 /**
  * @author luca
- *
+ * 
  */
 public class UIAccordion extends UIPanel {
 
@@ -42,11 +42,11 @@ public class UIAccordion extends UIPanel {
 	/*
 	 * The images used for submenus
 	 */
-	public Image closeImage = UIMenu.menuImage;
-	public Image openImage = UICanvas.getUIImage("/icons/downimage.png");
+	public UIImage closeImage = UIMenu.menuImage;
+	public UIImage openImage = UICanvas.getUIImage("/icons/downimage.png");
 
 	/*
-	 * A vector that contains the labels 
+	 * A vector that contains the labels
 	 */
 	private Vector itemLabels = new Vector();
 
@@ -94,9 +94,9 @@ public class UIAccordion extends UIPanel {
 		}
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		// if maxHeight = -1 I want to behave like a UIPanel
-		// if maxHeight = o I want to behave like an object with a fixed size
+		// if maxHeight = 0 I want to behave like an object with a fixed size
 		if (maxHeight == 0) {
 			int newHeight = 0;
 			Enumeration en = this.getItems().elements();
@@ -106,11 +106,17 @@ public class UIAccordion extends UIPanel {
 			}
 			// in case I am within an UIMenu this is mandatory
 			int maxTempHeight = (UICanvas.getInstance().getClipHeight() * 2) / 3;
-			if (newHeight > maxTempHeight) newHeight = maxTempHeight;
+			if (newHeight > maxTempHeight)
+				newHeight = maxTempHeight;
 			this.height = newHeight;
 			return this.height;
 		}
-		return super.getHeight(g);
+		this.height = super.getHeight(g);
+		return height;
+	}
+	
+	protected void paint(UIGraphics g, int w, int h) {
+		super.paint(g, w, h);
 	}
 
 	public void addSpareItem(UIItem item) {
@@ -157,10 +163,12 @@ public class UIAccordion extends UIPanel {
 
 	public int removeItem(UIItem it) {
 		AccordionItem ai = (AccordionItem) this.accordionItems.get(it);
-		if (this.openedItem == it) close(it);
+		if (this.openedItem == it)
+			close(it);
 		this.accordionItems.remove(it);
 		this.itemLabels.removeElement(it);
-		if (this.openedItem == it) this.openedItem = null;
+		if (this.openedItem == it)
+			this.openedItem = null;
 		return super.removeItem(ai.wrappedItem);
 	}
 
@@ -187,7 +195,8 @@ public class UIAccordion extends UIPanel {
 
 	public int getPanelSize(UIItem label) {
 		Vector v = getSubpanel(label);
-		if (v == null) return 0;
+		if (v == null)
+			return 0;
 		return v.size();
 	}
 
@@ -197,18 +206,21 @@ public class UIAccordion extends UIPanel {
 	}
 
 	/*
-	         * Returns true if a repaint is needed
-	         */
+	 * Returns true if a repaint is needed
+	 */
 	public void removePanelItem(UIItem label, UIItem item) {
 		Vector v = getSubpanel(label);
 		if (openedItem == label) {
 			int idx = this.getItems().indexOf(item);
-			if (selectedIdx >= idx && idx >= 0) selectedIdx--;
+			if (selectedIdx >= idx && idx >= 0)
+				selectedIdx--;
 			item.setSelected(false);
 		}
 		v.removeElement(item);
-		if (this.getScreen() != null) this.getScreen().removePaintedItem(item);
-		if (label == this.openedItem && v.size() == 0) this.close(label);
+		if (this.getScreen() != null)
+			this.getScreen().removePaintedItem(item);
+		if (label == this.openedItem && v.size() == 0)
+			this.close(label);
 		this.setDirty(true);
 	}
 
@@ -217,7 +229,8 @@ public class UIAccordion extends UIPanel {
 		v.insertElementAt(item, idx);
 		item.setContainer(this);
 		if (openedItem == label) {
-			if (selectedIdx >= this.getItems().indexOf(item)) selectedIdx++;
+			if (selectedIdx >= this.getItems().indexOf(item))
+				selectedIdx++;
 		}
 		this.setDirty(true);
 	}
@@ -235,7 +248,7 @@ public class UIAccordion extends UIPanel {
 		UIScreen currentScreen = this.getScreen();
 		currentScreen = (currentScreen == null ? (UIScreen) (UICanvas
 				.getInstance().getScreenList().elementAt(0)) : currentScreen);
-		Graphics g = currentScreen.getGraphics();
+		UIGraphics g = currentScreen.getGraphics();
 		UIVLayout ivl = new UIVLayout(vlSize, item.getHeight(g)
 				+ (this.sepSize >= 0 ? sepSize : 0));
 		ivl.setGroup(false);
@@ -282,14 +295,15 @@ public class UIAccordion extends UIPanel {
 		UIItem superItem = super.getSelectedItem();
 		if (this.getContainer() instanceof UIMenu
 				&& this.getContainer() instanceof UIScreen == false) {
-			if (this.accordionItems.containsKey(superItem)) return this;
+			if (this.accordionItems.containsKey(superItem))
+				return this;
 		}
 		return superItem;
 	}
 
 	public boolean keyPressed(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
-		if (ga == Canvas.FIRE) {
+		if (ga == UICanvas.FIRE) {
 			UIItem selItem = super.getSelectedItem();
 			// it is an item to (un)expand
 			if (this.accordionItems.containsKey(selItem)) {
@@ -327,13 +341,15 @@ public class UIAccordion extends UIPanel {
 
 	public void openLabel(UIItem selItem) {
 		boolean needOpen = (selItem != openedItem);
-		if (needOpen == false) return;
+		if (needOpen == false)
+			return;
 		clickLabel(selItem);
 	}
 
 	public void closeLabel(UIItem selItem) {
 		boolean needClose = (selItem == openedItem);
-		if (needClose == false) return;
+		if (needClose == false)
+			return;
 		clickLabel(selItem);
 	}
 
@@ -343,7 +359,8 @@ public class UIAccordion extends UIPanel {
 
 	private void close(UIItem openedItem) {
 		AccordionItem ai = (AccordionItem) this.accordionItems.get(openedItem);
-		if (ai == null) return;
+		if (ai == null)
+			return;
 		Vector oldPanel = ai.subPanel;
 		this.setSelectedIndex(-1);
 		int removeIndex = this.getItems().indexOf(oldPanel);
@@ -364,7 +381,8 @@ public class UIAccordion extends UIPanel {
 		Enumeration en = this.getItems().elements();
 		int count = 0;
 		while (en.hasMoreElements()) {
-			UIItem ithItem = (UIItem) en.nextElement();
+			Object ithEl = en.nextElement();
+			UIItem ithItem = (UIItem) ithEl;
 			if (count >= removeIndex) {
 				ithItem.setDirty(true);
 			}
@@ -372,22 +390,22 @@ public class UIAccordion extends UIPanel {
 		}
 	}
 
-	protected void paintIthItem(Graphics g, int w, UIItem ui, int ih, int l) {
+	protected void paintIthItem(UIGraphics g, int w, UIItem ui, int ih, int l) {
 		super.paintIthItem(g, w, ui, ih, l);
 		UIItem selItem = this.getSelectedItem();
-		if (selItem !=null) {
+		if (selItem != null) {
 			AccordionItem ai = null;
 			ai = (AccordionItem) accordionItems.get(selItem);
 			if (ai != null && ai.wrappedItem == ui) {
 				UISeparator fakeSep = new UISeparator(1, sepSelectedColor);
 				fakeSep.paint(g, w, sepSize);
-				g.translate(0, ih-1);
+				g.translate(0, ih - 1);
 				fakeSep.paint(g, w, sepSize);
-				g.translate(0, -ih+1);
+				g.translate(0, -ih + 1);
 			}
 		}
 	}
-	
+
 	public void setScreen(UIScreen _us) {
 		super.setScreen(_us);
 		Enumeration en = this.accordionItems.elements();
@@ -395,7 +413,7 @@ public class UIAccordion extends UIPanel {
 			AccordionItem ai = (AccordionItem) en.nextElement();
 			Enumeration en2 = ai.subPanel.elements();
 			while (en2.hasMoreElements()) {
-				UIItem ui= (UIItem) en2.nextElement();
+				UIItem ui = (UIItem) en2.nextElement();
 				ui.setScreen(_us);
 			}
 		}
@@ -456,12 +474,14 @@ public class UIAccordion extends UIPanel {
 	public Enumeration getSubPanelElements(UIItem item) {
 		// TODO Auto-generated method stub
 		Vector v = getSubpanel(item);
-		if (v == null) return null;
+		if (v == null)
+			return null;
 		return ((Vector) v).elements();
 	}
 
 	/**
-	 * @param oneOpen the oneOpen to set
+	 * @param oneOpen
+	 *            the oneOpen to set
 	 */
 	public void setOneOpen(boolean oneOpen) {
 		this.oneOpen = oneOpen;
@@ -515,8 +535,8 @@ public class UIAccordion extends UIPanel {
 			this.setSelectedItem(firstItem);
 		} catch (Exception e) {
 			// #mdebug 
-//@			System.out.println("in swapping elements");
-//@			e.printStackTrace();
+			System.out.println("in swapping elements");
+			e.printStackTrace();
 			// #enddebug
 		}
 	}
@@ -553,12 +573,12 @@ public class UIAccordion extends UIPanel {
 				this.open(oldOpenedItem);
 			}
 			if ((oldSelectedItem == firstItem || oldSelectedItem == secondItem)
-					&& this.getItems().contains(oldSelectedItem)) this
-					.setSelectedItem(oldSelectedItem);
+					&& this.getItems().contains(oldSelectedItem))
+				this.setSelectedItem(oldSelectedItem);
 		} catch (Exception e) {
 			// #mdebug 
-//@			System.out.println("in swapping elements");
-//@			e.printStackTrace();
+			System.out.println("in swapping elements");
+			e.printStackTrace();
 			// #enddebug
 		}
 	}
@@ -608,4 +628,5 @@ public class UIAccordion extends UIPanel {
 	public int getSepSelectedColor() {
 		return sepSelectedColor;
 	}
+
 }

@@ -25,8 +25,9 @@ import it.yup.util.ResourceManager;
 import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.Group;
+import it.yup.xmpp.XmppConstants;
 
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Iq;
 
 /**
@@ -59,7 +60,7 @@ public class ChgGroupNameScreen extends UIScreen {
 		this.append(groupPanel);
 
 		groupPanel.addItem(utf);
-		
+
 		UIHLayout buttonLayout = new UIHLayout(2);
 		buttonLayout.setGroup(false);
 		buttonLayout.insert(cancel, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
@@ -85,8 +86,8 @@ public class ChgGroupNameScreen extends UIScreen {
 				Contact c = (Contact) en.nextElement();
 				Iq iq = new Iq(null, Iq.T_SET);
 				Element query = iq
-						.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
-				Element itemEl = query.addElement(null, XMPPClient.ITEM);
+						.addElement(XmppConstants.NS_IQ_ROSTER, Iq.QUERY);
+				Element itemEl = query.addElement(null, XmppConstants.ITEM);
 				itemEl.setAttribute("jid", c.jid);
 				if (c.name != null) itemEl.setAttribute("name", c.name);
 				for (int i = 0; i < c.getGroups().length; i++) {
@@ -96,7 +97,7 @@ public class ChgGroupNameScreen extends UIScreen {
 					}
 					itemEl.addElement(null, "group").addText(gString);
 				}
-				xmppClient.sendIQ(iq, null);
+				iq.send(xmppClient.getXmlStream(),null);
 			}
 			UICanvas.getInstance().close(this);
 		}

@@ -1,12 +1,11 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITestMidlet.java 2016 2010-03-16 17:29:23Z luca $
+ * $Id: UITestMidlet.java 2454 2011-02-18 16:18:19Z luca $
 */
 
 package it.yup.tests;
 
-import it.yup.ui.UIAccordion;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -22,19 +21,19 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIRadioButtons;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
-import it.yup.ui.UITextPanel;
+import it.yup.ui.UIUtils;
 import it.yup.ui.UIVLayout;
-import it.yup.util.Logger;
-import it.yup.util.MemoryLogConsumer;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
+import it.yup.util.log.Logger;
+import it.yup.util.log.MemoryLogConsumer;
 
 import java.io.IOException;
-import java.util.Vector;
 
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Display;
-import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
 import javax.microedition.midlet.MIDlet;
 import javax.microedition.midlet.MIDletStateChangeException;
@@ -43,7 +42,7 @@ import lampiro.screens.DebugScreen;
 
 public class UITestMidlet extends MIDlet {
 
-	static Image[] imgs;
+	static UIImage[] imgs;
 
 	UICanvas canvas;
 
@@ -53,7 +52,10 @@ public class UITestMidlet extends MIDlet {
 	public UITestMidlet() {
 		ks = new KeysScreen();
 		canvas = UICanvas.getInstance();
+		// #ifndef RIM
 		UICanvas.setDisplay(Display.getDisplay(this));
+		// #endif
+		UICanvas.display(null);
 
 		// Popup tests
 		// UIMenu pop2 = new UIMenu(screen, "Popup-A");
@@ -90,6 +92,30 @@ public class UITestMidlet extends MIDlet {
 		UIConfig.scrollbar_fg = 0x13a0f7;
 		UIConfig.header_bg = 0x2407db;
 		UIConfig.bg_color = 0xddddff;
+
+		UIConfig.tbb_color = 0xb0c2c8;
+		UIConfig.input_color = 0xFFFFFF;
+		UIConfig.header_bg = 0x567cfe;
+		UIConfig.tbs_color = UIConfig.header_bg;
+		UIConfig.header_fg = 0xDDE7EC;
+		UIConfig.menu_title = 0xDDE7EC;
+		UIConfig.bg_color = 0xddddff;
+		UIConfig.menu_border = 0x223377;
+		UIConfig.menu_color = 0xacc2d8;
+		UIConfig.menu_3d = true;
+		UIConfig.button_color = UIConfig.tbb_color;
+		UIConfig.button_selected_color = UIConfig.header_bg;
+		UIConfig.bb_color = UIConfig.menu_border;
+		UIConfig.bbs_color = UIConfig.menu_border;
+		UIConfig.bdb_color = UIUtils.colorize(UIConfig.menu_color, -50);
+		UIConfig.blb_color = UIUtils.colorize(UIConfig.menu_color, 50);
+		UIConfig.bdbs_color = UIConfig.bdb_color;
+		UIConfig.blbs_color = UIConfig.blb_color;
+		// set fonts
+		UIConfig.font_body = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+				UIFont.STYLE_PLAIN, UIFont.SIZE_LARGE);
+		UIConfig.font_menu = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+				UIFont.STYLE_PLAIN, UIFont.SIZE_LARGE);
 
 	}
 
@@ -219,6 +245,31 @@ public class UITestMidlet extends MIDlet {
 			//			uip.addElement(cLabel);
 			//			uiaMenu.addItem(titleLabel, uip);
 
+			//			String htmlText = "<html xmlns='http://jabber.org/protocol/xhtml-im' >"
+			//					+ "<body style='font-weight:bold' >"
+			//					+ "    <p style='background-color:#11111;color:#EEEEEE'>"
+			//					+ "       text content"
+			//					+ "    </p>"
+			//					+ "    <img src='http://ooros.com/images/glider/glider.png'>"
+			//					+ "    </img>"
+			//					+ "</body>" + "</html>";
+			//			
+			//			KXmlParser parser = new KXmlParser();
+			//			byte [] data = Utils.getBytesUtf8(htmlText);
+			//			Element el = null;
+			//			try {
+			//				parser.setFeature(KXmlParser.FEATURE_PROCESS_NAMESPACES, true);
+			//				parser.setInput(new InputStreamReader(
+			//						new ByteArrayInputStream(data)));
+			//				el = KXmlProcessor.parseDocument(parser);
+			//			} catch (Exception e) {
+			//				// TODO: handle exception
+			//			}
+			//
+			//			UIHtmlPanel uitHtml = new UIHtmlPanel(el);
+			//			uitHtml.setMaxHeight(150);
+			//			this.append(uitHtml);
+
 			UIEmoLabel emoLabel = new UIEmoLabel("emo:):(eheh:Obene");
 			emoLabel.setAnchorPoint(Graphics.RIGHT);
 			// UIEmoLabel emoLabel = new UIEmoLabel("emo eheh bene");
@@ -277,6 +328,7 @@ public class UITestMidlet extends MIDlet {
 			veryLongLabel = "veryLongLabel ";
 			for (int i = 1; i <= 4; i++)
 				veryLongLabel = i + veryLongLabel + veryLongLabel;
+			UITextField.setButtonsString("Cancel", "OK");
 			UITextField longPanel = new UITextField("Mylabel", veryLongLabel,
 					50000, TextField.ANY);
 			longPanel.setWrappable(true);
@@ -285,20 +337,20 @@ public class UITestMidlet extends MIDlet {
 			longPanel.setText(veryLongLabel);
 			this.append(longPanel);
 
-//			UITextPanel shortPanel = new UITextPanel();
-//			shortPanel.setMaxHeight(50);
-//			String shortLabel = "veryShortLabel ";
-//			shortPanel.setText(shortLabel);
-//			this.append(shortPanel);
+			//			UITextPanel shortPanel = new UITextPanel();
+			//			shortPanel.setMaxHeight(50);
+			//			String shortLabel = "veryShortLabel ";
+			//			shortPanel.setText(shortLabel);
+			//			this.append(shortPanel);
 
 			this.setMenu(um);
 			try {
-				imgs = new Image[] {
-						Image.createImage("/icons/presence_online.png"),
-						Image.createImage("/icons/presence_dnd.png"),
-						Image.createImage("/icons/presence_away.png"),
-						Image.createImage("/icons/presence_unavailable.png"),
-						Image.createImage("/icons/error.png"), };
+				imgs = new UIImage[] {
+						UIImage.createImage("/icons/presence_online.png"),
+						UIImage.createImage("/icons/presence_dnd.png"),
+						UIImage.createImage("/icons/presence_away.png"),
+						UIImage.createImage("/icons/presence_unavailable.png"),
+						UIImage.createImage("/icons/error.png"), };
 			} catch (IOException e) {
 			}
 			this
@@ -355,8 +407,9 @@ public class UITestMidlet extends MIDlet {
 			UILabel label2 = new UILabel("layout");
 			UIHLayout uhl = new UIHLayout(4);
 			UIButton buttonLayout = new UIButton("button2");
-			Font bigFont = Font.getFont(Font.FACE_SYSTEM, Font.STYLE_UNDERLINED
-					| Font.STYLE_ITALIC, Font.SIZE_LARGE);
+			UIFont bigFont = UIFont.getFont(UIFont.FACE_SYSTEM,
+					UIFont.STYLE_UNDERLINED | UIFont.STYLE_ITALIC,
+					UIFont.SIZE_LARGE);
 			buttonLayout.setFont(bigFont);
 			uhl.insert(label1, 0, 33, UILayout.CONSTRAINT_PERCENTUAL);
 			uhl.insert(picture2, 1, 30, UILayout.CONSTRAINT_PIXELS);
@@ -407,55 +460,55 @@ public class UITestMidlet extends MIDlet {
 			{
 				UILabel bigPicture1 = new UILabel(imgs[4], "Big:");
 				bigPicture1.setFocusable(true);
-				bigPicture1.setAnchorPoint(Graphics.LEFT);
+				bigPicture1.setAnchorPoint(UIGraphics.LEFT);
 				bigPicture1.setFlip(false);
-				Font bigFont1 = Font.getFont(Font.FACE_PROPORTIONAL,
-						Font.STYLE_ITALIC, Font.SIZE_LARGE);
+				UIFont bigFont1 = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_ITALIC, UIFont.SIZE_LARGE);
 				bigPicture1.setFont(bigFont1);
 				this.append(bigPicture1);
 
 				UILabel bigPicture2 = new UILabel(imgs[4], "Big:");
 				bigPicture2.setFocusable(true);
-				bigPicture2.setAnchorPoint(Graphics.HCENTER);
+				bigPicture2.setAnchorPoint(UIGraphics.HCENTER);
 				bigPicture2.setFlip(false);
-				Font bigFont2 = Font.getFont(Font.FACE_PROPORTIONAL,
-						Font.STYLE_BOLD, Font.SIZE_LARGE);
+				UIFont bigFont2 = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_BOLD, UIFont.SIZE_LARGE);
 				bigPicture2.setFont(bigFont2);
 				this.append(bigPicture2);
 
 				UILabel bigPicture3 = new UILabel(imgs[4], "Big:");
 				bigPicture3.setFocusable(true);
-				bigPicture3.setAnchorPoint(Graphics.RIGHT);
+				bigPicture3.setAnchorPoint(UIGraphics.RIGHT);
 				bigPicture3.setFlip(false);
-				Font bigFont3 = Font.getFont(Font.FACE_MONOSPACE,
-						Font.STYLE_UNDERLINED, Font.SIZE_LARGE);
+				UIFont bigFont3 = UIFont.getFont(UIFont.FACE_MONOSPACE,
+						UIFont.STYLE_UNDERLINED, UIFont.SIZE_LARGE);
 				bigPicture3.setFont(bigFont3);
 				this.append(bigPicture3);
 
 				UILabel bigPicture4 = new UILabel(imgs[4], "Big:");
 				bigPicture4.setFocusable(true);
-				bigPicture4.setAnchorPoint(Graphics.LEFT);
+				bigPicture4.setAnchorPoint(UIGraphics.LEFT);
 				bigPicture4.setFlip(true);
-				Font bigFont4 = Font.getFont(Font.FACE_MONOSPACE,
-						Font.STYLE_PLAIN, Font.SIZE_SMALL);
+				UIFont bigFont4 = UIFont.getFont(UIFont.FACE_MONOSPACE,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_SMALL);
 				bigPicture4.setFont(bigFont4);
 				this.append(bigPicture4);
 
 				UILabel bigPicture5 = new UILabel(imgs[4], "Big:");
 				bigPicture5.setFocusable(true);
-				bigPicture5.setAnchorPoint(Graphics.HCENTER);
+				bigPicture5.setAnchorPoint(UIGraphics.HCENTER);
 				bigPicture5.setFlip(true);
-				Font bigFont5 = Font.getFont(Font.FACE_SYSTEM,
-						Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
+				UIFont bigFont5 = UIFont.getFont(UIFont.FACE_SYSTEM,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_MEDIUM);
 				bigPicture5.setFont(bigFont5);
 				this.append(bigPicture5);
 
 				UILabel bigPicture6 = new UILabel(imgs[4], "Big:");
 				bigPicture6.setFocusable(true);
-				bigPicture6.setAnchorPoint(Graphics.RIGHT);
+				bigPicture6.setAnchorPoint(UIGraphics.RIGHT);
 				bigPicture6.setFlip(true);
-				Font bigFont6 = Font.getFont(Font.FACE_SYSTEM,
-						Font.STYLE_ITALIC, Font.SIZE_MEDIUM);
+				UIFont bigFont6 = UIFont.getFont(UIFont.FACE_SYSTEM,
+						UIFont.STYLE_ITALIC, UIFont.SIZE_MEDIUM);
 				bigPicture6.setFont(bigFont6);
 				this.append(bigPicture6);
 			}
@@ -463,7 +516,7 @@ public class UITestMidlet extends MIDlet {
 			{
 				UILabel bigPicture1 = new UILabel(imgs[4], "Big:");
 				bigPicture1.setFocusable(true);
-				bigPicture1.setAnchorPoint(Graphics.LEFT);
+				bigPicture1.setAnchorPoint(UIGraphics.LEFT);
 				bigPicture1.setFlip(false);
 
 				UILabel hlabel = new UILabel("Horizontal");
@@ -486,19 +539,19 @@ public class UITestMidlet extends MIDlet {
 			{
 				UILabel bigPicture1 = new UILabel(imgs[4], "");
 				bigPicture1.setFocusable(true);
-				bigPicture1.setAnchorPoint(Graphics.LEFT);
+				bigPicture1.setAnchorPoint(UIGraphics.LEFT);
 				bigPicture1.setFlip(false);
 				this.append(bigPicture1);
 
 				UILabel bigPicture2 = new UILabel(imgs[4], "");
 				bigPicture2.setFocusable(true);
-				bigPicture2.setAnchorPoint(Graphics.HCENTER);
+				bigPicture2.setAnchorPoint(UIGraphics.HCENTER);
 				bigPicture2.setFlip(false);
 				this.append(bigPicture2);
 
 				UILabel bigPicture3 = new UILabel(imgs[4], "");
 				bigPicture3.setFocusable(true);
-				bigPicture3.setAnchorPoint(Graphics.RIGHT);
+				bigPicture3.setAnchorPoint(UIGraphics.RIGHT);
 				bigPicture3.setFlip(false);
 				this.append(bigPicture3);
 
@@ -507,19 +560,19 @@ public class UITestMidlet extends MIDlet {
 			{
 				UILabel bigPicture1 = new UILabel("Big:");
 				bigPicture1.setFocusable(true);
-				bigPicture1.setAnchorPoint(Graphics.LEFT);
+				bigPicture1.setAnchorPoint(UIGraphics.LEFT);
 				bigPicture1.setFlip(false);
 				this.append(bigPicture1);
 
 				UILabel bigPicture2 = new UILabel("Big:");
 				bigPicture2.setFocusable(true);
-				bigPicture2.setAnchorPoint(Graphics.HCENTER);
+				bigPicture2.setAnchorPoint(UIGraphics.HCENTER);
 				bigPicture2.setFlip(false);
 				this.append(bigPicture2);
 
 				UILabel bigPicture3 = new UILabel("Big:");
 				bigPicture3.setFocusable(true);
-				bigPicture3.setAnchorPoint(Graphics.RIGHT);
+				bigPicture3.setAnchorPoint(UIGraphics.RIGHT);
 				bigPicture3.setFlip(false);
 				this.append(bigPicture3);
 
@@ -554,21 +607,21 @@ public class UITestMidlet extends MIDlet {
 			longString += longString;
 			UILabel longLabel2 = new UILabel(longString);
 			longLabel2.setFocusable(true);
-			longLabel2.setAnchorPoint(Graphics.LEFT);
+			longLabel2.setAnchorPoint(UIGraphics.LEFT);
 			longLabel2.setFlip(false);
 			longLabel2.setWrappable(true, 200);
 			this.append(longLabel2);
 
 			UILabel longLabel3 = new UILabel(longString);
 			longLabel3.setFocusable(true);
-			longLabel3.setAnchorPoint(Graphics.HCENTER);
+			longLabel3.setAnchorPoint(UIGraphics.HCENTER);
 			longLabel3.setFlip(false);
 			longLabel3.setWrappable(true, 200);
 			this.append(longLabel3);
 
 			UILabel longLabel4 = new UILabel(longString);
 			longLabel4.setFocusable(true);
-			longLabel4.setAnchorPoint(Graphics.RIGHT);
+			longLabel4.setAnchorPoint(UIGraphics.RIGHT);
 			longLabel4.setFlip(false);
 			longLabel4.setWrappable(true, 200);
 			this.append(longLabel4);
@@ -591,7 +644,7 @@ public class UITestMidlet extends MIDlet {
 			uv.setGroup(true);
 			UILabel hdr = new UILabel("HEADER");
 			hdr.setFocusable(false);
-			hdr.setAnchorPoint(Graphics.HCENTER);
+			hdr.setAnchorPoint(UIGraphics.HCENTER);
 			uv.insert(hdr, 0, 20, UILayout.CONSTRAINT_PIXELS);
 			UIPanel up = new UIPanel();
 			// up.setMaxHeight(100);
@@ -682,26 +735,28 @@ public class UITestMidlet extends MIDlet {
 			g.setColor(0);
 
 			if (state == 0) {
-				g.drawString("Press left key", 5, 5, Graphics.TOP
-						| Graphics.LEFT);
+				g.drawString("Press left key", 5, 5, UIGraphics.TOP
+						| UIGraphics.LEFT);
 			} else if (state == 1) {
-				g.drawString("Press right key", 5, 5, Graphics.TOP
-						| Graphics.LEFT);
+				g.drawString("Press right key", 5, 5, UIGraphics.TOP
+						| UIGraphics.LEFT);
 			} else if (state == 2) {
-				g.drawString("Press any key to continue", 5, 5, Graphics.TOP
-						| Graphics.LEFT);
+				g.drawString("Press any key to continue", 5, 5, UIGraphics.TOP
+						| UIGraphics.LEFT);
 			}
 
 			if (err != null) {
 				g.setColor(0x00a00000);
-				g.drawString(err, 5, 25, Graphics.TOP | Graphics.LEFT);
+				g.drawString(err, 5, 25, UIGraphics.TOP | UIGraphics.LEFT);
 			}
 		}
 
 		protected void keyPressed(int k) {
 			if (state == 2) {
 				UICanvas.setMenuKeys(left_key, right_key);
+				// #ifndef RIM
 				Display.getDisplay(UITestMidlet.this).setCurrent(canvas);
+				// #endif
 				TestScreen screen = new TestScreen();
 				canvas.open(screen, true);
 				screen.askRepaint();

@@ -1,8 +1,8 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUCScreen.java 2032 2010-03-25 17:30:11Z luca $
-*/
+ * $Id: MUCScreen.java 2329 2010-11-16 14:12:50Z luca $
+ */
 
 package lampiro.screens;
 
@@ -11,27 +11,27 @@ import it.yup.ui.UICombobox;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.xml.Element;
 import it.yup.xmlstream.PacketListener;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.MUC;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import java.util.Enumeration;
 import java.util.Vector;
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Graphics;
 import lampiro.screens.HandleMucScreen.HMC_CONSTANTS;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
-//#enddebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 public class MUCScreen extends ChatScreen implements PacketListener {
 
@@ -59,7 +59,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 	public MUCScreen(Contact u) {
 		super(u, u.jid);
 		chatLineStart = 1;
-		//this.setFreezed(true);
+		// this.setFreezed(true);
 		toggleMenu();
 
 		if (XMPPClient.getInstance().getRoster().getBookmarkByJid(u.jid, false) == null) {
@@ -71,11 +71,12 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 				+ user.getPrintableName());
 		this.rosterCombo = new UICombobox(rm
 				.getString(ResourceIDs.STR_ADD_USER), true);
-		this.rosterCombo.setSubmenu(this.closeMenu);
-
 		this.mucParticipants = new UICombobox(rm
 				.getString(ResourceIDs.STR_PARTICIPANTS), false);
+		// #ifndef RIM
+		this.rosterCombo.setSubmenu(this.closeMenu);
 		this.mucParticipants.setSubmenu(this.closeMenu);
+		// #endif
 
 		addUser.setText(rm.getString(ResourceIDs.STR_ADD_USER));
 
@@ -108,8 +109,8 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			this.getMenu().insert(getMenu().indexOf(cmd_handle_groups) + 1,
 					addUser);
 		}
-		//		this.getMenu().remove(this.cmd_capture_img);
-		//		this.getMenu().remove(this.cmd_capture_aud);
+		// this.getMenu().remove(this.cmd_capture_img);
+		// this.getMenu().remove(this.cmd_capture_aud);
 	}
 
 	private void populateParticipants() {
@@ -124,7 +125,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		}
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		this.mucParticipants.setSelectedIndex(-1);
 		super.paint(g, w, h);
 	}
@@ -139,13 +140,14 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 			Contact c = (Contact) en.nextElement();
 			String printableName = c.getPrintableName();
 			Presence[] ps = c.getAllPresences();
-			if (ps == null) continue;
-			if (ps.length == 1 && c.supportsMUC(ps[0])) {
+			if (ps == null)
+				continue;
+			if (ps.length == 1 && RosterScreen.supportsMUC(ps[0])) {
 				this.rosterCombo.append(printableName);
 				this.mucCandidates.addElement(ps[0]);
 			} else if (ps.length >= 2) {
 				for (int i = 0; i < ps.length; i++) {
-					if (c.supportsMUC(ps[1])) {
+					if (RosterScreen.supportsMUC(ps[1])) {
 						this.rosterCombo.append(printableName
 								+ " "
 								+ Contact.resource(ps[i]
@@ -162,17 +164,17 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 				&& this.getMenu().isOpenedState() == false) {
 			int ga = UICanvas.getInstance().getGameAction(kc);
 
-			if (ga == Canvas.FIRE) {
+			if (ga == UICanvas.FIRE) {
 				if (RosterScreen.isOnline()
 						&& this.chatPanel.getItems().elementAt(
 								chatPanel.getSelectedIndex()) == mucParticipants) {
 					populateParticipants();
 					mucParticipants.setScreen(this);
 				}
-				//				else if (this.chatPanel.getItems().elementAt(
-				//						chatPanel.getSelectedIndex()) == rosterCombo) {
-				//					populateRosterCombo();
-				//				}
+				// else if (this.chatPanel.getItems().elementAt(
+				// chatPanel.getSelectedIndex()) == rosterCombo) {
+				// populateRosterCombo();
+				// }
 			}
 		}
 		return super.keyPressed(kc);
@@ -214,6 +216,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		} else if (c == cmd_clear) {
 			super.menuAction(menu, c);
 			this.chatPanel.insertItemAt(rosterCombo, 0);
+			this.askRepaint();
 			return;
 		}
 
@@ -226,7 +229,9 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		while (en.hasMoreElements()) {
 			Object[] coupleConv = (Object[]) en.nextElement();
 			Vector messages = (Vector) coupleConv[1];
-			if (messages.size() > 0) { return true; }
+			if (messages.size() > 0) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -252,14 +257,14 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 
 	protected void openComposer() {
 		SimpleComposerScreen cs = new MUCComposerScreen(this, (MUC) user);
-		UICanvas.display(cs);
+		UICanvas.display(cs.getTextBox());
 	}
 
 	static void handlePresence(MUC presenceMUC, Element e, String type) {
 		String jidName = Contact.resource(e.getAttribute(Message.ATT_FROM));
-		// avoid printing myself data here 
+		// avoid printing myself data here
 		boolean goingOffline = "unavailable".equals(type);
-		//if (jidName.equals(presenceMUC.nick)) return;
+		// if (jidName.equals(presenceMUC.nick)) return;
 		Message msg = null;
 		msg = new Message(presenceMUC.jid, Message.HEADLINE);
 		msg.setAttribute(Message.ATT_FROM, e.getAttribute(Message.ATT_FROM));
@@ -278,35 +283,34 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		}
 		if (send == true) {
 			msg.setBody(msgText);
-			//presenceMUC.lastResource = null;
+			// presenceMUC.lastResource = null;
 			presenceMUC
 					.addMessageToHistory(e.getAttribute(Message.ATT_TO), msg);
 			RosterScreen rs = RosterScreen.getInstance();
 			try {
-				UICanvas.lock();
-				rs._updateContact(presenceMUC, Contact.CH_MESSAGE_NEW);
-				rs.askRepaint();
-				MUCScreen ms = (MUCScreen) RosterScreen.getChatScreenList()
-						.get(presenceMUC.jid);
-				if (ms != null) {
-					if (UICanvas.getInstance().getCurrentScreen() == ms) ms
-							.updateConversation();
-					ms.askRepaint();
+				synchronized (UICanvas.getLock()) {
+					rs._updateContact(presenceMUC, Contact.CH_MESSAGE_NEW);
+					rs.askRepaint();
+					MUCScreen ms = (MUCScreen) RosterScreen.getChatScreenList()
+							.get(presenceMUC.jid);
+					if (ms != null) {
+						if (UICanvas.getInstance().getCurrentScreen() == ms)
+							ms.updateConversation();
+						ms.askRepaint();
+					}
 				}
 			} catch (Exception ex) {
 				// #mdebug
-//@				Logger.log("In handling presence error:");
-//@				ex.printStackTrace();
+				Logger.log("In handling presence error:");
+				ex.printStackTrace();
 				// #enddebug
-			} finally {
-				UICanvas.unlock();
 			}
 		}
 	}
 
 	void sendInvite(String ithContact) {
 		Message msg = new Message(user.jid, null);
-		Element x = new Element(XMPPClient.NS_MUC_USER, DataForm.X);
+		Element x = new Element(XmppConstants.NS_MUC_USER, DataForm.X);
 		msg.addElement(x);
 		Element invite = new Element("", "invite");
 		invite.setAttribute(Message.ATT_TO, ithContact);
@@ -314,10 +318,10 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		XMPPClient.getInstance().sendPacket(msg);
 	}
 
-	protected void getPrintableHeight(Graphics g, int h) {
+	protected void getPrintableHeight(UIGraphics g, int h) {
 		super.getPrintableHeight(g, h);
 		if (mucParticipants == null) {
-			// this method could be called without mucParticipants 
+			// this method could be called without mucParticipants
 			// being initialized.
 			this.mucParticipants = new UICombobox(rm
 					.getString(ResourceIDs.STR_ADD_USER), true);
@@ -331,9 +335,11 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		// @ long t1 = System.currentTimeMillis();
 		// #endif
 
-		//		byte type = (text[2] != null && Contact.resource(text[2]) != null && Contact
-		//				.resource(text[2]).equals(Contact.user(text[0]))) ? ConversationEntry.ENTRY_TO
-		//				: ConversationEntry.ENTRY_FROM;
+		// byte type = (text[2] != null && Contact.resource(text[2]) != null &&
+		// Contact
+		// .resource(text[2]).equals(Contact.user(text[0]))) ?
+		// ConversationEntry.ENTRY_TO
+		// : ConversationEntry.ENTRY_FROM;
 
 		String otherNick = Contact.resource(text[4]);
 		byte type = (otherNick == null || otherNick
@@ -348,8 +354,8 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		String labelText = "";
 		labelText += text[1];
 		ConversationEntry convEntry = new ConversationEntry(labelText, type);
-		if (type == ConversationEntry.ENTRY_TO) convEntry.from = otherNick != null ? otherNick
-				: "";
+		if (type == ConversationEntry.ENTRY_TO)
+			convEntry.from = otherNick != null ? otherNick : "";
 		convEntry.arriveTime = text[2];
 		convEntry.messageType = text[3];
 		return convEntry;
@@ -384,7 +390,8 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 
 			rosterCombo.removeAll();
 			mucCandidates.removeAllElements();
-			if (orderedContacts != null) orderedContacts.removeAllElements();
+			if (orderedContacts != null)
+				orderedContacts.removeAllElements();
 
 			RosterScreen rs = RosterScreen.getInstance();
 			rs._updateContact(this.user, Contact.CH_MESSAGE_NEW);
@@ -409,7 +416,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		this.chatPanel.insertItemAt(rosterCombo, this.chatPanel
 				.removeItem(mucParticipants));
 		this.chatPanel.setSelectedItem(rosterCombo);
-		//this.keyPressed(UICanvas.getInstance().getKeyCode(Canvas.FIRE));
+		// this.keyPressed(UICanvas.getInstance().getKeyCode(Canvas.FIRE));
 		populateRosterCombo();
 		rosterCombo.openMenu();
 		this.chatPanel.insertItemAt(mucParticipants, this.chatPanel
@@ -430,7 +437,7 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 				+ c.getPrintableName();
 
 		msg.setBody(msgText);
-		//presenceMUC.lastResource = null;
+		// presenceMUC.lastResource = null;
 		this.user.addMessageToHistory(myJid, msg);
 	}
 
@@ -440,9 +447,12 @@ public class MUCScreen extends ChatScreen implements PacketListener {
 		int arriveTimeLength = entry.arriveTime.length();
 		if (arriveTimeLength > 0 || fromLength > 0) {
 			retString = "[";
-			if (fromLength > 0) retString += entry.from;
-			if (fromLength > 0 && arriveTimeLength > 0) retString += " ";
-			if (arriveTimeLength > 0) retString += entry.arriveTime;
+			if (fromLength > 0)
+				retString += entry.from;
+			if (fromLength > 0 && arriveTimeLength > 0)
+				retString += " ";
+			if (arriveTimeLength > 0)
+				retString += entry.arriveTime;
 			retString += "] ";
 		}
 		return retString;

@@ -1,18 +1,19 @@
+// #condition MIDP
 /**
  * 
  */
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIFont;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Font;
 
 public class TokenIterator {
 
 	public interface UIISplittableItem {
 		String getText();
 
-		int getTextWidth(String textLine, Font font, int startIndex, int length);
+		int getTextWidth(String textLine, UIFont font, int startIndex,
+				int length);
 	}
 
 	/**
@@ -26,12 +27,13 @@ public class TokenIterator {
 
 	private Vector linesIndeces = new Vector();
 
-	private Font font;
+	private UIFont font;
 
 	private int w;
 
 	/**
-	 * @param textPanel TODO
+	 * @param textPanel
+	 *            TODO
 	 * 
 	 */
 	public TokenIterator(UIISplittableItem textItem) {
@@ -49,10 +51,12 @@ public class TokenIterator {
 		return computed;
 	}
 
-	public void computeLazyLines(Font f, int w) {
+	public void computeLazyLines(UIFont f, int w) {
 		linesNumber = (int) Math.ceil((float) f.stringWidth(this.splittableItem
 				.getText())
 				/ (float) w);
+		if (linesNumber < 0)
+			linesNumber = 1;
 		computed = true;
 		this.w = w;
 		this.font = f;
@@ -75,8 +79,9 @@ public class TokenIterator {
 		limits = (int[]) linesIndeces.elementAt(i);
 		if (limits[0] >= 0 && limits[1] >= 0
 				&& limits[0] < this.splittableItem.getText().length()
-				&& limits[1] < this.splittableItem.getText().length()) return this.splittableItem
-				.getText().substring(limits[0], limits[1] + 1);
+				&& limits[1] < this.splittableItem.getText().length())
+			return this.splittableItem.getText().substring(limits[0],
+					limits[1] + 1);
 		else
 			return "";
 	}
@@ -96,33 +101,34 @@ public class TokenIterator {
 		for (int i = limits[1] + 1; i < text.length(); i++) {
 			ithChar = text.charAt(i);
 			switch (ithChar) {
-				case '\n':
-				case '\r':
-					if (i == startIndex) {
-						startIndex++;
-					} else {
-						int ithWidth = splittableItem.getTextWidth(text, font,
-								startIndex, i - startIndex);
-						if (ithWidth <= w) {
-							linesIndeces.addElement(new int[] { startIndex,
-									i - 1 });
-							return;
-						} else
-							needSplit = true;
-					}
-					break;
+			case '\n':
+			case '\r':
+				if (i == startIndex) {
+					startIndex++;
+				} else {
+					int ithWidth = splittableItem.getTextWidth(text, font,
+							startIndex, i - startIndex);
+					if (ithWidth <= w) {
+						linesIndeces
+								.addElement(new int[] { startIndex, i - 1 });
+						return;
+					} else
+						needSplit = true;
+				}
+				break;
 
-				case ' ':
-					if (i == startIndex) {
-						startIndex++;
-					} else {
-						int ithWidth = splittableItem.getTextWidth(text, font,
-								startIndex, i - startIndex);
-						if (ithWidth <= w) goodIndex = i - 1;
-						else
-							needSplit = true;
-					}
-					break;
+			case ' ':
+				if (i == startIndex) {
+					startIndex++;
+				} else {
+					int ithWidth = splittableItem.getTextWidth(text, font,
+							startIndex, i - startIndex);
+					if (ithWidth <= w)
+						goodIndex = i - 1;
+					else
+						needSplit = true;
+				}
+				break;
 			}
 			if (needSplit) {
 				if (goodIndex > startIndex) {
@@ -136,17 +142,18 @@ public class TokenIterator {
 		}
 		// last line special ending
 		int lastIndex = text.length() - 1;
-		//if (startIndex > lastIndex) startIndex = lastIndex;
+		// if (startIndex > lastIndex) startIndex = lastIndex;
 		if (lastIndex < 0) {
 			startIndex = 0;
 			lastIndex = 0;
 		}
 		int length = lastIndex - startIndex + 1;
-		if (length + startIndex > text.length()) length = 0;
+		if (length + startIndex > text.length())
+			length = 0;
 		int ithWidth = splittableItem.getTextWidth(text, font, startIndex,
 				length);
-		if (ithWidth <= w) linesIndeces.addElement(new int[] { startIndex,
-				lastIndex });
+		if (ithWidth <= w)
+			linesIndeces.addElement(new int[] { startIndex, lastIndex });
 		else {
 			if (goodIndex > startIndex && goodIndex <= lastIndex) {
 				linesIndeces.addElement(new int[] { startIndex, goodIndex });
@@ -169,7 +176,8 @@ public class TokenIterator {
 			med = (min + max) / 2;
 			ithWidth = splittableItem.getTextWidth(this.splittableItem
 					.getText(), font, startIndex, med + 1 - startIndex);
-			if (ithWidth <= w) min = med + 1;
+			if (ithWidth <= w)
+				min = med + 1;
 			else
 				max = med;
 		}

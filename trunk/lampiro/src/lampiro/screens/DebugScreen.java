@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DebugScreen.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: DebugScreen.java 2310 2010-11-04 12:18:13Z luca $
 */
 
 package lampiro.screens;
@@ -12,11 +12,10 @@ import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
-import it.yup.util.MemoryLogConsumer;
+import it.yup.ui.wrappers.UIFont;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
-
-import javax.microedition.lcdui.Font;
+import it.yup.util.log.MemoryLogConsumer;
 
 public class DebugScreen extends UIScreen {
 
@@ -45,8 +44,8 @@ public class DebugScreen extends UIScreen {
 			UILabel uith = new UILabel((String) consumer.messages.elementAt(i));
 			uith.setWrappable(true, UICanvas.getInstance().getWidth());
 			uith.setFocusable(true);
-			Font minFont = Font.getFont(Font.FACE_PROPORTIONAL,
-										Font.STYLE_PLAIN, Font.SIZE_SMALL);
+			UIFont minFont = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+					UIFont.STYLE_PLAIN, UIFont.SIZE_SMALL);
 			uith.setFont(minFont);
 			this.mainPanel.addItem(uith);
 		}

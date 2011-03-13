@@ -1,22 +1,21 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICombobox.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: UICombobox.java 2386 2011-01-17 11:55:37Z luca $
+ */
 
 /**
  * 
  */
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.Utils;
 
 import java.util.Enumeration;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
 
 /**
  * @author luca
@@ -69,6 +68,12 @@ public class UICombobox extends UILabel {
 			this.append(mainPanel);
 			this.mainPanel.setMaxHeight(-1);
 			this.setSelectedItem(mainPanel);
+// #ifndef RIM_5.0
+			addMenu();
+			// #endif
+		}
+
+		private void addMenu() {
 			UIMenu menu = new UIMenu("");
 			this.setMenu(menu);
 			menu.append(selectLabel);
@@ -76,22 +81,12 @@ public class UICombobox extends UILabel {
 		}
 
 		public void menuAction(UIMenu menu, UIItem c) {
-			if (c == selectLabel) {
-
-			} else if (c == cancelLabel) {
-				//				if (multiChoice == true) {
-				//					boolean flags[] = new boolean[this.mainPanel.getItems()
-				//							.size()];
-				//					for (int i = 0; i < flags.length; i++)
-				//						flags[i] = false;
-				//					setSelectedFlags(flags);
-				//				}
+			if (c == cancelLabel) {
 				this.sel_pattern = "";
 				if (this.originalItems != null) {
 					this.updateFilter();
 				}
 				UICanvas.getInstance().close(this);
-				//UICanvas.getInstance().open(UICombobox.this.screen, true);
 			}
 		}
 
@@ -103,17 +98,17 @@ public class UICombobox extends UILabel {
 			int ga = UICanvas.getInstance().getGameAction(key);
 
 			switch (key) {
-				case Canvas.KEY_NUM0:
-				case Canvas.KEY_NUM1:
-				case Canvas.KEY_NUM2:
-				case Canvas.KEY_NUM3:
-				case Canvas.KEY_NUM4:
-				case Canvas.KEY_NUM5:
-				case Canvas.KEY_NUM6:
-				case Canvas.KEY_NUM7:
-				case Canvas.KEY_NUM8:
-				case Canvas.KEY_NUM9:
-					int key_num = key - Canvas.KEY_NUM0;
+				case UICanvas.KEY_NUM0:
+				case UICanvas.KEY_NUM1:
+				case UICanvas.KEY_NUM2:
+				case UICanvas.KEY_NUM3:
+				case UICanvas.KEY_NUM4:
+				case UICanvas.KEY_NUM5:
+				case UICanvas.KEY_NUM6:
+				case UICanvas.KEY_NUM7:
+				case UICanvas.KEY_NUM8:
+				case UICanvas.KEY_NUM9:
+					int key_num = key - UICanvas.KEY_NUM0;
 					long t = System.currentTimeMillis();
 					if ((key_num != sel_last_key) || t - sel_last_ts > 1000) {
 						// new key
@@ -141,7 +136,7 @@ public class UICombobox extends UILabel {
 			}
 
 			// any of the "delete" character 
-			if (key == UICanvas.MENU_CANCEL || ga == Canvas.LEFT || key == 8) {
+			if (key == UICanvas.MENU_CANCEL || ga == UICanvas.LEFT || key == 8) {
 				if (sel_pattern.length() > 0) {
 					sel_pattern = sel_pattern.substring(0,
 							sel_pattern.length() - 1);
@@ -162,7 +157,10 @@ public class UICombobox extends UILabel {
 				}
 			}
 
-			if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)
+			if (key == UICanvas.MENU_LEFT) {
+				menuAction(null, cancelLabel);
+				return true;
+			} else if ((key == UICanvas.MENU_RIGHT || ga == UICanvas.FIRE)
 					&& (this.selectedIndex >= 0 || UICombobox.this.multiChoice)) {
 				UIItem selItem = this.mainPanel.getSelectedItem();
 				if (selItem != null) {
@@ -184,7 +182,7 @@ public class UICombobox extends UILabel {
 					//UICanvas.getInstance().open(UICombobox.this.screen, true);
 					this.screen.itemAction(UICombobox.this);
 				} else {
-					if (ga == Canvas.FIRE) {
+					if (ga == UICanvas.FIRE) {
 						// UICheckbox selectedItem = (UICheckbox) this.itemList
 						// .elementAt(this.selectedIndex);
 						// (selectedItem).setChecked(!selectedItem.isChecked());
@@ -211,7 +209,6 @@ public class UICombobox extends UILabel {
 					UICombobox.this.setDirty(true);
 					UIComboScreen.this.askRepaint();
 				}
-
 				return true;
 			} else {
 				boolean retVal = super.keyPressed(key);
@@ -281,10 +278,10 @@ public class UICombobox extends UILabel {
 		this.title.setText(title);
 		this.wrappable = false;
 		this.comboScreen = new UIComboScreen(title);
-		this.anchorPoint = Graphics.RIGHT | Graphics.VCENTER;
-		Font f = UIConfig.font_body;
-		Font titleFont = Font
-				.getFont(f.getFace(), Font.STYLE_BOLD, f.getSize());
+		this.anchorPoint = UIGraphics.RIGHT | UIGraphics.VCENTER;
+		UIFont f = UIConfig.font_body;
+		UIFont titleFont = UIFont.getFont(f.getFace(), UIFont.STYLE_BOLD, f
+				.getSize());
 		this.title.setFont(titleFont);
 		this.title.setFocusable(true);
 		this.setBg_color(UIConfig.input_color);
@@ -301,7 +298,7 @@ public class UICombobox extends UILabel {
 		super.setSelected(_selected);
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		// 6 is the number of pixels for the border
 		this.height = super.getHeight(g) + this.title.getHeight(g) + 6;
 		return this.height;
@@ -312,10 +309,10 @@ public class UICombobox extends UILabel {
 	 * 
 	 * @see it.yup.ui.UIItem#paint(javax.microedition.lcdui.Graphics, int, int)
 	 */
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		Vector comboItems = this.comboScreen.mainPanel.getItems();
 		if (this.multiChoice == false) {
-				if (comboItems.size() > 0 && this.selectedIndex >= 0) this.text = ((UILabel) comboItems
+			if (comboItems.size() > 0 && this.selectedIndex >= 0) this.text = ((UILabel) comboItems
 					.elementAt(this.selectedIndex)).getText();
 		} else {
 			this.text = "";
@@ -340,12 +337,19 @@ public class UICombobox extends UILabel {
 		this.title.paint(g, w, titleHeight);
 		g.translate(0, titleHeight);
 		int superHeight = super.getHeight(g);
-		g.setColor(UIConfig.bg_color);
-		g.fillRect(0, 0, w, superHeight + 6);
+		if (this.bg_color != UIItem.TRANSPARENT_COLOR) {
+			g.setColor(UIConfig.bg_color);
+			g.fillRect(0, 0, w, superHeight + 6);
+		}
 		//drawBorder(g, 1, 1, w-2, superHeight+4);
 		drawInput(g, 1, 1, w - 2, superHeight + 4);
 		g.translate(3, 3);
 		super.paint(g, w - 6, superHeight);
+	}
+
+	public void setBg_color(int bg_color) {
+		this.bg_color = bg_color;
+		this.title.setBg_color(bg_color);
 	}
 
 	public UILabel append(String comboItem) {
@@ -362,8 +366,8 @@ public class UICombobox extends UILabel {
 		uimi.setFocusable(true);
 		return uimi;
 	}
-	
-	public UILabel insertAt(String comboItem,int position) {
+
+	public UILabel insertAt(String comboItem, int position) {
 		UILabel uimi = null;
 		if (this.multiChoice == false) {
 			uimi = new UILabel(comboItem);
@@ -372,7 +376,7 @@ public class UICombobox extends UILabel {
 		} else {
 			uimi = new UICheckbox(comboItem);
 		}
-		comboScreen.mainPanel.insertItemAt(uimi,position);
+		comboScreen.mainPanel.insertItemAt(uimi, position);
 		uimi.setFocusable(true);
 		return uimi;
 	}
@@ -393,7 +397,7 @@ public class UICombobox extends UILabel {
 
 	public boolean keyPressed(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
-		if (ga == Canvas.FIRE) {
+		if (ga == UICanvas.FIRE) {
 			openMenu();
 			return false;
 		}
@@ -408,7 +412,14 @@ public class UICombobox extends UILabel {
 				&& comboScreen.mainPanel.getItems().size() > 0) {
 			this.setSelectedIndex(0);
 		}
-		UICanvas.getInstance().open(comboScreen, true,this.getScreen());
+		boolean oldRolled = false;
+		if (this.getScreen() != null) {
+			oldRolled = this.getScreen().isRollEnabled();
+			this.getScreen().setRollEnabled(true);
+		}
+		UICanvas.getInstance().open(comboScreen, true, this.getScreen());
+		if (this.getScreen() != null) this.getScreen()
+				.setRollEnabled(oldRolled);
 	}
 
 	/**
@@ -435,7 +446,7 @@ public class UICombobox extends UILabel {
 
 		return resInt;
 	}
-	
+
 	/**
 	 * @return The array of selection flags.
 	 */
@@ -451,7 +462,7 @@ public class UICombobox extends UILabel {
 				&& comboScreen.mainPanel.getItems().size() > 0) flags[this.selectedIndex] = true;
 		return flags;
 	}
-	
+
 	/**
 	 * Return the selected UIItem within the UIItem itself; usually it is the
 	 * UIItem itself but in the subclasses (like UIVLayout) it could one of the
@@ -469,8 +480,8 @@ public class UICombobox extends UILabel {
 		int[] selIndeces = this.getSelectedIndeces();
 		String[] resString = new String[selIndeces.length];
 		for (int i = 0; i < selIndeces.length; i++) {
-			Object ithSel = this.comboScreen.mainPanel.getItems()
-					.elementAt(selIndeces[i]);
+			Object ithSel = this.comboScreen.mainPanel.getItems().elementAt(
+					selIndeces[i]);
 			resString[i] = ((UILabel) ithSel).getText();
 		}
 		return resString;
@@ -544,5 +555,9 @@ public class UICombobox extends UILabel {
 		UICheckbox uic = (UICheckbox) comboScreen.mainPanel.getItems()
 				.elementAt(idx);
 		return uic.isChecked();
+	}
+
+	public UILabel getTitle() {
+		return title;
 	}
 }

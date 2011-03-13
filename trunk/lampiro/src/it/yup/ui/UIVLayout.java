@@ -1,16 +1,18 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIVLayout.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: UIVLayout.java 2325 2010-11-15 20:07:28Z luca $
+ */
 
 /**
  * 
  */
 package it.yup.ui;
 
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Graphics;
+import javax.microedition.lcdui.game.Sprite;
+
+import it.yup.ui.wrappers.UIGraphics;
 
 /**
  * @author luca
@@ -26,8 +28,8 @@ public class UIVLayout extends UILayout {
 	 */
 	public UIVLayout(int rowNumber, int height) {
 		super(rowNumber);
-		this.dirKey1 = Canvas.UP;
-		this.dirKey2 = Canvas.DOWN;
+		this.dirKey1 = UICanvas.UP;
+		this.dirKey2 = UICanvas.DOWN;
 		this.height = height;
 	}
 
@@ -53,31 +55,54 @@ public class UIVLayout extends UILayout {
 		return layoutItems[i].getLayoutHeight();
 	}
 
-	protected int getMyDimension(Graphics g, int w) {
+	protected int getMyDimension(UIGraphics g, int w) {
 		return this.getHeight(g);
 	}
 
-	protected void paintLayoutItem(int i, Graphics g, int w, int h,
+	protected void paintLayoutItem(int i, UIGraphics g, int w, int h,
 			int forcedDim) {
 		layoutItems[i].paint0(g, w, forcedDim);
 	}
 
-	protected void paintLastItem(int i, Graphics g, int w, int h, int pixelIndex) {
-		paintLayoutItem(i, g, w, h, this.getHeight(g) - pixelIndex);
+	protected void paintBGRegion(UIGraphics g, int x, int y, int w, int h,
+			int forcedDim) {
+		if (this.getBgImage() != null) {
+			g.drawRegion(getBgImage(), x, y, w, forcedDim, Sprite.TRANS_NONE,
+					0, 0, UIGraphics.TOP | UIGraphics.LEFT);
+		}
 	}
 
-	protected void translateG(Graphics g, int i, int forcedDim) {
+	protected void paintLastItem(int i, UIGraphics g, int w, int h,
+			int pixelIndex) {
+		paintLayoutItem(i, g, w, h, this.getHeight(g) - pixelIndex - 2
+				* vPadding);
+	}
+
+	protected void paintLastBgRegion(UIGraphics g, int x, int y, int w, int h,
+			int pixelIndex) {
+		paintBGRegion(g, x, y, w, h, this.getHeight(g) - pixelIndex - 2
+				* vPadding);
+	}
+
+	protected void translateG(UIGraphics g, int i, int forcedDim) {
 		g.translate(0, forcedDim);
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		if (height == -1) {
 			height = g.getClipHeight() + g.getClipY();
+		}
+		if (this.getBgImage() != null && this.getBgImage().getHeight() > height) {
+			this.height = getBgImage().getHeight();
 		}
 		return this.height;
 	}
 
 	public void setHeight(int layoutHeight) {
 		this.height = layoutHeight;
+	}
+
+	protected int getMyPadding() {
+		return vPadding;
 	}
 }

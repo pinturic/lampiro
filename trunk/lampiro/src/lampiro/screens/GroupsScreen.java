@@ -9,7 +9,6 @@ package lampiro.screens;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.TextField;
 
 import lampiro.screens.rosterItems.UIContactGroup;
@@ -23,12 +22,14 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
+import it.yup.ui.wrappers.UIFont;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.Roster;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 import it.yup.xmpp.packets.Iq;
 
 /**
@@ -84,9 +85,9 @@ public class GroupsScreen extends UIScreen {
 		UILabel existingGroups = new UILabel(rm
 				.getString(ResourceIDs.STR_EXISTING_GROUPS));
 		contactPanel.addItem(existingGroups);
-		Font xFont = UICanvas.getInstance().getCurrentScreen().getGraphics()
+		UIFont xFont = UICanvas.getInstance().getCurrentScreen().getGraphics()
 				.getFont();
-		Font lFont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+		UIFont lFont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
 				.getSize());
 		existingGroups.setFont(lFont);
 
@@ -131,30 +132,46 @@ public class GroupsScreen extends UIScreen {
 			String groupName = this.group_name.getText();
 			if (groupName.length() > 0) newGroups.addElement(groupName);
 
-			Iq iq_roster = new Iq(null, Iq.T_SET);
-			Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER,
-					Iq.QUERY);
-			Element item = query.addElement(XMPPClient.NS_IQ_ROSTER, "item");
-			item.setAttribute("jid", this.contact.jid);
-			if (contact.name.length() > 0) {
-				item.setAttribute("name", contact.name);
-			}
-			XMPPClient.getInstance().sendIQ(iq_roster, null);
-
-			iq_roster = new Iq(null, Iq.T_SET);
-			iq_roster.addElement(query);
 			Enumeration en = this.groupCBS.elements();
 			while (en.hasMoreElements()) {
 				UICheckbox ithGroup = (UICheckbox) en.nextElement();
 				if (ithGroup.isChecked()) newGroups.addElement(ithGroup
 						.getText());
 			}
-			en = newGroups.elements();
-			while (en.hasMoreElements()) {
-				item.addElement(XMPPClient.NS_IQ_ROSTER, "group").addText(
-						(String) en.nextElement());
+
+			String server = Contact.domain(contact.jid);
+			if (XMPPClient.getInstance().getRoster().distrRosters
+					.containsKey(server) == false) {
+				Iq iq_roster = new Iq(null, Iq.T_SET);
+				Element query = iq_roster.addElement(
+						XmppConstants.NS_IQ_ROSTER, Iq.QUERY);
+				Element item = query.addElement(XmppConstants.NS_IQ_ROSTER,
+						"item");
+				item.setAttribute("jid", this.contact.jid);
+				if (contact.name.length() > 0) {
+					item.setAttribute("name", contact.name);
+				}
+				XMPPClient xmppClient = XMPPClient.getInstance();
+				iq_roster.send(xmppClient.getXmlStream(), null);
+
+				iq_roster = new Iq(null, Iq.T_SET);
+				iq_roster.addElement(query);
+
+				en = newGroups.elements();
+				while (en.hasMoreElements()) {
+					item.addElement(XmppConstants.NS_IQ_ROSTER, "group")
+							.addText((String) en.nextElement());
+				}
+
+				iq_roster.send(xmppClient.getXmlStream(), null);
+			} else {
+				en = newGroups.elements();
+				String[] groups = new String[newGroups.size()];
+				newGroups.copyInto(groups);
+				contact.setGroups(groups);
+				XMPPClient.getInstance().getRoster().subscribeContact(contact,
+						true);
 			}
-			XMPPClient.getInstance().sendIQ(iq_roster, null);
 			UICanvas.getInstance().close(this);
 		} else if (c == cmd_cancel) {
 			UICanvas.getInstance().close(this);

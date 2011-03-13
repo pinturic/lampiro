@@ -1,30 +1,32 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
  * $Id: UIScrollableLabel.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package it.yup.ui;
 
-//#mdebug 
-//@import it.yup.util.Logger;
+//#mdebug
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import java.util.TimerTask;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Font;
+import it.yup.ui.wrappers.UIFont;
 
 /**
  * @author luca
- *
+ * 
  */
 public class UIScrollableLabel extends UILabel {
 
 	private int lines;
 	private Vector hiddenLines = new Vector();
 	/** the task used to animate the gauge */
-	private Ticker ticker=new Ticker();
+	private Ticker ticker = new Ticker();
 
 	/**
 	 * Task used to "tick" the clock on a CONTINUOUS_RUNNING Gauge.
@@ -37,29 +39,29 @@ public class UIScrollableLabel extends UILabel {
 		 * @see java.util.TimerTask#run()
 		 */
 		public void run() {
-			UICanvas.lock();
-			try {
-				if (hiddenLines.size() > 0) {
-					/* ticks in blocks of 10% */
-					Object o = hiddenLines.elementAt(0);
-					hiddenLines.removeElementAt(0);
-					textLines.addElement(o);
-					o = textLines.elementAt(0);
-					textLines.removeElementAt(0);
-					hiddenLines.addElement(o);
-					dirty = true;
+			synchronized (UICanvas.getLock()) {
+				try {
+					if (hiddenLines.size() > 0) {
+						/* ticks in blocks of 10% */
+						Object o = hiddenLines.elementAt(0);
+						hiddenLines.removeElementAt(0);
+						textLines.addElement(o);
+						o = textLines.elementAt(0);
+						textLines.removeElementAt(0);
+						hiddenLines.addElement(o);
+						dirty = true;
+						// #mdebug
+						Logger.log("Printed: " + o);
+						// #enddebug
+						askRepaint();
+					}
+				} catch (Exception e) {
 					// #mdebug
-//@					Logger.log("Printed: "+o);
+					e.printStackTrace();
+					Logger.log(e.getClass().getName());
 					// #enddebug
-					askRepaint();
 				}
-			} catch (Exception e) {
-				// #mdebug 
-//@				e.printStackTrace();
-//@				Logger.log(e.getClass().getName());
-				// #enddebug
 			}
-			UICanvas.unlock();
 		}
 	}
 
@@ -78,7 +80,7 @@ public class UIScrollableLabel extends UILabel {
 		this.lines = lines;
 	}
 
-	protected void computeTextLines(Font usedFont, int w) {
+	protected void computeTextLines(UIFont usedFont, int w) {
 		super.computeTextLines(usedFont, w);
 		this.hiddenLines.removeAllElements();
 		while (this.textLines.size() > lines) {
@@ -86,7 +88,7 @@ public class UIScrollableLabel extends UILabel {
 			this.textLines.removeElementAt(lines);
 		}
 	}
-	
+
 	public void cancel() {
 		this.ticker.cancel();
 	}

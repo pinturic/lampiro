@@ -1,47 +1,58 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: LampiroMidlet.java 2034 2010-03-26 17:11:34Z luca $
-*/
+ * $Id: LampiroMidlet.java 2447 2011-02-07 13:13:58Z luca $
+ */
 
 package lampiro;
 
 // #mdebug
-//@
-//@import it.yup.util.Logger;
-//@import it.yup.util.MemoryLogConsumer;
-//@import it.yup.util.StderrConsumer;
-//@import it.yup.util.XMPPConsumer;
-//@
+
+import it.yup.util.log.Logger;
+import it.yup.util.log.MemoryLogConsumer;
+import it.yup.util.log.StderrConsumer;
+import it.yup.util.log.XMPPConsumer;
+import it.yup.util.log.XMPPConsumer.XMPPLogger;
+
 // #enddebug
 
 // #ifdef UI
 
+import it.yup.transport.NetConnector;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICombobox;
 import it.yup.ui.UIConfig;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
-import it.yup.util.ResourceIDs;
-import it.yup.util.ResourceManager;
+
+import it.yup.ui.wrappers.UIFont;
 import lampiro.screens.SplashScreen;
-import javax.microedition.lcdui.Font;
+
+// #ifndef RIM
+
 import javax.microedition.midlet.MIDlet;
+import javax.microedition.lcdui.Display;
+
+// #endif
 
 // #endif
 // #ifndef UI
 //@
-//@import javax.microedition.midlet.MIDlet;
 //@import it.yup.screens.SplashScreen;
 //@
 // #endif
 
-import it.yup.xmpp.Config;
+import it.yup.client.Config;
+import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Presence;
 
-import javax.microedition.lcdui.Display;
+import javax.microedition.io.ConnectionNotFoundException;
+
+import it.yup.util.ResourceIDs;
+import it.yup.util.ResourceManager;
+import it.yup.util.storage.KeyStoreFactory;
 
 /**
  * Lampiro Midlet.
@@ -49,13 +60,19 @@ import javax.microedition.lcdui.Display;
  * XXX: Use ResourceMgr for the phone hold on message or move the hold-on logic
  * in XMPPClient (maybe better)
  */
-public class LampiroMidlet extends MIDlet {
-
+// #ifndef RIM
+public class LampiroMidlet extends MIDlet
+// #endif
+// #mdebug
+		implements XMPPLogger
+// #enddebug
+{
+	// #ifndef RIM
 	/** The main display */
 	public static Display disp;
-
 	/** The midlet instance */
 	public static LampiroMidlet _lampiro;
+	// #endif
 
 	private XMPPClient xmpp = null;
 
@@ -70,56 +87,118 @@ public class LampiroMidlet extends MIDlet {
 	 * Constructor
 	 */
 	public LampiroMidlet() {
+		// first of all initialize config
+		ResourceManager.setDefaultProperties(Config.lang,
+				new String[] { "/locale/common" },
+				// #ifndef GLIDER
+				new String[][] {}
+		// #endif
+				);
+		String rmsName = Config.CLIENT_NAME + "rms";
+		Config.makeInstance(KeyStoreFactory.getStore(rmsName));
 		xmpp = XMPPClient.getInstance();
 		// #mdebug
-//@		Logger.addConsumer(new StderrConsumer());
-//@		Logger.addConsumer(MemoryLogConsumer.getConsumer());
-//@		//		XMPPConsumer xmppConsumer = XMPPConsumer.getConsumer();
-//@		//		xmppConsumer.debugJid = "blutest@jabber.bluendo.com";
-//@		//		Logger.addConsumer(xmppConsumer);
+				Logger.addConsumer(new StderrConsumer());
+				Logger.addConsumer(MemoryLogConsumer.getConsumer());
 		// #enddebug
 		_lampiro = this;
+		// #ifndef RIM
 		LampiroMidlet.disp = Display.getDisplay(this);
+		// #endif
 		// #ifdef UI
+		// #ifndef RIM
 		UICanvas.setDisplay(Display.getDisplay(this));
+		// #endif
 		UICanvas canvas = UICanvas.getInstance();
 		UICanvas.display(null);
-		String colorString = Config.getInstance()
-				.getProperty(Config.COLOR, "0");
-		int colorInt = colorString.toCharArray()[0] - '0';
+		String defaultColor = "0";
+		Config cfg = Config.getInstance();
+		String colorString = cfg.getProperty(Config.COLOR, defaultColor);
+		int colorInt = colorString.charAt(0) - '0';
 		LampiroMidlet.changeColor(colorInt);
-		String fontString = Config.getInstance().getProperty(Config.FONT_SIZE,
-				"0");
-		int fontInt = fontString.toCharArray()[0] - '0';
-		LampiroMidlet.changeFont(fontInt);
+		String defaultFont = UICanvas.getInstance().hasPointerEvents() ? "1"
+				: "0";
+		String fontString = cfg.getProperty(Config.FONT_SIZE, defaultFont);
+		int fontInt = fontString.charAt(0) - '0';
+		String defaultMenuFont = UICanvas.getInstance().hasPointerEvents() ? "2"
+				: "1";
+		String fontMenuString = cfg.getProperty(Config.FONT_MENU_SIZE,
+				defaultMenuFont);
+		int fontMenuInt = fontMenuString.charAt(0) - '0';
+		LampiroMidlet.changeFont(fontInt, fontMenuInt);
 
 		// update the default strings for comboboxes
 		ResourceManager rm = ResourceManager.getManager();
-		UICombobox.selectString = rm.getString(ResourceIDs.STR_SELECT)
-				.toUpperCase();
-		String cancelString = rm.getString(ResourceIDs.STR_CANCEL)
-				.toUpperCase();
-		String okString = rm.getString(ResourceIDs.STR_OK).toUpperCase();
+		UICombobox.selectString = rm.getString(ResourceIDs.STR_SELECT);
+		String cancelString = rm.getString(ResourceIDs.STR_CANCEL);
+		String okString = rm.getString(ResourceIDs.STR_OK);
+		// #ifndef RIM
+		UICombobox.selectString = UICombobox.selectString.toUpperCase();
+		cancelString = cancelString.toUpperCase();
+		okString = okString.toUpperCase();
+		// #endif
 		UICombobox.cancelString = cancelString;
 		UITextField.setButtonsString(cancelString, okString);
-
-		canvas.open(new SplashScreen(), true);
+		// #ifndef RIM
+		openCanvas();
 		// #endif
-// #ifndef UI
-		//@				disp.setCurrent(new SplashScreen());
 		// #endif
+		// #ifndef UI
+		//@		 disp.setCurrent(new SplashScreen());
+		// #endif
+	}
 
+	// #mdebug
+		public boolean messageReady(Element e) {
+			XMPPClient xmppClient = XMPPClient.getInstance();
+			if (xmppClient != null && xmppClient.my_jid != null
+					&& xmppClient.isValid_stream()) {
+				try {
+					xmppClient.sendPacket(e);
+				} catch (Exception ex) {
+					System.out.println(ex.getMessage());
+					ex.printStackTrace();
+					return false;
+				}
+				return true;
+			} else {
+				return false;
+			}
+		}
+	
+	// #enddebug
+
+	private void openCanvas() {
+		synchronized (UICanvas.getLock()) {
+			try {
+				UICanvas.getInstance().open(new SplashScreen(), true);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
 	 * Starts the application or re-starts it after being placed in background.
 	 */
 	public void startApp() {
-
 		if (last_availability >= 0) {
-			xmpp.setPresence(last_availability, last_status);
+			updatePresence(last_availability, last_status);
 			last_availability = -1;
 		}
+	}
+
+	public static void vibrate(int duration) {
+		// #ifndef RIM
+		LampiroMidlet.disp.vibrate(duration);
+		// #endif
+	}
+
+	public final static boolean makePlatformRequest(String url)
+			throws ConnectionNotFoundException {
+		// #ifndef RIM
+		return _lampiro.platformRequest(url);
+		// #endif
 	}
 
 	/**
@@ -141,46 +220,78 @@ public class LampiroMidlet extends MIDlet {
 	 * available.
 	 */
 	protected void pauseApp() {
+		ResourceManager rm = ResourceManager.getManager();
+		Contact myContact = xmpp.getMyContact();
+		last_availability = myContact.getAvailability();
+		String pauseStr = rm.getString(ResourceIDs.STR_PAUSE_APP);
+		Presence pres = myContact.getPresence(null);
+		if (pres != null) {
+			last_status = pres.getStatus();
+		}
+		updatePresence(Contact.AV_AWAY, pauseStr);
+		//		if (updatePresence) {
+		//			try {
+		//				Thread.sleep(1000);
+		//			} catch (InterruptedException e) {
+		//				e.printStackTrace();
+		//			}
+		//		}
+	}
+
+	private boolean updatePresence(int availability, String status) {
 		Contact myContact = xmpp.getMyContact();
 		if (myContact != null) {
-			ResourceManager rm = ResourceManager.getManager();
-			String pauseStr = rm.getString(ResourceIDs.STR_PAUSE_APP);
-			last_availability = myContact.getAvailability();
 			Presence pres = myContact.getPresence(null);
 			if (pres != null) {
-				last_status = pres.getStatus();
-				xmpp.setPresence(Contact.AV_AWAY, pauseStr);
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+				xmpp.setPresence(availability, status);
+				return true;
 			}
 		}
+		return false;
 	}
 
 	public static void exit() {
 		if (_lampiro == null) { return; }
 		LampiroMidlet m = _lampiro;
 		m.destroyApp(false);
+		// #ifndef RIM
 		m.notifyDestroyed();
+		// #endif
 	}
 
 	// #ifdef UI
 
-	static public void changeFont(int fontIndex) {
+	static public void changeFont(int fontIndex, int menuFontIndex) {
 		switch (fontIndex) {
 			case 0:
-				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-						Font.STYLE_PLAIN, Font.SIZE_SMALL);
+				UIConfig.font_body = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_SMALL);
 				break;
 			case 1:
-				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-						Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
+				UIConfig.font_body = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_MEDIUM);
 				break;
 			case 2:
-				UIConfig.font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-						Font.STYLE_PLAIN, Font.SIZE_LARGE);
+				UIConfig.font_body = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_LARGE);
+				break;
+
+			default:
+				break;
+		}
+
+		switch (menuFontIndex) {
+			case 0:
+				UIConfig.font_menu = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_SMALL);
+				break;
+			case 1:
+				UIConfig.font_menu = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_MEDIUM);
+				break;
+			case 2:
+				UIConfig.font_menu = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+						UIFont.STYLE_PLAIN, UIFont.SIZE_LARGE);
 				break;
 
 			default:
@@ -277,5 +388,6 @@ public class LampiroMidlet extends MIDlet {
 		}
 	}
 
-	// #endif 
+	// #endif
+
 }

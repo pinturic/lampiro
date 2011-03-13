@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: HandleMucScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
@@ -10,6 +10,7 @@ import java.util.Hashtable;
 
 import javax.microedition.lcdui.TextField;
 
+import it.yup.dispatch.EventQuery;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -20,27 +21,28 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIRadioButtons;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
+import it.yup.ui.UIUtils;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.IQResultListener;
 import it.yup.xmpp.MUC;
 import it.yup.xmpp.Roster;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Presence;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
-//#enddebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 public class HandleMucScreen extends UIScreen {
 
@@ -58,7 +60,7 @@ public class HandleMucScreen extends UIScreen {
 		public void handleResult(Element e) {
 			String _from = e.getAttribute(Iq.ATT_FROM);
 			Iq nextIq = new Iq(_from, Iq.T_SET);
-			Element nextQuery = nextIq.addElement(XMPPClient.NS_MUC_OWNER,
+			Element nextQuery = nextIq.addElement(XmppConstants.NS_MUC_OWNER,
 					Iq.QUERY);
 			String name = Contact.user(_from);
 			Element x = e.getPath(new String[] { null, null }, new String[] {
@@ -66,7 +68,7 @@ public class HandleMucScreen extends UIScreen {
 			if (x == null) return;
 			Element[] fields = x.getChildrenByName(null, "field");
 
-			x = nextQuery.addElement(XMPPClient.JABBER_X_DATA, "x");
+			x = nextQuery.addElement(XmppConstants.JABBER_X_DATA, "x");
 			x.setAttribute(Iq.ATT_TYPE, DataForm.TYPE_SUBMIT);
 
 			Hashtable conf = new Hashtable(20);
@@ -108,8 +110,7 @@ public class HandleMucScreen extends UIScreen {
 				x.addElement(ithNewField);
 			}
 			//System.out.println(Utils.getStringUTF8(nextIq.toXml()));
-
-			XMPPClient.getInstance().sendIQ(nextIq, listener);
+			nextIq.send(XMPPClient.getInstance().getXmlStream(),listener);
 		}
 	}
 
@@ -134,11 +135,10 @@ public class HandleMucScreen extends UIScreen {
 
 	private UIRadioButtons radio_autojoin = null;
 
-	private UILabel cmd_close = new UILabel(rm.getString(ResourceIDs.STR_CLOSE)
-			.toUpperCase());
+	private UIButton cmd_close = new UIButton(rm
+			.getString(ResourceIDs.STR_CLOSE));
 
-	public UIButton cmd_save = new UIButton(rm.getString(ResourceIDs.STR_SAVE)
-			.toUpperCase());
+	public UIButton cmd_save = new UIButton(rm.getString(ResourceIDs.STR_SAVE));
 
 	private UILabel lbl_autojoin = new UILabel(rm
 			.getString(ResourceIDs.STR_AUTOJOIN));
@@ -166,7 +166,7 @@ public class HandleMucScreen extends UIScreen {
 
 	/*
 	 * @param creator
-	 * 			if myContact is the creator 
+	 * if myContact is the creator
 	 */
 	public HandleMucScreen(String jid, String host, int constants) {
 		super();
@@ -185,9 +185,6 @@ public class HandleMucScreen extends UIScreen {
 
 		infoLabel.setWrappable(true, UICanvas.getInstance().getWidth() - 30);
 
-		this.setMenu(new UIMenu(""));
-		this.getMenu().append(this.cmd_save);
-		this.getMenu().append(this.cmd_close);
 		setTitle(rm.getString(ResourceIDs.STR_NAME));
 		this.append(mainPanel);
 
@@ -216,6 +213,7 @@ public class HandleMucScreen extends UIScreen {
 		radio_autojoin.setSelectedIndex(HMC_CONSTANTS.NEVER);
 		radio_autojoin.setSelected(false);
 		mainPanel.setSelectedItem(muc_name_field);
+		mainPanel.addItem(UIUtils.easyButtonsLayout(cmd_close, cmd_save));
 		if (jid != null) {
 			Roster roster = XMPPClient.getInstance().getRoster();
 			Element bookEl = roster.getBookmarkByJid(jid, false);
@@ -247,9 +245,13 @@ public class HandleMucScreen extends UIScreen {
 	}
 
 	public void menuAction(UIMenu menu, UIItem item) {
-		if (item == this.cmd_close) {
+
+	}
+
+	public void itemAction(UIItem c) {
+		if (c == this.cmd_close) {
 			UICanvas.getInstance().close(this);
-		} else if (item == cmd_save) {
+		} else if (c == cmd_save) {
 			// muc field text
 			String mf = muc_name_field.getText();
 			if (creator && Utils.is_email(mf)) {
@@ -276,26 +278,25 @@ public class HandleMucScreen extends UIScreen {
 					new String[] { Presence.ATT_FROM }, new String[] { mucName
 							+ "@" + hostText + "/" + corText });
 			q.child = new EventQuery("x", new String[] { "xmlns" },
-					new String[] { XMPPClient.NS_MUC_USER });
+					new String[] { XmppConstants.NS_MUC_USER });
 			BasicXmlStream.addOnetimePacketListener(q, new PacketListener() {
 
 				public void packetReceived(Element e) {
 					Element statusEl = e.getPath(new String[] {
-							XMPPClient.NS_MUC_USER, null }, new String[] { "x",
+							XmppConstants.NS_MUC_USER, null }, new String[] { "x",
 							"status" });
 					if (statusEl != null
 							&& "201".equals(statusEl.getAttribute("code"))) {
 						try {
-							UICanvas.lock();
-							createMUC(mucName, hostText, corText, pwdTxt, null,
-									false, true);
+							synchronized (UICanvas.getLock()) {
+								createMUC(mucName, hostText, corText, pwdTxt,
+										null, false, true);
+							}
 						} catch (Exception ex) {
 							// #mdebug
-//@																					Logger.log("In creating a MUC:");
-//@																					ex.printStackTrace();
+							Logger.log("In creating a MUC:");
+							ex.printStackTrace();
 							// #enddebug
-						} finally {
-							UICanvas.unlock();
 						}
 					}
 				}
@@ -308,12 +309,8 @@ public class HandleMucScreen extends UIScreen {
 			if (changeNick == false) roster.saveMUC(u, persistent, autojoin,
 					lampiroauto_join);
 
-			menuAction(null, cmd_close);
-		}
-	}
-
-	public void itemAction(UIItem c) {
-		if (c == chk_persistent) {
+			itemAction(cmd_close);
+		} else if (c == chk_persistent) {
 			placeItems();
 		}
 	}
@@ -344,18 +341,18 @@ public class HandleMucScreen extends UIScreen {
 			xmppClient.getRoster().contacts.remove(c);
 			RosterScreen.getInstance()._removeContact(c);
 		}
-		MUC u = xmppClient.roster.createMuc(mucSimplejid, mucName, nick, pwd,
-				joinNow);
+		MUC u = xmppClient.getRoster().createMuc(mucSimplejid, mucName, nick,
+				pwd, joinNow);
 		RosterScreen.getInstance()._updateContact(u, Contact.CH_STATUS);
 
 		if (configureNow == true) {
 			Iq iq = new Iq(mucSimplejid + "/", Iq.T_GET);
-			Element query = new Element(XMPPClient.NS_MUC_OWNER, Iq.QUERY);
+			Element query = new Element(XmppConstants.NS_MUC_OWNER, Iq.QUERY);
 			iq.addElement(query);
 			//		Element x = new Element(DataForm.NAMESPACE, DataForm.X);
 			//		x.setAttribute("type", "submit");
 			//		query.addElement(x);
-			xmppClient.sendIQ(iq, listener);
+			iq.send(XMPPClient.getInstance().getXmlStream(),listener);
 		}
 		return u;
 	}

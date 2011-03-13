@@ -1,11 +1,12 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: OptionsScreen.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: OptionsScreen.java 2329 2010-11-16 14:12:50Z luca $
+ */
 
 package lampiro.screens;
 
+import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
 import it.yup.ui.UICombobox;
@@ -13,18 +14,17 @@ import it.yup.ui.UIConfig;
 import it.yup.ui.UIGauge;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILabel;
-import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmpp.Config;
+import it.yup.util.Alerts;
+import it.yup.client.Config;
 
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
 
 // #ifdef UI
@@ -36,19 +36,18 @@ public class OptionsScreen extends UIScreen {
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
-	private UILabel cmd_save = new UILabel(rm.getString(ResourceIDs.STR_SAVE));
-	private UILabel cmd_cancel = new UILabel(rm
+	private UIButton cmd_save = new UIButton(rm.getString(ResourceIDs.STR_SAVE));
+	private UIButton cmd_cancel = new UIButton(rm
 			.getString(ResourceIDs.STR_CANCEL));
-	private UILabel cmd_reset = new UILabel(rm
+	private UIButton cmd_reset = new UIButton(rm
 			.getString(ResourceIDs.STR_RESET_OPTIONS));
-
-	private UIMenu actionsMenu = UIUtils.easyMenu("", 10, 10, 200, cmd_cancel);
 
 	private UICombobox ch_vibrate;
 	private UICombobox ch_tone;
 	public UICombobox color;
 	public UICombobox resolution;
 	public UICombobox font_size;
+	public UICombobox menu_font_size;
 
 	private UITextField tf_keepalive;
 	private UITextField history_size;
@@ -63,6 +62,11 @@ public class OptionsScreen extends UIScreen {
 	 * The old font index used in case of cancel saving
 	 */
 	private int oldFontIndex = 0;
+
+	/*
+	 * The old font index used in case of cancel saving
+	 */
+	private int oldMenuFontIndex = 0;
 
 
 	private UIGauge g_volume;
@@ -95,7 +99,7 @@ public class OptionsScreen extends UIScreen {
 		// XXX: append(new Spacer(100, 1));
 
 		color = new UICombobox(rm.getString(ResourceIDs.STR_COLOR), false);
-		color.setAnchorPoint(Graphics.RIGHT);
+		color.setAnchorPoint(UIGraphics.RIGHT);
 		color.append(rm.getString(ResourceIDs.STR_COLOR_BLUE));
 		color.append(rm.getString(ResourceIDs.STR_COLOR_GREEN));
 		color.append(rm.getString(ResourceIDs.STR_COLOR_RED));
@@ -108,7 +112,7 @@ public class OptionsScreen extends UIScreen {
 
 		resolution = new UICombobox(rm
 				.getString(ResourceIDs.STR_CAMERA_RESOLUTION), false);
-		resolution.setAnchorPoint(Graphics.RIGHT);
+		resolution.setAnchorPoint(UIGraphics.RIGHT);
 		resolution.append(rm.getString(ResourceIDs.STR_RESOLUTION_DEFAULT));
 		resolution.append(rm.getString(ResourceIDs.STR_CAMERA_LOW));
 		resolution.append(rm.getString(ResourceIDs.STR_CAMERA_MEDIUM));
@@ -122,7 +126,7 @@ public class OptionsScreen extends UIScreen {
 
 		String font_sizeString = rm.getString(ResourceIDs.STR_FONT_SIZE);
 		font_size = new UICombobox(font_sizeString, false);
-		font_size.setAnchorPoint(Graphics.RIGHT);
+		font_size.setAnchorPoint(UIGraphics.RIGHT);
 		font_size.append(rm.getString(ResourceIDs.STR_FONT_SMALL));
 		font_size.append(rm.getString(ResourceIDs.STR_FONT_MEDIUM));
 		font_size.append(rm.getString(ResourceIDs.STR_FONT_BIG));
@@ -130,7 +134,19 @@ public class OptionsScreen extends UIScreen {
 		font_sizeString = Config.getInstance().getProperty(Config.FONT_SIZE,
 				"0");
 		font_size.setSelectedIndex(font_sizeString.toCharArray()[0] - '0');
-		// XXX: append(new Spacer(100, 1));
+
+		String font_menu_sizeString = rm
+				.getString(ResourceIDs.STR_MENU_FONT_SIZE);
+		menu_font_size = new UICombobox(font_menu_sizeString, false);
+		menu_font_size.setAnchorPoint(UIGraphics.RIGHT);
+		menu_font_size.append(rm.getString(ResourceIDs.STR_FONT_SMALL));
+		menu_font_size.append(rm.getString(ResourceIDs.STR_FONT_MEDIUM));
+		menu_font_size.append(rm.getString(ResourceIDs.STR_FONT_BIG));
+		append(menu_font_size);
+		font_menu_sizeString = Config.getInstance().getProperty(
+				Config.FONT_MENU_SIZE, "1");
+		menu_font_size
+				.setSelectedIndex(font_menu_sizeString.toCharArray()[0] - '0');
 
 		// volume
 		int volume = Integer
@@ -157,36 +173,65 @@ public class OptionsScreen extends UIScreen {
 		qwerty = new UICheckbox(rm.getString(ResourceIDs.STR_QWERTY));
 		//qwerty.setAnchorPoint(Graphics.LEFT);
 		//qwerty.setFlip(true);
-		Font xFont = UICanvas.getInstance().getCurrentScreen().getGraphics()
+		UIFont xFont = UICanvas.getInstance().getCurrentScreen().getGraphics()
 				.getFont();
-		Font lfont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+		UIFont lfont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
 				.getSize());
 		qwerty.setFont(lfont);
-		qwerty.setChecked(cfg.getProperty(Config.QWERTY, Config.FALSE).equals(
+		String defaultVal =
+		// #ifndef RIM
+				Config.FALSE;
+		// #endif
+		qwerty.setChecked(cfg.getProperty(Config.QWERTY, defaultVal).equals(
 				Config.TRUE));
 		append(qwerty);
+		append(UIUtils.easyButtonsLayout(cmd_save, cmd_reset));
+		append(UIUtils.easyCenterLayout(cmd_cancel, 100));
 
-		// add the commands
-		setMenu(new UIMenu(""));
-		UIMenu menu = getMenu();
-		menu.append(cmd_save);
-		menu.append(cmd_reset);
-
-		UIItem[] array = new UIItem[] { ch_vibrate, ch_tone, color, resolution,
-				font_size, g_volume, tf_keepalive,
-				history_size, qwerty, };
-		for (int i = 0; i < array.length; i++) {
-			array[i].setSubmenu(actionsMenu);
-		}
 		this.setSelectedItem(ch_vibrate);
 
 		oldColorIndex = this.color.getSelectedIndex();
 		oldFontIndex = this.font_size.getSelectedIndex();
-
+		oldMenuFontIndex = this.menu_font_size.getSelectedIndex();
 	}
 
 	public void itemAction(UIItem item) {
-		if (item == this.color) {
+		// to update the colors of the rosterscreen
+		RosterScreen.getInstance().updateScreen();
+		if (cmd_save == item) {
+			saveOptions(true);
+		} else if (cmd_reset == item) {
+			Config cfg = Config.getInstance();
+			cfg.resetStorage(false);
+			// this *CAN* be set now instead of waiting reload
+			UICanvas.getInstance().close(this);
+			OptionsScreen os = new OptionsScreen();
+			UICanvas.getInstance().open(os, true, this.getReturnScreen());
+			os.itemAction(os.color);
+			os.itemAction(os.font_size);
+			os.itemAction(os.menu_font_size);
+			os.saveOptions(true);
+		} else if (cmd_cancel == item) {
+			int tempColorIndex = this.color.getSelectedIndex();
+			int tempFontIndex = this.font_size.getSelectedIndex();
+			int tempMenuFontIndex = this.menu_font_size.getSelectedIndex();
+			if (tempColorIndex != this.oldColorIndex) {
+				this.color.setSelectedIndex(oldColorIndex);
+				itemAction(color);
+				RosterScreen.getInstance().updateScreen();
+			}
+			if (tempFontIndex != this.oldFontIndex) {
+				this.font_size.setSelectedIndex(oldFontIndex);
+				itemAction(font_size);
+				RosterScreen.getInstance().updateScreen();
+			}
+			if (tempMenuFontIndex != this.oldMenuFontIndex) {
+				this.menu_font_size.setSelectedIndex(oldMenuFontIndex);
+				itemAction(menu_font_size);
+				RosterScreen.getInstance().updateScreen();
+			}
+			UICanvas.getInstance().close(this);
+		} else if (item == this.color) {
 			int colorIndex = this.color.getSelectedIndex();
 			// #ifdef UI
 			LampiroMidlet.changeColor(colorIndex);
@@ -195,25 +240,15 @@ public class OptionsScreen extends UIScreen {
 			cfg.setProperty(Config.COLOR, this.color.getSelectedIndex() + "");
 			cfg.saveToStorage();
 
-			// to update menus and colors of myself
-			//			titleLabel.setBg_color(UIConfig.header_bg);
-			//			titleLabel.setFg_color(UIConfig.menu_title);
-			//			footerLeft.setBg_color(UIConfig.header_bg);
-			//			footerLeft.setFg_color(UIConfig.menu_title);
-			//			footerRight.setBg_color(UIConfig.header_bg);
-			//			footerRight.setFg_color(UIConfig.menu_title);
-			//			this.color.comboScreen.titleLabel.setBg_color(UIConfig.header_bg);
-			//			this.color.comboScreen.titleLabel.setFg_color(UIConfig.menu_title);
-			//			this.color.comboScreen.footerLeft.setBg_color(UIConfig.header_bg);
-			//			this.color.comboScreen.footerLeft.setFg_color(UIConfig.menu_title);
-			//			this.color.comboScreen.footerRight.setBg_color(UIConfig.header_bg);
-			//			this.color.comboScreen.footerRight.setFg_color(UIConfig.menu_title);
-
 			//better the pythonic way
-			UIItem[] colorItems = new UIItem[] { titleLabel, footerLeft,
-					footerRight, this.color.comboScreen.titleLabel,
+			UIItem[] colorItems = new UIItem[] { titleLabel,
+					this.color.comboScreen.titleLabel
+			// #ifndef RIM
+					, footerLeft, footerRight,
 					this.color.comboScreen.footerLeft,
-					this.color.comboScreen.footerRight };
+					this.color.comboScreen.footerRight
+			// #endif
+			};
 			for (int i = 0; i < colorItems.length; i++) {
 				UIItem ithItem = colorItems[i];
 				ithItem.setBg_color(UIConfig.header_bg);
@@ -225,47 +260,25 @@ public class OptionsScreen extends UIScreen {
 		} else if (item == this.font_size) {
 			int fontIndex = this.font_size.getSelectedIndex();
 			// #ifdef UI
-			LampiroMidlet.changeFont(fontIndex);
+			LampiroMidlet.changeFont(fontIndex, menu_font_size
+					.getSelectedIndex());
 			// #endif 
 			Config cfg = Config.getInstance();
-			cfg.setProperty(Config.FONT_SIZE, this.font_size.getSelectedIndex()
-					+ "");
+			cfg.setProperty(Config.FONT_SIZE, fontIndex + "");
 			cfg.saveToStorage();
 			this.setDirty(true);
 			this.askRepaint();
-		}
-	}
-
-	public void menuAction(UIMenu menu, UIItem cmd) {
-		// to update the colors of the rosterscreen
-		RosterScreen.getInstance().updateScreen();
-
-		if (cmd_save == cmd) {
-			saveOptions(true);
-		} else if (cmd_reset == cmd) {
+		} else if (item == this.menu_font_size) {
+			int fontIndex = this.menu_font_size.getSelectedIndex();
+			// #ifdef UI
+			LampiroMidlet.changeFont(this.font_size.getSelectedIndex(),
+					fontIndex);
+			// #endif 
 			Config cfg = Config.getInstance();
-			cfg.resetStorage(false);
-			// this *CAN* be set now instead of waiting reload
-			UICanvas.getInstance().close(this);
-			OptionsScreen os = new OptionsScreen();
-			UICanvas.getInstance().open(os, true, this.getReturnScreen());
-			os.itemAction(os.color);
-			os.itemAction(os.font_size);
-			os.saveOptions(true);
-		} else if (cmd_cancel == cmd) {
-			int tempColorIndex = this.color.getSelectedIndex();
-			int tempFontIndex = this.font_size.getSelectedIndex();
-			if (tempColorIndex != this.oldColorIndex) {
-				this.color.setSelectedIndex(oldColorIndex);
-				itemAction(color);
-				RosterScreen.getInstance().updateScreen();
-			}
-			if (tempFontIndex != this.oldFontIndex) {
-				this.font_size.setSelectedIndex(oldFontIndex);
-				itemAction(font_size);
-				RosterScreen.getInstance().updateScreen();
-			}
-			UICanvas.getInstance().close(this);
+			cfg.setProperty(Config.FONT_MENU_SIZE, fontIndex + "");
+			cfg.saveToStorage();
+			this.setDirty(true);
+			this.askRepaint();
 		}
 	}
 
@@ -304,7 +317,7 @@ public class OptionsScreen extends UIScreen {
 
 		UICanvas.getInstance().close(this);
 		if (showAlert) {
-			UICanvas.showAlert(AlertType.WARNING, rm
+			UICanvas.showAlert(Alerts.WARNING, rm
 					.getString(ResourceIDs.STR_WARNING), rm
 					.getString(ResourceIDs.STR_SETTINGS_EFFECT));
 		}

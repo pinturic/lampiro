@@ -1,37 +1,66 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Roster.java 2069 2010-04-27 21:12:31Z luca $
+ * $Id: Roster.java 2432 2011-01-30 15:26:48Z luca $
 */
 
 package it.yup.xmpp;
 
-// #mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+//#mdebug
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
-import it.yup.xmpp.XMPPClient.XmppListener;
+import it.yup.xmpp.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
+import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
-import it.yup.util.RMSIndex;
+import it.yup.dispatch.EventQuery;
 import it.yup.util.Utils;
+import it.yup.util.storage.KeyStore;
+import it.yup.util.storage.KeyStoreFactory;
+import it.yup.util.Alerts;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import javax.microedition.lcdui.AlertType;
-
 public class Roster implements PacketListener {
+
+	public interface PresenceSender {
+		public void sendPresence();
+	}
+
+	class DistrRoster {
+
+		private String jid;
+
+		public DistrRoster(String jid) {
+			this.jid = jid;
+			distrRosters.put(jid, this);
+		}
+
+		public void retrieveRoster() {
+			Iq iq_roster = new Iq(jid, Iq.T_GET);
+			Element query = iq_roster.addElement(XmppConstants.NS_IQ_ROSTER,
+					Iq.QUERY);
+			//			if (client.xmlStream.hasFeature(XMPPClient.NS_ROSTERVER)) {
+			//				query.setAttribute("ver", this.rosterVersion);
+			//			}
+			RosterIqListener rosterListener = new RosterIqListener(
+					RosterIqListener.DISTR_ROSTER);
+			// after receiving roster I need to go online for this roster
+			iq_roster.send(getXmlStream(), rosterListener, 240000);
+		}
+
+	}
 
 	private class RosterIqListener extends IQResultListener {
 
@@ -39,6 +68,7 @@ public class Roster implements PacketListener {
 		public static final int ROSTER = 1;
 		public static final int SUBSCRIBE = 2;
 		public static final int UPDATE_GATEWAY = 3;
+		public static final int DISTR_ROSTER = 4;
 		private int LISTENER_TYPE = 0;
 		public boolean go_online;
 		public boolean accept;
@@ -53,7 +83,7 @@ public class Roster implements PacketListener {
 				case BOOKMARK:
 					serverStorage = false;
 					break;
-					
+
 				case ROSTER:
 					setupRoster(e);
 					break;
@@ -62,7 +92,7 @@ public class Roster implements PacketListener {
 					break;
 			}
 			// #mdebug
-//@			System.out.println(e.toXml());
+						System.out.println(e.toXml());
 			// #enddebug
 		}
 
@@ -80,6 +110,11 @@ public class Roster implements PacketListener {
 				case UPDATE_GATEWAY:
 					updateGateway(e);
 					break;
+				case DISTR_ROSTER:
+					recreateRoster(e, false);
+					saveToStorage();
+					presenceToGateway(e.getAttribute(Stanza.ATT_FROM), true);
+					break;
 				default:
 					break;
 			}
@@ -90,26 +125,20 @@ public class Roster implements PacketListener {
 		 * @param e
 		 */
 		private void updateGateway(Element e) {
-			String type = null;
-			String name = "";
 			String from = e.getAttribute(Stanza.ATT_FROM);
 
 			Element identity = e.getPath(new String[] {
-					XMPPClient.NS_IQ_DISCO_INFO, XMPPClient.NS_IQ_DISCO_INFO },
-					new String[] { Iq.QUERY, "identity" });
+					XmppConstants.NS_IQ_DISCO_INFO,
+					XmppConstants.NS_IQ_DISCO_INFO }, new String[] { Iq.QUERY,
+					XmppConstants.IDENTITY });
 			if (identity != null) {
-				type = identity.getAttribute("type");
-				String category = identity.getAttribute("category");
-				name = identity.getAttribute("name");
+				String category = identity.getAttribute(XmppConstants.CATEGORY);
 				if (category.compareTo("gateway") == 0) {
-					Roster.this.registeredGateways.put(from, new String[] {
-							type, name });
+					addGateway(from, e);
 					saveGateways();
-
 					// to notify the RosterScreen of the gateway presence 
-					if (client.getXmppListener() != null) client
-							.getXmppListener().updateContact(c,
-									Contact.CH_STATUS);
+					if (getXmppListener() != null) getXmppListener()
+							.updateContact(c, Contact.CH_STATUS);
 				}
 			}
 		}
@@ -122,11 +151,11 @@ public class Roster implements PacketListener {
 			if (accept) {
 				psub = new Presence(Presence.T_SUBSCRIBED, null, null, -1);
 				psub.setAttribute(Stanza.ATT_TO, c.jid);
-				client.sendPacket(psub);
+				getXmlStream().send(psub);
 			}
 			psub = new Presence(Presence.T_SUBSCRIBE, null, null, -1);
 			psub.setAttribute(Stanza.ATT_TO, c.jid);
-			client.sendPacket(psub);
+			getXmlStream().send(psub);
 		}
 
 		/**
@@ -135,12 +164,10 @@ public class Roster implements PacketListener {
 		private void setupRoster(Element e) {
 			recreateRoster(e, true);
 			saveToStorage();
-			if (go_online) {
-				client.setPresence(-1, null);
+			if (go_online && presenceSender != null) {
+				presenceSender.sendPresence();
 			}
-
-			XmppListener listener = XMPPClient.getInstance().getXmppListener();
-			if (listener != null) listener.rosterRetrieved();
+			if (getXmppListener() != null) getXmppListener().rosterRetrieved();
 		}
 
 		/**
@@ -149,25 +176,25 @@ public class Roster implements PacketListener {
 		private void setupBookmark(Element e) {
 			serverStorage = true;
 			Element storage = e.getPath(new String[] { null,
-					XMPPClient.NS_BOOKMARKS }, new String[] { Iq.QUERY,
-					XMPPClient.STORAGE });
+					XmppConstants.NS_BOOKMARKS }, new String[] { Iq.QUERY,
+					XmppConstants.STORAGE });
 			if (storage != null) {
-				privateStorage.removeChild(XMPPClient.NS_BOOKMARKS,
-						XMPPClient.STORAGE);
+				privateStorage.removeChild(XmppConstants.NS_BOOKMARKS,
+						XmppConstants.STORAGE);
 				privateStorage.addElement(storage);
 			}
 
 			Element exStorage = e.getPath(new String[] { null,
-					XMPPClient.NS_STORAGE_LAMPIRO }, new String[] { Iq.QUERY,
-					XMPPClient.STORAGE });
+					XmppConstants.NS_STORAGE_LAMPIRO }, new String[] {
+					Iq.QUERY, XmppConstants.STORAGE });
 			if (exStorage != null) {
-				privateStorage.removeChild(XMPPClient.NS_STORAGE_LAMPIRO,
-						XMPPClient.STORAGE);
+				privateStorage.removeChild(XmppConstants.NS_STORAGE_LAMPIRO,
+						XmppConstants.STORAGE);
 				privateStorage.addElement(exStorage);
 			}
 
 			Element[] conferences = storage.getChildrenByName(null,
-					XMPPClient.CONFERENCE);
+					XmppConstants.CONFERENCE);
 			for (int i = 0; i < conferences.length; i++) {
 				Element el = conferences[i];
 				String jid = el.getAttribute("jid");
@@ -180,7 +207,7 @@ public class Roster implements PacketListener {
 				if (autoJoinString != null && autoJoinString.equals("true")) autoJoin = true;
 
 				Element[] extEl = exStorage.getChildrenByNameAttrs(null,
-						XMPPClient.CONFERENCE, new String[] { "jid" },
+						XmppConstants.CONFERENCE, new String[] { "jid" },
 						new String[] { jid });
 
 				boolean lampiroAutoJoin = autoJoin;
@@ -196,17 +223,15 @@ public class Roster implements PacketListener {
 				Contact c = getContactByJid(Contact.user(jid));
 				if (c != null && c instanceof MUC == false) {
 					contacts.remove(c.jid);
-					if (client.getXmppListener() != null) client
-							.getXmppListener().removeContact(c, false);
+					if (getXmppListener() != null) getXmppListener()
+							.removeContact(c, false);
 				}
 				MUC muc = createMuc(jid, Contact.user(jid), nick, pwd,
 						lampiroAutoJoin);
-				if (client.getXmppListener() != null) client.getXmppListener()
-						.updateContact(muc, Contact.CH_STATUS);
-
+				if (getXmppListener() != null) getXmppListener().updateContact(
+						muc, Contact.CH_STATUS);
 			}
 		}
-
 	}
 
 	/*
@@ -214,9 +239,9 @@ public class Roster implements PacketListener {
 	 */
 	class RosterX implements PacketListener {
 		public RosterX() {
-			EventQuery q = new EventQuery("message", null, null);
+			EventQuery q = new EventQuery(Message.MESSAGE, null, null);
 			EventQuery x = new EventQuery("x", new String[] { "xmlns" },
-					new String[] { XMPPClient.NS_ROSTERX });
+					new String[] { XmppConstants.NS_ROSTERX });
 			q.child = x;
 			BasicXmlStream.addPacketListener(q, this);
 
@@ -231,7 +256,7 @@ public class Roster implements PacketListener {
 			// check the packet sender
 			// check what to do with contacts 
 			// answer in case it is an Iq
-			if (client.getXmppListener() != null) client.getXmppListener()
+			if (getXmppListener() != null) getXmppListener()
 					.rosterXsubscription(e);
 		}
 	}
@@ -239,7 +264,7 @@ public class Roster implements PacketListener {
 	/*
 	 * The roster version
 	 */
-	String rosterVersion = "0";
+	private String rosterVersion = "0";
 
 	/** All contacts */
 	public Hashtable contacts = new Hashtable();
@@ -248,81 +273,173 @@ public class Roster implements PacketListener {
 	/** All contacts */
 	private Element privateStorage = null;
 
-	private XMPPClient client;
+	private XmppListener xmppListener;
 
 	private RosterX rosterX;
+
+	public Hashtable distrRosters = new Hashtable();
 
 	public static String unGroupedCode = new String(
 			new char[] { ((char) 0x08) });
 
 	public Hashtable registeredGateways = new Hashtable(5);
 
-	Roster(XMPPClient _client) {
-		client = _client;
-		privateStorage = new Element(XMPPClient.NS_PRIVATE, Iq.QUERY);
-		privateStorage.addElement(new Element(XMPPClient.NS_BOOKMARKS,
-				XMPPClient.STORAGE));
-		privateStorage.addElement(new Element(XMPPClient.NS_STORAGE_LAMPIRO,
-				XMPPClient.STORAGE));
+	private BasicXmlStream xmlStream;
+
+	private PresenceSender presenceSender;
+
+	public Roster(PresenceSender presenceSender) {
+		this.presenceSender = presenceSender;
+		privateStorage = new Element(XmppConstants.NS_PRIVATE, Iq.QUERY);
+		privateStorage.addElement(new Element(XmppConstants.NS_BOOKMARKS,
+				XmppConstants.STORAGE));
+		privateStorage.addElement(new Element(XmppConstants.NS_STORAGE_LAMPIRO,
+				XmppConstants.STORAGE));
 	}
 
-	public void streamInitialized() {
+	public void presenceToGateway(String to, boolean online) {
+		Element pres = null;
+		if (online) {
+			pres = myContact.getPresence(null).clone();
+		} else {
+			pres = new Presence();
+			pres.setAttribute(Presence.ATT_TYPE, Presence.T_UNAVAILABLE);
+		}
+		pres.setAttribute(Presence.ATT_TO, to);
+		xmlStream.send(pres);
+	}
+
+	public void streamInitialized(BasicXmlStream xmlStream) {
+		this.xmlStream = xmlStream;
 		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "type" },
 				new String[] { "set" });
 		eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
-				new String[] { XMPPClient.NS_IQ_ROSTER });
+				new String[] { XmppConstants.NS_IQ_ROSTER });
 		BasicXmlStream.addPacketListener(eq, this);
-		this.rosterX = new RosterX();
+
+		// roster new listener
+		eq = new EventQuery(Iq.IQ, new String[] { "type" },
+				new String[] { "set" });
+		eq.child = new EventQuery(Iq.QUERY, new String[] { "xmlns" },
+				new String[] { XmppConstants.NS_XMPP_SUBSCRIPTIONS });
+		final BasicXmlStream tmpStream = xmlStream;
+		BasicXmlStream.addPacketListener(eq, new PacketListener() {
+
+			public void packetReceived(Element e) {
+				Element query = e.getChildByName(null, Iq.QUERY);
+				// check all possible child
+				Element subscribed = query.getChildByName(null,
+						Presence.T_SUBSCRIBED);
+				Element subscribe = query.getChildByName(null,
+						Presence.T_SUBSCRIBE);
+				if (subscribe != null || subscribed != null) {
+					Element subPacket = null;
+					boolean complete;
+					if (subscribe != null) {
+						subPacket = subscribe;
+						complete = false;
+					} else {
+						subPacket = subscribed;
+						complete = true;
+					}
+					Element item = new Element(XmppConstants.NS_IQ_ROSTER,
+							XmppConstants.ITEM);
+					item.setAttribute(XmppConstants.SUBSCRIPTION,
+							complete ? Contact.SUB_BOTH : Iq.ATT_FROM);
+					Element nickEl = subPacket.getChildByName(null,
+							XmppConstants.NICK);
+					if (nickEl != null) item.setAttribute("name", nickEl
+							.getText());
+					String jid = subPacket.getAttribute("jid");
+					item.setAttribute("jid", jid);
+					Element[] groups = subPacket.getChildrenByName(null,
+							"group");
+					for (int i = 0; i < groups.length; i++) {
+						Element element = groups[i];
+						item.addElement(element);
+					}
+					updateRosterItem(item);
+					Contact c = getContactByJid(jid);
+					if (!complete) xmppListener.askSubscription(c);
+				}
+				Element unsubscribe = query.getChildByName(null,
+						Presence.T_UNSUBSCRIBE);
+				if (unsubscribe != null) {
+					Element item = new Element(XmppConstants.NS_IQ_ROSTER,
+							XmppConstants.ITEM);
+					item.setAttribute(XmppConstants.SUBSCRIPTION,
+							Contact.SUB_NONE);
+					String jid = unsubscribe.getAttribute("jid");
+					item.setAttribute("jid", jid);
+					updateRosterItem(item);
+				}
+				Element unsubscribed = query.getChildByName(null,
+						Presence.T_UNSUBSCRIBED);
+				if (unsubscribed != null) {
+
+				}
+				Element reply = Iq.easyReply(e);
+				tmpStream.send(reply);
+			}
+
+		});
+
+		rosterX = new RosterX();
 	}
 
-	RMSIndex rosterStore;
+	KeyStore rosterStore;
 
-	/*
-	 * The configuration instance
-	 */
-	private Config cfg = Config.getInstance();
+	private Contact myContact;
 
 	/**
 	 * Read the contacts from the RMS
 	 * 
 	 */
-	protected synchronized void readFromStorage() {
+	public synchronized void readFromStorage() {
 		try {
 			rosterStore.open();
-			byte[] rosterData = rosterStore.load(Utils.getBytesUtf8("roster"));
+			byte[] rosterData = rosterStore.load(Utils
+					.getBytesUtf8(XmppConstants.ROSTER));
 			if (rosterData != null) {
 				Element rosterEl = BProcessor.parse(rosterData);
-				rosterVersion = rosterEl.getAttribute("ver");
-				if (rosterVersion == null) rosterVersion = "null";
+				setRosterVersion(rosterEl.getAttribute("ver"));
+				if (getRosterVersion() == null) setRosterVersion("null");
 				Element[] children = rosterEl.getChildrenByName(null, "group");
 				for (int i = 0; i < children.length; i++) {
 					Element ithChild = children[i];
 					String gName = ithChild.getText();
-					byte[] gData = rosterStore.load(Utils.getBytesUtf8(gName));
-					if (gData != null) {
-						Element gEl = BProcessor.parse(gData);
-						Element[] gChildren = gEl.getChildrenByName(null,
-								"item");
-						for (int j = 0; j < gChildren.length; j++) {
-							Element item = gChildren[j];
-							this.updateRosterItem(item);
+					try {
+						byte[] gData = rosterStore.load(Utils
+								.getBytesUtf8(gName));
+						if (gData != null) {
+							Element gEl = BProcessor.parse(gData);
+							Element[] gChildren = gEl.getChildrenByName(null,
+									"item");
+							for (int j = 0; j < gChildren.length; j++) {
+								Element item = gChildren[j];
+								this.updateRosterItem(item);
+							}
 						}
+					} catch (OutOfMemoryError e) {
+						// #mdebug
+									Logger.log("Error in reading from storage: " + e.getMessage(),
+											Logger.DEBUG);
+						// #enddebug
 					}
 				}
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("Error in reading from storage: " + e.getMessage(),
-//@					Logger.DEBUG);
-//@			e.printStackTrace();
+						Logger.log("Error in reading from storage: " + e.getMessage(),
+								Logger.DEBUG);
 			// #enddebug
-			client.showAlert(AlertType.ERROR, Config.ALERT_DATA,
-					Config.ALERT_DATA, e.getClass().toString());
+			xmppListener.showAlert(Alerts.ERROR, XmppConstants.ALERT_DATA,
+					XmppConstants.ALERT_DATA, e.getClass().toString());
 		} finally {
 			rosterStore.close();
 		}
 		// #mdebug
-//@		Logger.log("Finish read from storage:" + System.currentTimeMillis());
+				Logger.log("Finish read from storage:" + System.currentTimeMillis());
 		// #enddebug
 	}
 
@@ -333,28 +450,37 @@ public class Roster implements PacketListener {
 	protected synchronized void saveToStorage() {
 		try {
 			rosterStore.open();
-			Element rosterEl = new Element(XMPPClient.NS_IQ_ROSTER, "roster");
-			if (rosterVersion == null) rosterVersion = "null";
-			rosterEl.setAttribute("ver", this.rosterVersion);
+			Element rosterEl = new Element(XmppConstants.NS_IQ_ROSTER,
+					XmppConstants.ROSTER);
+			if (getRosterVersion() == null) setRosterVersion("null");
+			rosterEl.setAttribute("ver", this.getRosterVersion());
 			Hashtable groups = Group.getGroups();
 			Enumeration en = groups.elements();
 			while (en.hasMoreElements()) {
-				Group g = (Group) en.nextElement();
-				byte[] groupData = BProcessor.toBinary(g.store());
-				rosterStore.store(Utils.getBytesUtf8(g.name), groupData);
-				Element groupEl = new Element(XMPPClient.NS_IQ_ROSTER, "group");
-				groupEl.addText(g.name);
-				rosterEl.addElement(groupEl);
+				try {
+					Group g = (Group) en.nextElement();
+					byte[] groupData = BProcessor.toBinary(g.store(this));
+					rosterStore.store(Utils.getBytesUtf8(g.name), groupData);
+					Element groupEl = new Element(XmppConstants.NS_IQ_ROSTER,
+							"group");
+					groupEl.addText(g.name);
+					rosterEl.addElement(groupEl);
+				} catch (OutOfMemoryError e) {
+					// #mdebug
+								Logger.log("Error in saving to storage: " + e.getMessage(),
+										Logger.DEBUG);
+					// #enddebug
+				}
 			}
-			rosterStore.store(Utils.getBytesUtf8("roster"), BProcessor
-					.toBinary(rosterEl));
+			rosterStore.store(Utils.getBytesUtf8(XmppConstants.ROSTER),
+					BProcessor.toBinary(rosterEl));
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("Error in saving to storage: " + e.getMessage(),
-//@					Logger.DEBUG);
+						Logger.log("Error in saving to storage: " + e.getMessage(),
+								Logger.DEBUG);
 			// #enddebug
-			client.showAlert(AlertType.ERROR, Config.ALERT_DATA,
-					Config.ALERT_DATA, e.getClass().toString());
+			xmppListener.showAlert(Alerts.ERROR, XmppConstants.ALERT_DATA,
+					XmppConstants.ALERT_DATA, e.getClass().toString());
 		} finally {
 			rosterStore.close();
 		}
@@ -362,8 +488,8 @@ public class Roster implements PacketListener {
 
 	public void packetReceived(Element e) {
 		// #mdebug
-//@		Logger.log("RosterHandler: received packet: " + new String(e.toXml()),
-//@				Logger.DEBUG);
+				Logger.log("RosterHandler: received packet: " + new String(e.toXml()),
+						Logger.DEBUG);
 		// #enddebug
 
 		Element query = e.getChildByName(null, Iq.QUERY);
@@ -372,8 +498,11 @@ public class Roster implements PacketListener {
 			updateRosterItem(items[i]);
 		}
 		String tempVer = query.getAttribute("ver");
-		if (tempVer != null) this.rosterVersion = tempVer;
+		if (tempVer != null) this.setRosterVersion(tempVer);
 		saveToStorage();
+
+		Element reply = Iq.easyReply(e);
+		xmlStream.send(reply);
 	}
 
 	/**
@@ -385,55 +514,92 @@ public class Roster implements PacketListener {
 	public void retrieveRoster(final boolean go_online, boolean purge) {
 		//ask the roster and after the bookmarks
 		Iq iq_roster = new Iq(null, Iq.T_GET);
-		Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
-		if (client.xmlStream.hasFeature(XMPPClient.NS_ROSTERVER)) {
-			query.setAttribute("ver", this.rosterVersion);
+		Element query = iq_roster.addElement(XmppConstants.NS_IQ_ROSTER,
+				Iq.QUERY);
+		if (xmlStream.hasFeature(XmppConstants.NS_ROSTERVER)) {
+			query.setAttribute("ver", this.getRosterVersion());
 		}
 		RosterIqListener rosterListener = new RosterIqListener(
 				RosterIqListener.ROSTER);
 		rosterListener.go_online = go_online;
-		client.sendIQ(iq_roster, rosterListener, 240000);
+		iq_roster.send(xmlStream, rosterListener, 240000);
+		Enumeration en = this.distrRosters.elements();
+		while (en.hasMoreElements()) {
+			DistrRoster distr = (DistrRoster) en.nextElement();
+			distr.retrieveRoster();
+		}
 	}
 
 	public void retrieveBookmarks() {
 		Element query;
 		Iq iq_bookMarks = new Iq(null, Iq.T_GET);
-		query = iq_bookMarks.addElement(XMPPClient.NS_PRIVATE, Iq.QUERY);
-		query.addElement(XMPPClient.NS_BOOKMARKS, XMPPClient.STORAGE);
-		query.addElement(XMPPClient.NS_STORAGE_LAMPIRO, XMPPClient.STORAGE);
+		query = iq_bookMarks.addElement(XmppConstants.NS_PRIVATE, Iq.QUERY);
+		query.addElement(XmppConstants.NS_BOOKMARKS, XmppConstants.STORAGE);
+		query.addElement(XmppConstants.NS_STORAGE_LAMPIRO,
+				XmppConstants.STORAGE);
 		IQResultListener bookmarkListener = new RosterIqListener(
 				RosterIqListener.BOOKMARK);
-		client.sendIQ(iq_bookMarks, bookmarkListener, 240000);
+		iq_bookMarks.send(xmlStream, bookmarkListener, 240000);
 	}
 
 	/**
 	 * Subscribe to a contact. Adding a contact fires the transmission of two
 	 * messages: an iq of type set for updating the roster, and a presence of
 	 * type subscribe
-	 * @param c: the contact to be subscribed
-	 * @param accept: true if this is a response to a subscribe request
+	 * 
+	 * @param c
+	 *            : the contact to be subscribed
+	 * @param accept
+	 *            : true if this is a response to a subscribe request
 	 */
-	public void subscribeContact(Contact c, final boolean accept) {
-		contacts.put(c.jid, c);
-		Iq iq_roster = new Iq(null, Iq.T_SET);
-		Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
-		Element item = query.addElement(XMPPClient.NS_IQ_ROSTER, "item");
-		item.setAttribute("jid", c.jid);
-		if (c.name.length() > 0) {
-			item.setAttribute("name", c.name);
-		}
-		for (int i = 0; i < c.getGroups().length; i++) {
-			item.addElement(XMPPClient.NS_IQ_ROSTER, "group").addText(
-					c.getGroups()[i]);
-		}
-		if (c.getGroups().length == 0) this.addGatewayGroup(c, item);
+	public void subscribeContact(Contact c, boolean accept) {
+		// i check by means of the domain
+		// if it is a normal contact or from a gateway supporting roster new
+		String domain = Contact.domain(c.jid);
+		if (domain == null || distrRosters.containsKey(domain) == false) {
+			contacts.put(c.jid, c);
+			Iq iq_roster = new Iq(null, Iq.T_SET);
+			Element query = iq_roster.addElement(XmppConstants.NS_IQ_ROSTER,
+					Iq.QUERY);
+			Element item = query.addElement(XmppConstants.NS_IQ_ROSTER, "item");
+			item.setAttribute("jid", c.jid);
+			if (c.name.length() > 0) {
+				item.setAttribute("name", c.name);
+			}
+			for (int i = 0; i < c.getGroups().length; i++) {
+				item.addElement(XmppConstants.NS_IQ_ROSTER, "group").addText(
+						c.getGroups()[i]);
+			}
+			if (c.getGroups().length == 0) this.addGatewayGroup(c, item);
 
-		RosterIqListener subscribeListener = new RosterIqListener(
-				RosterIqListener.SUBSCRIBE);
-		subscribeListener.accept = accept;
-		subscribeListener.c = c;
-		client.sendIQ(iq_roster, subscribeListener);
-		// recreateGroups();
+			RosterIqListener subscribeListener = new RosterIqListener(
+					RosterIqListener.SUBSCRIBE);
+			subscribeListener.accept = accept;
+			subscribeListener.c = c;
+			iq_roster.send(xmlStream, subscribeListener);
+			// recreateGroups();
+		} else {
+			String sub = c.subscription;
+			Iq iq = new Iq(domain, Iq.T_SET);
+			Element query = iq.addElement(XmppConstants.NS_XMPP_SUBSCRIPTIONS,
+					Iq.QUERY);
+			Element subscribe = query.addElement(null, Presence.T_SUBSCRIBE);
+			if (Iq.ATT_FROM.equals(sub)) {
+				c.subscription = "both";
+				subscribe.name = Presence.T_SUBSCRIBED;
+			} else if (c.name.length() > 0) {
+				subscribe.addElement("nickname", XmppConstants.NICK).addText(
+						c.name);
+			}
+			for (int i = 0; i < c.getGroups().length; i++) {
+				Element g = new Element(XmppConstants.NS_XMPP_SUBSCRIPTIONS,
+						"group");
+				g.addText(c.getGroups()[i]);
+				subscribe.addElement(g);
+			}
+			subscribe.setAttribute("jid", c.jid);
+			iq.send(xmlStream, null);
+		}
 	}
 
 	private void addGatewayGroup(Contact c, Element item) {
@@ -442,8 +608,14 @@ public class Roster implements PacketListener {
 			String from = (String) en.nextElement();
 			String domain = Contact.domain(c.jid);
 			if (from.equals(domain)) {
-				item.addElement(XMPPClient.NS_IQ_ROSTER, "group").addText(
-						((String[]) (registeredGateways.get(from)))[0]);
+				Element elGroup = (Element) registeredGateways.get(from);
+				Element identity = elGroup.getPath(new String[] {
+						XmppConstants.NS_IQ_DISCO_INFO,
+						XmppConstants.NS_IQ_DISCO_INFO }, new String[] {
+						Iq.QUERY, XmppConstants.IDENTITY });
+				String groupName = identity.getAttribute("type");
+				item.addElement(XmppConstants.NS_IQ_ROSTER, "group").addText(
+						groupName);
 				break;
 			}
 		}
@@ -453,13 +625,27 @@ public class Roster implements PacketListener {
 
 	public void unsubscribeContact(Contact c) {
 		contacts.remove(c.jid);
-		Iq iq_roster = new Iq(null, Iq.T_SET);
-		Element query = iq_roster.addElement(XMPPClient.NS_IQ_ROSTER, Iq.QUERY);
-		Element item = query.addElement(XMPPClient.NS_IQ_ROSTER, "item");
+		String domain = Contact.domain(c.jid);
+		Iq iq_roster = null;
+		Element query = null;
+		String to = null;
+		String ns = XmppConstants.NS_IQ_ROSTER;
+		String itemName = XmppConstants.ITEM;
+		boolean remSub = true;
+		// it is a roster new
+		if (domain != null && distrRosters.containsKey(domain)) {
+			to = domain;
+			ns = XmppConstants.NS_XMPP_SUBSCRIPTIONS;
+			itemName = Presence.T_UNSUBSCRIBE;
+			remSub = false;
+		}
+		iq_roster = new Iq(to, Iq.T_SET);
+		query = iq_roster.addElement(ns, Iq.QUERY);
+		Element item = query.addElement(null, itemName);
 		item.setAttribute("jid", c.jid);
-		item.setAttribute(XMPPClient.SUBSCRIPTION, XMPPClient.REMOVE);
-		client.sendPacket(iq_roster);
-		// recreateGroups();
+		if (remSub) item.setAttribute(XmppConstants.SUBSCRIPTION,
+				XmppConstants.REMOVE);
+		xmlStream.send(iq_roster);
 	}
 
 	private void recreateRoster(Element iq, boolean purge) {
@@ -477,8 +663,12 @@ public class Roster implements PacketListener {
 		Element query = iq.getChildByName(null, Iq.QUERY);
 		if (query == null) { return; }
 		String tempVer = query.getAttribute("ver");
-		if (tempVer != null) this.rosterVersion = tempVer;
+		if (tempVer != null) this.setRosterVersion(tempVer);
 		Element items[] = query.getChildrenByName(null, "item");
+
+		String myDomain = Contact.domain(myContact.jid);
+		Contact myDomainContact = getContactByJid(myDomain);
+
 		if (purge) {
 			Hashtable newContacts = new Hashtable();
 			// the old contacts that have a presence but are not 
@@ -494,10 +684,11 @@ public class Roster implements PacketListener {
 				Contact contactToRemove = (Contact) this.contacts.get(ithElem);
 				// Presence[] ps = contactToRemove.getAllPresences();
 				if (newContacts.containsKey(ithElem) == false) {
-					if (contactToRemove.isVisible() == false /*ps == null || ps.length == 0*/) {
-						if (client.getXmppListener() != null) client
-								.getXmppListener().removeContact(
-										contactToRemove, false);
+					// my server is always visible
+					if (!contactToRemove.isVisible()
+							&& !myDomain.equals(contactToRemove.jid)) {
+						if (xmppListener != null) xmppListener.removeContact(
+								contactToRemove, false);
 					} else {
 						newContacts.put(contactToRemove.jid, contactToRemove);
 						oldUnRosterContacts.addElement(contactToRemove);
@@ -508,9 +699,8 @@ public class Roster implements PacketListener {
 			// these old contacts must be updated
 			en = oldUnRosterContacts.elements();
 			while (en.hasMoreElements()) {
-				if (client.getXmppListener() != null) client.getXmppListener()
-						.updateContact((Contact) en.nextElement(),
-								Contact.CH_STATUS);
+				if (xmppListener != null) xmppListener.updateContact(
+						(Contact) en.nextElement(), Contact.CH_STATUS);
 			}
 		}
 
@@ -518,24 +708,20 @@ public class Roster implements PacketListener {
 			updateRosterItem(items[i]);
 		}
 
-		// add the server contact
-		// XXX: is it correct to do it here ?
-		// and/or is it the nicest way to do it
-		XMPPClient me = XMPPClient.getInstance();
-		String myDomain = Contact.domain(me.my_jid);
-		Contact c = getContactByJid(myDomain);
-		if (c == null) {
-			Element serverEl = new Element("", "serverEl");
+		Element serverEl;
+		if (myDomainContact == null || myDomainContact.resources == null
+				|| myDomainContact.resources.length == 0) {
+			serverEl = new Element("", "serverEl");
 			serverEl.setAttributes(new String[] { Iq.ATT_TO, "jid", "name",
-					XMPPClient.SUBSCRIPTION }, new String[] { me.my_jid,
+					XmppConstants.SUBSCRIPTION }, new String[] { myContact.jid,
 					myDomain, "Jabber Server", Contact.SUB_BOTH });
 			updateRosterItem(serverEl);
 			/// create a a fictitious presence
-			Presence p = new Presence(me.my_jid, Presence.T_SUBSCRIBED,
+			Presence p = new Presence(myContact.jid, Presence.T_SUBSCRIBED,
 					"online", "Jabber Server", 1);
 			p.setAttribute(Presence.ATT_FROM, myDomain);
-			c = getContactByJid(myDomain);
-			c.updatePresence(p);
+			myDomainContact = getContactByJid(myDomain);
+			myDomainContact.updatePresence(p);
 			updateRosterItem(serverEl);
 		}
 	}
@@ -562,10 +748,10 @@ public class Roster implements PacketListener {
 		Contact c = getContactByJid(jid);
 		if (c == null) {
 			c = new Contact(jid, item.getAttribute("name"), item
-					.getAttribute(XMPPClient.SUBSCRIPTION), groups);
+					.getAttribute(XmppConstants.SUBSCRIPTION), groups);
 		} else {
 			// contact found, just update
-			c.subscription = item.getAttribute(XMPPClient.SUBSCRIPTION);
+			c.subscription = item.getAttribute(XmppConstants.SUBSCRIPTION);
 			String name = item.getAttribute("name");
 			if (name != null) {
 				c.name = name;
@@ -574,26 +760,50 @@ public class Roster implements PacketListener {
 		}
 
 		if (changedGroups) {
-			if (client.getXmppListener() != null) client.getXmppListener()
-					.updateContact(c, Contact.CH_GROUP);
+			if (xmppListener != null) xmppListener.updateContact(c,
+					Contact.CH_GROUP);
 		}
 
-		// XXX not sure that is completely correct...
-		String subscription = item.getAttribute(XMPPClient.SUBSCRIPTION);
-		if (XMPPClient.REMOVE.equals(subscription)) {
-			// if the user has removed me from roster
-			// there is nothing to do remove contacts and nothing all
-			contacts.remove(c.jid);
-			if (client.getXmppListener() != null) client.getXmppListener()
-					.removeContact(c, true);
-			return;
+		String subscription = item.getAttribute(XmppConstants.SUBSCRIPTION);
+		if (xmppListener != null) {
+			if (XmppConstants.REMOVE.equals(subscription)) {
+				// if the user has removed me from roster
+				// there is nothing to do remove contacts and nothing all
+				contacts.remove(c.jid);
+				xmppListener.removeContact(c, true);
+				return;
+			} else if (Iq.ATT_FROM.equals(subscription)) {
+				Element subEl = item.getChildByName(null,
+						XmppConstants.SUBSCRIPTION);
+				if (subEl != null) {
+					String state = subEl.getAttribute(XmppConstants.STATE);
+					if (XmppConstants.ASK.equals(state)) {
+						xmppListener.askSubscription(c);
+					}
+				}
+			}
 		}
 
 		contacts.put(c.jid, c);
 		// check if this contact is one of my registered gateways
 		updateGateways(c);
-		if (client.getXmppListener() != null) client.getXmppListener()
-				.updateContact(c, Contact.CH_STATUS);
+		if (xmppListener != null) xmppListener.updateContact(c,
+				Contact.CH_STATUS);
+	}
+
+	private void addGateway(String from, Element e) {
+		this.registeredGateways.put(from, e);
+		// if it is a roster provider I need to ask it
+		Element query = e.getChildByName(null, Iq.QUERY);
+		Element[] feature = query.getChildrenByNameAttrs(null,
+				XmppConstants.FEATURE, new String[] { "var" },
+				new String[] { XmppConstants.NS_IQ_ROSTER });
+		if (feature.length > 0) {
+			if (distrRosters.containsKey(from) == false) {
+				DistrRoster distr = new DistrRoster(from);
+				distr.retrieveRoster();
+			}
+		}
 	}
 
 	/*
@@ -604,7 +814,7 @@ public class Roster implements PacketListener {
 
 		try {
 			byte[] gwBytes = rosterStore.load(Utils
-					.getBytesUtf8(Config.REGISTERED_GATEWAYS));
+					.getBytesUtf8(XmppConstants.REGISTERED_GATEWAYS));
 
 			// to check it is a valid xml
 			if (gwBytes == null || gwBytes.length == 0) return;
@@ -614,9 +824,9 @@ public class Roster implements PacketListener {
 				decodedPacket = BProcessor.parse(gwBytes);
 			} catch (Exception e) {
 				// #mdebug
-//@				e.printStackTrace();
-//@				Logger.log("In loading gateways" + e.getClass().getName()
-//@						+ "\n" + e.getMessage());
+								e.printStackTrace();
+								Logger.log("In loading gateways" + e.getClass().getName()
+										+ "\n" + e.getMessage());
 				//#enddebug
 				return;
 			}
@@ -625,22 +835,17 @@ public class Roster implements PacketListener {
 			try {
 				for (int i = 0; i < children.length; i++) {
 					Element ithElem = children[i];
-					String ithFrom = ithElem.getChildByName(null,
-							Stanza.ATT_FROM).getText();
-					String ithType = ithElem.getChildByName(null, "type")
-							.getText();
-					String ithName = ithElem.getChildByName(null, "name")
-							.getText();
-					this.registeredGateways.put(ithFrom, new String[] {
-							ithType, ithName });
+					String ithFrom = ithElem.getAttribute(Stanza.ATT_FROM);
+					addGateway(ithFrom, ithElem);
 				}
 			} catch (Exception e) {
-				// corrupted configuration reset it
-				cfg.setData(Config.REGISTERED_GATEWAYS.getBytes(),
+				rosterStore.store(Utils
+						.getBytesUtf8(XmppConstants.REGISTERED_GATEWAYS),
 						new byte[] {});
 			}
 		} catch (Exception e) {
-			rosterStore.store(Utils.getBytesUtf8(Config.REGISTERED_GATEWAYS),
+			rosterStore.store(Utils
+					.getBytesUtf8(XmppConstants.REGISTERED_GATEWAYS),
 					new byte[] {});
 		} finally {
 			rosterStore.close();
@@ -652,21 +857,15 @@ public class Roster implements PacketListener {
 	 */
 	private synchronized void saveGateways() {
 		Element el = new Element("", "gws");
-		Enumeration en = this.registeredGateways.keys();
+		Enumeration en = this.registeredGateways.elements();
 		while (en.hasMoreElements()) {
-			String ithFrom = (String) en.nextElement();
-			String[] data = (String[]) this.registeredGateways.get(ithFrom);
-			String ithType = data[0];
-			String ithName = data[1];
-			Element gw = el.addElement(null, "gw");
-			gw.addElement(null, Stanza.ATT_FROM).addText(ithFrom);
-			gw.addElement(null, "type").addText(ithType);
-			gw.addElement(null, "name").addText(ithName);
+			el.addElement((Element) en.nextElement());
 		}
 
 		rosterStore.open();
 		try {
-			rosterStore.store(Utils.getBytesUtf8(Config.REGISTERED_GATEWAYS),
+			rosterStore.store(Utils
+					.getBytesUtf8(XmppConstants.REGISTERED_GATEWAYS),
 					BProcessor.toBinary(el));
 		} catch (Exception e) {
 
@@ -682,7 +881,7 @@ public class Roster implements PacketListener {
 	 * @param c
 	 * 		The contact to check for
 	 */
-	private void updateGateways(final Contact c) {
+	private void updateGateways(Contact c) {
 		if (c.jid.indexOf('@') >= 0
 				|| registeredGateways.containsKey(Contact.userhost(c.jid))) return;
 
@@ -691,8 +890,8 @@ public class Roster implements PacketListener {
 		gw.c = c;
 
 		Iq iq = new Iq(c.jid, Iq.T_GET);
-		iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-		XMPPClient.getInstance().sendIQ(iq, gw, 240000);
+		iq.addElement(XmppConstants.NS_IQ_DISCO_INFO, Iq.QUERY);
+		iq.send(xmlStream, gw, 240000);
 	}
 
 	public Contact getContactByJid(String jid) {
@@ -700,12 +899,11 @@ public class Roster implements PacketListener {
 	}
 
 	public Element getBookmarkByJid(String jid, boolean extended) {
-		// TODO Auto-generated method stub
-		String ns = extended == false ? XMPPClient.NS_BOOKMARKS
-				: XMPPClient.NS_STORAGE_LAMPIRO;
+		String ns = extended == false ? XmppConstants.NS_BOOKMARKS
+				: XmppConstants.NS_STORAGE_LAMPIRO;
 		Element storage = this.privateStorage.getChildByName(ns, "storage");
 		Element[] conference = storage.getChildrenByNameAttrs(null,
-				XMPPClient.CONFERENCE, new String[] { "jid" },
+				XmppConstants.CONFERENCE, new String[] { "jid" },
 				new String[] { jid });
 		if (conference.length > 0) return conference[0];
 		return null;
@@ -720,7 +918,6 @@ public class Roster implements PacketListener {
 		// first check if for some reason a contact 
 		// with that jid already exists
 		MUC u = null;
-		Contact myContact = client.getMyContact();
 		Contact c = this.getContactByJid(mucJid);
 		String roomNick = nick != null ? nick : Contact.user(myContact
 				.getPrintableName());
@@ -732,17 +929,17 @@ public class Roster implements PacketListener {
 		}
 		if (u == null) {
 			u = new MUC(mucJid, mucName, nick, pwd);
-			client.roster.contacts.put(u.jid, u);
+			contacts.put(u.jid, u);
 		}
 		if (joinNow == false) return u;
 
 		Presence pres = new Presence(myContact.getPresence(null));
 		pres.setAttribute(Stanza.ATT_TO, mucJid + "/" + roomNick);
-		Element el = new Element(XMPPClient.NS_MUC, DataForm.X);
+		Element el = new Element(XmppConstants.NS_MUC, DataForm.X);
 		pres.addElement(el);
 		if (pwd != null) el.addElement(null, "password").addText(pwd);
 
-		client.sendPacket(pres);
+		xmlStream.send(pres);
 
 		return u;
 	}
@@ -750,14 +947,14 @@ public class Roster implements PacketListener {
 	public void saveMUC(MUC u, boolean persistent, boolean autojoin,
 			boolean lampiroauto_join) {
 		Element storage = privateStorage.getChildByName(
-				XMPPClient.NS_BOOKMARKS, XMPPClient.STORAGE);
+				XmppConstants.NS_BOOKMARKS, XmppConstants.STORAGE);
 		Element[] conferences = storage.getChildrenByNameAttrs(null,
-				XMPPClient.CONFERENCE, new String[] { "jid" },
+				XmppConstants.CONFERENCE, new String[] { "jid" },
 				new String[] { u.jid });
 		Element conference = null;
 		if (conferences.length == 0) {
-			conference = new Element(XMPPClient.NS_BOOKMARKS,
-					XMPPClient.CONFERENCE);
+			conference = new Element(XmppConstants.NS_BOOKMARKS,
+					XmppConstants.CONFERENCE);
 			storage.addElement(conference);
 		} else {
 			conference = conferences[0];
@@ -765,14 +962,14 @@ public class Roster implements PacketListener {
 		if (u.nick != null) {
 			Element nickEl = conference.getChildByName(null, "nick");
 			if (nickEl == null) nickEl = conference.addElement(
-					XMPPClient.NS_BOOKMARKS, "nick");
+					XmppConstants.NS_BOOKMARKS, "nick");
 			nickEl.resetText();
 			nickEl.addText(u.nick);
 		}
 		if (u.pwd != null) {
 			Element pwdEl = conference.getChildByName(null, "password");
 			if (pwdEl == null) pwdEl = conference.addElement(
-					XMPPClient.NS_BOOKMARKS, "password");
+					XmppConstants.NS_BOOKMARKS, "password");
 			pwdEl.resetText();
 			pwdEl.addText(u.pwd);
 		}
@@ -783,15 +980,15 @@ public class Roster implements PacketListener {
 		conference.setAttribute("jid", u.jid);
 		conference.setAttribute("name", Contact.user(u.jid));
 
-		storage = privateStorage.getChildByName(XMPPClient.NS_STORAGE_LAMPIRO,
-				XMPPClient.STORAGE);
+		storage = privateStorage.getChildByName(
+				XmppConstants.NS_STORAGE_LAMPIRO, XmppConstants.STORAGE);
 		conferences = storage.getChildrenByNameAttrs(null,
-				XMPPClient.CONFERENCE, new String[] { "jid" },
+				XmppConstants.CONFERENCE, new String[] { "jid" },
 				new String[] { u.jid });
 		Element extConference = null;
 		if (conferences.length == 0) {
-			extConference = new Element(XMPPClient.NS_STORAGE_LAMPIRO,
-					XMPPClient.CONFERENCE);
+			extConference = new Element(XmppConstants.NS_STORAGE_LAMPIRO,
+					XmppConstants.CONFERENCE);
 			storage.addElement(extConference);
 		} else {
 			extConference = conferences[0];
@@ -810,7 +1007,7 @@ public class Roster implements PacketListener {
 		if (serverStorage == true) {
 			Iq iq = new Iq(null, Iq.T_SET);
 			iq.addElement(privateStorage);
-			XMPPClient.getInstance().sendIQ(iq, null, 240000);
+			iq.send(xmlStream, null, 240000);
 		}
 
 	}
@@ -848,11 +1045,14 @@ public class Roster implements PacketListener {
 		retrieveRoster(false, true);
 	}
 
-	void setupStore(String my_jid) {
+	public void setupStore(String my_jid) {
 		String rmsName = getRecordStoreName(my_jid);
-		this.rosterStore = new RMSIndex(rmsName);
+		this.rosterStore = KeyStoreFactory.getStore(rmsName);
 	}
 
+	public KeyStore getRecordStore() {
+		return this.rosterStore;
+	}
 
 	/**
 	 * @param my_jid
@@ -863,18 +1063,135 @@ public class Roster implements PacketListener {
 		return rmsName;
 	}
 
-	// private Group findGroup(String gname) {
-	// Group g = null;
-	// for(int i = 1; i < groups.size(); i++) {
-	// g = (Group)groups.elementAt(i);
-	// if(g.name.equals(gname)) {
-	// return g;
-	// }
-	// }
-	//	    
-	// /* arrivando qui, non ho trovato il gruppo */
-	// g = new Group(gname);
-	// groups.addElement(g);
-	// return g;
-	// }
+	/**
+	 * @param rosterVersion the rosterVersion to set
+	 */
+	public void setRosterVersion(String rosterVersion) {
+		this.rosterVersion = rosterVersion;
+	}
+
+	/**
+	 * @return the rosterVersion
+	 */
+	public String getRosterVersion() {
+		return rosterVersion;
+	}
+
+	public void setXmppListener(XmppListener xmppListener) {
+		this.xmppListener = xmppListener;
+	}
+
+	public void setMyContact(Contact me) {
+		this.myContact = me;
+	}
+
+	/**
+	 * Update the status of a task. Queue it if this is the first time it's
+	 * status is updated
+	 * 
+	 * @param task
+	 */
+	public void updateTask(Task task) {
+		Contact user = getContactByJid(task.getFrom());
+		// I may wish to execute commands even on unknown contacts
+		if (user == null) {
+			user = new Contact(Contact.userhost(task.getFrom()), null, null,
+					null);
+			contacts.put(Contact.userhost(user.jid), user);
+		}
+		user.addTask(task);
+		// #mdebug
+				System.out.println("Tsk: " + Integer.toHexString(task.getStatus()));
+		//#enddebug
+		byte type = task.getStatus();
+
+		// true if we should display the command
+		boolean display = false;
+		boolean removed = false;
+
+		if ((type & Task.CMD_MASK) == Task.CMD_MASK) {
+			switch (type) {
+				case Task.CMD_FORM_LESS:
+					display = false;
+					removed = true;
+					user.removeTask(task);
+					break;
+				case Task.CMD_INPUT:
+					display = true;
+					break;
+				case Task.CMD_EXECUTING:
+					// do nothing, just wait for an answer
+					break;
+				case Task.CMD_CANCELING:
+					// do nothing, just wait for an answer
+					break;
+				case Task.CMD_CANCELED:
+					display = true;
+					removed = true;
+					user.removeTask(task);
+					break;
+				case Task.CMD_FINISHED:
+					// tasks.removeElement(task);
+					display = true;
+					break;
+				case Task.CMD_ERROR:
+					display = true;
+					removed = true;
+					break;
+				case Task.CMD_DESTROY:
+					removed = true;
+					user.removeTask(task);
+					break;
+			}
+		} else { // simple data form
+			switch (type) {
+				case Task.DF_FORM:
+					display = true;
+					break;
+				case Task.DF_SUBMITTED:
+					removed = true;
+					user.removeTask(task);
+					break;
+				case Task.DF_CANCELED:
+					removed = true;
+					user.removeTask(task);
+					break;
+				case Task.DF_RESULT:
+					display = true;
+					break;
+				case Task.DF_ERROR:
+					display = true;
+					removed = true;
+					break;
+				case Task.DF_DESTROY:
+					removed = true;
+					user.removeTask(task);
+					break;
+			}
+		}
+
+		task.setEnableDisplay(display);
+		task.setEnableNew(!removed);
+	}
+
+	/**
+	 * @return the xmppListener
+	 */
+	public XmppListener getXmppListener() {
+		return xmppListener;
+	}
+
+	/**
+	 * @param xmlStream the xmlStream to set
+	 */
+	public void setXmlStream(BasicXmlStream xmlStream) {
+		this.xmlStream = xmlStream;
+	}
+
+	/**
+	 * @return the xmlStream
+	 */
+	public BasicXmlStream getXmlStream() {
+		return xmlStream;
+	};
 }

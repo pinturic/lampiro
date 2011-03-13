@@ -1,8 +1,8 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ResourceIDs.java 2034 2010-03-26 17:11:34Z luca $
-*/
+ * $Id: ResourceIDs.java 2325 2010-11-15 20:07:28Z luca $
+ */
 
 /**
  * 
@@ -41,6 +41,7 @@ public class ResourceIDs {
 	public static final int STR_NEXT = 25;
 	public static final int STR_REGISTER = 26;
 	public static final int STR_MISSING_FIELD = 27;
+	public static final int STR_AUTORECONNECT = 28;
 	public static final int STR_ABOUT = 29;
 	public static final int STR_WARNING = 30;
 	public static final int STR_HIDE = 31;
@@ -102,6 +103,8 @@ public class ResourceIDs {
 	public static final int STR_SUB_FROM = 87;
 	public static final int STR_SUB_UNKNOWN = 88;
 	public static final int STR_SUB_NONE = 89;
+	public static final int STR_RECONNECT = 90;
+	public static final int STR_ENABLE = 91;
 
 	public static final int STR_WRITE = 100;
 	public static final int STR_CHAT_WITH = 101;
@@ -121,6 +124,7 @@ public class ResourceIDs {
 	public static final int STR_OK = 115;
 
 	public static final int STR_JABBER_ID = 200;
+	public static final int STR_OPTIONAL = 201;
 	public static final int STR_EMAIL_ADDRESS = 202;
 	public static final int STR_NEW_USER = 203;
 	public static final int STR_TITLE = 204;
@@ -251,6 +255,8 @@ public class ResourceIDs {
 	public static final int STR_REMOVE_NETWORK = 758;
 	public static final int STR_ACTIVE_SESSIONS = 759;
 	public static final int STR_CHG_GROUP_NAME = 760;
+	public static final int STR_NEW_VERSION_TITLE = 761;
+	public static final int STR_NEW_VERSION_TEXT = 762;
 
 	public static final int STR_SET_STATUS = 800;
 	public static final int STR_CHOOSE_STATUS = 801;
@@ -309,6 +315,7 @@ public class ResourceIDs {
 	public static final int STR_CAMERA_HIGH = 1226;
 	public static final int STR_CAMERA_HUGE = 1227;
 	public static final int STR_CAMERA_ERROR = 1228;
+	public static final int STR_MENU_FONT_SIZE = 1229;
 
 	public static final int STR_UNREAD_NEWS = 1300;
 	public static final int STR_NEWS_SIZE = 1301;
@@ -326,8 +333,41 @@ public class ResourceIDs {
 	public static final int STR_ONLINE_SYNC_ALL = 1313;
 	public static final int STR_STOP_SYNC_ALL = 1314;
 	public static final int STR_SYNC_STATUS = 1315;
+	public static final int STR_VISIT_ADVER = 6002;
+	public static final int STR_FULL_VERSION = 6003;
 
+	public static final int STR_SECURED_CONNECTION = 5009;
+	public static final int STR_WRONG_KEY = 5011;
 
+	public static final int STR_GLIDER = 5001;
+	public static final int STR_GEC = 5002;
+	public static final int STR_OOROS_NEWS = 5003;
+	public static final int STR_MONEIRO = 5004;
+	public static final int STR_GLIDER_LOGIN = 5005;
+	public static final int STR_CREATE_MODIFY = 5006;
+	public static final int STR_MESSENGER = 5007;
+	public static final int STR_OOROS_ADVICE = 5008;
+	public static final int STR_CONFIRM_SUBSCRIPTION = 5010;
+	public static final int STR_ACTION = 5012;
+	public static final int STR_POST = 5013;
+	public static final int STR_ALSO = 5014;
+	public static final int STR_TAGS = 5015;
+	public static final int STR_LIKE = 5016;
+	public static final int STR_SUBSCRIBE = 5017;
+	public static final int STR_FEED_SEARCH = 5018;
+	public static final int STR_NO_ITEMS_FOUND = 5019;
+	public static final int STR_LIKE_SENT = 5020;
+
+	public static final int STR_APP_SWITCH = 6001;
+	public static final int STR_ALLOWED_NETWORKS = 6004;
+	public static final int STR_CONN_WIFI = 6005; // Wifi
+	public static final int STR_CONN_DIRECT = 6006; // Direct Connection
+	public static final int STR_CONN_BIBS = 6007; // Blackberry Internet Service
+	public static final int STR_CONN_BES_MDS = 6008; // Bes/MDS
+	public static final int STR_RETRY = 6009;
+	public static final int STR_MINIMIZE = 6010;
+	public static final int STR_ASKPERMISSION = 6011;
+	public static final int STR_CONN_DIRECT_AUTO = 6012; // Direct Connection automatic
 
 	/* uninstantiable */
 	private ResourceIDs() {

@@ -1,7 +1,8 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICanvas.java 2022 2010-03-22 10:54:58Z luca $
+ * $Id: UICanvas.java 2441 2011-01-31 20:28:26Z luca $
  */
 
 /**
@@ -9,14 +10,17 @@
  */
 package it.yup.ui;
 
-// #mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+//#mdebug
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import it.yup.util.Utils;
-import it.yup.xmpp.Config;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
+import it.yup.util.Alerts;
 
 import java.io.IOException;
 import java.util.Enumeration;
@@ -24,15 +28,18 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
 import javax.microedition.lcdui.Canvas;
+
+// #ifndef RIM
+
+import javax.microedition.lcdui.Alert;
+import javax.microedition.lcdui.game.GameCanvas;
 import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-import javax.microedition.lcdui.game.GameCanvas;
+
+// #endif
 
 /**
  * UICanvas is the class that holds all the open screens and shows them. Screens
@@ -42,13 +49,20 @@ import javax.microedition.lcdui.game.GameCanvas;
  * 
  * The UICanvas is singleton: only one may exist per midlet.
  */
+// #ifndef RIM
 public class UICanvas extends GameCanvas {
+	// #endif
 
 	/** the key used to activate the left key */
 	public static int MENU_LEFT = -6;
 	/** the key used to activate the right key */
 	public static int MENU_RIGHT = -7;
 	public static int MENU_CANCEL = -8;
+
+	/*
+	 * Caching information about weather the canvas is shown or not
+	 */
+	private static boolean active = false;
 
 	private static final Object[][] keyMaps = {
 			{ "Nokia", new Integer(-6), new Integer(-7) },
@@ -57,19 +71,36 @@ public class UICanvas extends GameCanvas {
 			{ "otorola", new Integer(-21), new Integer(-22) },
 			{ "harp", new Integer(-21), new Integer(-22) },
 			{ "j2me", new Integer(-6), new Integer(-7) },
-			{ "SunMicrosystems_wtk", new Integer(-6), new Integer(-7) } };
+			{ "SunMicrosystems_wtk", new Integer(-6), new Integer(-7) },
+			{ "lackberry", new Integer(-6), new Integer(-7) }
 
+	};
+
+	// #ifndef RIM
 	/** The alert used to show errors (if any) */
 	private static Alert alert;
-	/** singleton instance */
-	private static UICanvas _instance;
+
 	/** the display */
 	private static Display display;
+
+	private static Object lockObject = new Object();
+
+	// #endif
+
+	public static Object getLock() {
+// #ifndef RIM
+		return lockObject;
+		// #endif
+	}
+
+	/** singleton instance */
+	private static UICanvas _instance;
+
 	/** a timer to schedule tasks */
 	private static Timer timer;
 
 	/** l'elenco degli screen */
-	private Vector screenList;
+	private Vector screenList = new Vector();
 
 	private int viewedIndex = 0;
 
@@ -86,62 +117,59 @@ public class UICanvas extends GameCanvas {
 	private UIMenu wlist;
 
 	/*
-	 * A semaphore used to lock all the graphical operations.
-	 */
-	private Semaphore sem = new Semaphore(1);
-
-	/*
 	 * The images used in tabs
 	 */
-	Image rag = UICanvas.getUIImage("/icons/rag.png");
-	Image lag = UICanvas.getUIImage("/icons/lag.png");
-	private Image rab = UICanvas.getUIImage("/icons/rab.png");
-	private Image lab = UICanvas.getUIImage("/icons/lab.png");
+	UIImage rag = UICanvas.getUIImage("/icons/rag.png");
+	UIImage lag = UICanvas.getUIImage("/icons/lag.png");
+	private UIImage rab = UICanvas.getUIImage("/icons/rab.png");
+	private UIImage lab = UICanvas.getUIImage("/icons/lab.png");
 
-	// #mdebug
-//@	/*
-//@	 * The time at which the pointer is pressed
-//@	 */
-//@	private long pressedTime;
-//@
-//@	/*
-//@	 * The time at which the pointer is released
-//@	 */
-//@	private long releasedTime;
-//@
-	// #enddebug
+	// #ifdef UI_DEBUG
+	//@	/*
+	//@	 * The time at which the pointer is pressed
+	//@	 */
+	//@	private long pressedTime;
+	//@
+	//@	/*
+	//@	 * The time at which the pointer is released
+	//@	 */
+	//@	private long releasedTime;
+	//@
+	// #endif
 
 	private int pressedX;
 	private int pressedY;
+	private int draggedY;
+	private int bufferedOffsetX = 0;
+	private int bufferedOffsetY = 0;
+	private Timer dragTimer = null;
+	private long lastDragTime = 0;
+	private long dragInterval = 100;
+	// #ifndef RIM
+
+	private long lastPressedTime = 0;
+	private long lastReleaseTime = 0;
+	private int step = 0;
+	private int inertia;
+
+	// #endif
 
 	/*
-	 * Set to true when dragging an object 
+	 * Set to true when dragging an object
 	 */
 	private boolean dragged = false;
 
 	/*
-	 * A boolean used to know if repeated events are generated.
-	 * If it is false the repeated events are generated artificially. 
+	 * A boolean used to know if repeated events are generated. If it is false
+	 * the repeated events are generated artificially.
 	 */
 	public boolean hasRE = true;
 
-	public static void lock() {
-		if (_instance == null) return;
-		try {
-			_instance.sem.acquire();
-		} catch (InterruptedException e) {
-			// #mdebug
-//@			Logger.log("In locking UI");
-//@			System.out.println(e.getMessage());
-//@			e.printStackTrace();
-			// #enddebug
-		}
-	}
+	private long keyReleasedTime = Long.MAX_VALUE;
+	private long keyPressedTime = Long.MAX_VALUE;
 
-	public static void unlock() {
-		if (_instance == null) return;
-		_instance.sem.release();
-	}
+	TimerTask longPressedTask = initLongPress(null);
+	boolean longPressRun = false;
 
 	/**
 	 * The constructor for {@link UICanvas}.
@@ -152,25 +180,33 @@ public class UICanvas extends GameCanvas {
 	 */
 	private UICanvas() {
 		super(false);
-		screenList = new Vector();
+		// #ifndef RIM
 		setFullScreenMode(true);
+		// #endif
 		this.hasRE = this.hasRepeatEvents();
-		String keys = Config.getInstance().getProperty(Config.CANVAS_KEYS);
 		// not initialized
-		if (keys == null || keys.indexOf(',') == -1) setupdefaultKeyCode();
+		setupdefaultKeyCode();
+		if (this.hasPointerMotionEvents()) {
+			int newWidth = ((int) (rab.getWidth() * 1.5));
+			int newHeight = ((int) (rab.getHeight() * 1.5));
+			this.rab = rab.imageResize(newWidth, newHeight, false);
+			this.rag = rag.imageResize(newWidth, newHeight, false);
+			this.lag = lag.imageResize(newWidth, newHeight, false);
+			this.lab = lab.imageResize(newWidth, newHeight, false);
+		}
 	}
 
 	private boolean isMotorola() {
 		try {
 			String imei = System.getProperty("IMEI");
 			// #mdebug
-//@			Logger.log("IMEI :" + imei);
-			//#enddebug
+			Logger.log("IMEI :" + imei);
+			// #enddebug
 			if (imei != null) return true;
 			imei = System.getProperty("com.motorola.IMEI");
 			// #mdebug
-//@			Logger.log("com.motorola.IMEI :" + imei);
-			//#enddebug
+			Logger.log("com.motorola.IMEI :" + imei);
+			// #enddebug
 			if (imei != null) return true;
 		} catch (Exception e) {
 
@@ -187,8 +223,8 @@ public class UICanvas extends GameCanvas {
 		}
 
 		// #mdebug
-//@		Logger.log("platform:" + platform);
-		//              #enddebug
+		Logger.log("platform:" + platform);
+		// #enddebug
 		for (int i = 0; i < keyMaps.length; ++i) {
 			String manufacturer = (String) keyMaps[i][0];
 
@@ -225,22 +261,23 @@ public class UICanvas extends GameCanvas {
 		return clipHeight; // this.getGraphics().getClipHeight();
 	}
 
-	private long keyReleasedTime = Long.MAX_VALUE;
-	private long keyPressedTime = Long.MAX_VALUE;
-
 	protected void keyReleased(int key) {
 		try {
-			UICanvas.lock();
-			_keyReleased(key);
-			return;
+			// #ifndef RIM
+			synchronized (UICanvas.getLock()) {
+				// #endif
+				_keyReleased(key);
+				// #ifndef RIM
+			}
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In key pressed:" + e.getMessage() + " "
-//@					+ e.getClass().getName());
-//@			e.printStackTrace();
+			Logger.log("In key pressed:" + e.getMessage() + " "
+					+ e.getClass().getName());
+			e.printStackTrace();
 			// #enddebug
 		} finally {
-			UICanvas.unlock();
+
 		}
 	}
 
@@ -268,21 +305,25 @@ public class UICanvas extends GameCanvas {
 	 */
 	protected void keyPressed(int key) {
 		// #mdebug
-//@		//Logger.log("key pressed:" + key);
+		// Logger.log("key pressed:" + key);
 		// #enddebug
 
 		try {
-			UICanvas.lock();
-			_keyPressed(key);
-			return;
+			// #ifndef RIM
+			synchronized (UICanvas.getLock()) {
+				// #endif
+				this.lastGameAction = this.getGameAction(key);
+				_keyPressed(key);
+				return;
+				// #ifndef RIM
+			}
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In key pressed:" + e.getMessage() + " "
-//@					+ e.getClass().getName());
-//@			e.printStackTrace();
+			Logger.log("In key pressed:" + e.getMessage() + " "
+					+ e.getClass().getName());
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
@@ -295,14 +336,14 @@ public class UICanvas extends GameCanvas {
 				keyPressedTime = System.currentTimeMillis();
 			}
 			if (System.currentTimeMillis() - keyPressedTime > 1000) {
-				// to be sure the time is reset 
+				// to be sure the time is reset
 				try {
 					_keyRepeated(key);
 				} catch (Exception e) {
 					// #mdebug
-//@					Logger.log("In key pressed:" + e.getMessage() + " "
-//@							+ e.getClass().getName());
-//@					e.printStackTrace();
+					Logger.log("In key pressed:" + e.getMessage() + " "
+							+ e.getClass().getName());
+					e.printStackTrace();
 					// #enddebug
 				}
 				keyPressedTime = Long.MAX_VALUE;
@@ -326,37 +367,45 @@ public class UICanvas extends GameCanvas {
 			}
 		}
 
-		UIMenu writeScreen = (UIMenu) screenList.elementAt(viewedIndex);
-		writeScreen.keyPressed(key);
+		UIScreen writeScreen = (UIScreen) screenList.elementAt(viewedIndex);
+		boolean selectionKept = writeScreen.keyPressed(key);
 	}
 
-	TimerTask longPressedTask = initLongPress(null);
-	boolean longPressRun = false;
-
 	public void pointerPressed(int x, int y) {
-		// #mdebug
-//@
-//@		this.pressedTime = System.currentTimeMillis();
-//@
-		// #enddebug
+		// #ifdef UI_DEBUG
+		//@				Logger.log("pointerPressed: " + x + " " + y);
+		// #endif
+
+		// #ifndef RIM
+		this.lastPressedTime = System.currentTimeMillis();
+		inertia = 0;
+		step = 0;
+		// #endif
 		this.pressedX = x;
 		this.pressedY = y;
+		this.draggedY = y;
 		this.dragged = false;
 		UIScreen paintedScreen = getCurrentScreen();
 		if (paintedScreen == null) return;
 
 		boolean hasSubMenu = false;
 		try {
-			UICanvas.lock();
-			hasSubMenu = handlePointEvent(x, y, paintedScreen, false);
+			// #ifndef RIM
+			synchronized (UICanvas.getLock()) {
+				// #endif
+				this.lastGameAction = -1;
+				hasSubMenu = handlePointEvent(x, y, paintedScreen, false);
+				// #ifndef RIM
+			}
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In pointerPressed");
-//@			System.out.println(e.getMessage());
-//@			e.printStackTrace();
+			Logger.log("In pointerPressed");
+			System.out.println(e.getMessage());
+			e.printStackTrace();
 			// #enddebug
 		} finally {
-			UICanvas.unlock();
+
 		}
 
 		if (hasSubMenu) {
@@ -364,10 +413,6 @@ public class UICanvas extends GameCanvas {
 			longPressedTask = initLongPress(paintedScreen);
 			Utils.tasks.schedule(longPressedTask, 750);
 		}
-
-		// #mdebug
-//@		//Logger.log("pointerPressed:" + x + " " + y + ":");
-		// #enddebug
 	}
 
 	private TimerTask initLongPress(final UIScreen paintedScreen) {
@@ -380,118 +425,236 @@ public class UICanvas extends GameCanvas {
 
 	private void longPress(UIScreen paintedScreen) {
 		try {
-			UICanvas.lock();
-			// #mdebug
-//@			Logger.log("longPressed:");
-			// #enddebug
-			longPressRun = true;
-			if (paintedScreen != null) {
-				paintedScreen.keyPressed(UICanvas.MENU_LEFT);
+			synchronized (UICanvas.getLock()) {
+				// #mdebug
+				Logger.log("longPressed:");
+				// #enddebug
+				longPressRun = true;
+				if (paintedScreen != null) {
+					paintedScreen.keyPressed(UICanvas.MENU_LEFT);
+				}
 			}
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In long press:" + e.getMessage() + " "
-//@					+ e.getClass().getName());
-//@			e.printStackTrace();
+			Logger.log("In long press:" + e.getMessage() + " "
+					+ e.getClass().getName());
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
-	public void pointerDragged(int x, int y) {
-		try {
-			UICanvas.lock();
-			// #mdebug
-//@			//Logger.log("pointerDragged:" + x + " " + y + ":");
-			// #enddebug
-			UIScreen paintedScreen = getCurrentScreen();
-			if (paintedScreen == null) return;
+	public void pointerDragged(final int x, final int y) {
+		// #ifdef UI_DEBUG
+		//@				Logger.log("pointerDragged: " + x + " " + y);
+		// #endif
+		int yOffset = 0;
+		int xOffset = 0;
+		final int totalYOffset;
+		final int totalXOffset;
+		xOffset = x - pressedX;
+		yOffset = y - draggedY;
+		draggedY = y;
 
-			int yOffset = y - pressedY;
-			int xOffset = x - pressedX;
-			UIItem foundItem = findItem(x, y, paintedScreen, null);
-			//if a little movement is made reset the longpressTask
-			if (Math.abs(yOffset) > 5 || Math.abs(xOffset) > 5) {
+		// if a little movement is made reset the longpressTask
+		if (Math.abs(yOffset + bufferedOffsetY) >= 5
+				|| Math.abs(xOffset + bufferedOffsetX) >= 5) {
+			longPressedTask.cancel();
+		}
+		long now = System.currentTimeMillis();
+		if (dragTimer == null && now - lastDragTime > dragInterval
+				&& Math.abs(yOffset + bufferedOffsetY) > 10) {
+			lastDragTime = now;
+			yOffset += bufferedOffsetY;
+			xOffset += bufferedOffsetX;
+			bufferedOffsetY = 0;
+			bufferedOffsetX = 0;
+		} else {
+			bufferedOffsetX += xOffset;
+			bufferedOffsetY += yOffset;
+			if (Math.abs(yOffset) >= 5 || Math.abs(xOffset) >= 5) {
 				longPressedTask.cancel();
 			}
+			return;
+		}
+		totalYOffset = yOffset;
+		totalXOffset = xOffset;
+		if (Math.abs(totalYOffset) >= 1 || Math.abs(totalXOffset) >= 10) {
+			dragged = true;
+		}
 
-			if (foundItem != null && this.dragged == false) {
-				if (yOffset >= 5 || yOffset <= -5) {
-					paintedScreen.startDrag(foundItem);
+		dragTimer = UICanvas.getTimer();
+		dragTimer.schedule(new TimerTask() {
+			public void run() {
+				synchronized (UICanvas.getLock()) {
+					doDrag(x, y, totalYOffset, totalXOffset);
 				}
 			}
+		}, 10);
+	}
 
-			int ka = -1;
-			if (yOffset >= 20) {
-				ka = this.getKeyCode(Canvas.DOWN);
-				this.dragged = true;
-				paintedScreen.keyRepeated(ka);
-				this.pressedX = x;
-				this.pressedY = y;
-				return;
-			}
-			if (yOffset <= -20) {
-				ka = this.getKeyCode(Canvas.UP);
-				this.dragged = true;
-				paintedScreen.keyRepeated(ka);
-				this.pressedX = x;
-				this.pressedY = y;
-				return;
-			}
-			if (yOffset >= 15) {
-				ka = this.getKeyCode(Canvas.DOWN);
-				this.dragged = true;
-				paintedScreen.keyPressed(ka);
-				this.pressedX = x;
-				this.pressedY = y;
-				return;
-			}
-			if (yOffset <= -15) {
-				ka = this.getKeyCode(Canvas.UP);
-				this.dragged = true;
-				paintedScreen.keyPressed(ka);
-				this.pressedX = x;
-				this.pressedY = y;
-				return;
-			}
+	/**
+	 * @param x
+	 * @param y
+	 * @param totalYOffset
+	 * @param totalXOffset
+	 */
+	private void doDrag(final int x, final int y, int totalYOffset,
+			int totalXOffset) {
+		UIScreen paintedScreen = null;
+		try {
+			paintedScreen = getCurrentScreen();
+			if (paintedScreen == null) return;
 
-			ka = -1;
-			if (xOffset >= 15) {
-				this.dragged = true;
-				if (foundItem != null) {
-					ka = this.getKeyCode(Canvas.RIGHT);
-					foundItem.keyPressed(ka);
+			// #ifndef RIM
+			if (Math.abs(inertia) > 10) {
+				while (Math.abs(inertia) > 10) {
+					paintedScreen.addPaintOffset(inertia);
+					paintedScreen.setDirty(true);
+					paintedScreen.askRepaint();
+					step = step > 0 ? step + 1 : step - 1;
+					inertia = inertia + step;
 				}
-				this.pressedX = x;
-				this.pressedY = y;
 				return;
 			}
-			if (xOffset <= -15) {
-				this.dragged = true;
-				if (foundItem != null) {
-					ka = this.getKeyCode(Canvas.LEFT);
-					foundItem.keyPressed(ka);
-				}
-				this.pressedX = x;
-				this.pressedY = y;
+			paintedScreen.addPaintOffset(totalYOffset);
+			paintedScreen.setDirty(true);
+			paintedScreen.askRepaint();
+			if (Math.abs(bufferedOffsetY) > 5) {
+				int temp = bufferedOffsetY;
+				bufferedOffsetY = 0;
+				doDrag(x, y, temp, totalXOffset);
 				return;
 			}
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In key dragged");
-//@			e.printStackTrace();
+			//	Logger.log("in doDrag "  e.getClass());
 			// #enddebug
 		} finally {
-			UICanvas.unlock();
+			dragTimer = null;
+		}
+
+		int ka = -1;
+		UIItem foundItem = findItem(x, y, paintedScreen, null);
+		if (foundItem != null && this.dragged == false) {
+			if (Math.abs(totalYOffset) >= 5) {
+				paintedScreen.startDrag(foundItem);
+			}
+		}
+		ka = -1;
+
+		if (totalXOffset >= 15) {
+			if (foundItem != null) {
+				ka = getKeyCode(UICanvas.RIGHT);
+				foundItem.keyPressed(ka);
+			}
+			return;
+		}
+		if (totalXOffset <= -15) {
+			if (foundItem != null) {
+				ka = getKeyCode(UICanvas.LEFT);
+				foundItem.keyPressed(ka);
+			}
+			return;
 		}
 	}
+
+	//	public void pointerDraggedOld(int x, int y) {
+	//		try {
+	//			// #ifndef RIM
+	//			synchronized (UICanvas.getLock()) {
+	//				// #endif
+	//				// #mdebug
+	//								// Logger.log("pointerDragged:" + x + " " + y + ":");
+	//				// #enddebug
+	//				UIScreen paintedScreen = getCurrentScreen();
+	//				if (paintedScreen == null) return;
+	//
+	//				int yOffset = y - pressedY;
+	//				int xOffset = x - pressedX;
+	//				UIItem foundItem = findItem(x, y, paintedScreen, null);
+	//				// if a little movement is made reset the longpressTask
+	//				if (Math.abs(yOffset) > 5 || Math.abs(xOffset) > 5) {
+	//					longPressedTask.cancel();
+	//				}
+	//
+	//				if (foundItem != null && this.dragged == false) {
+	//					if (yOffset >= 5 || yOffset <= -5) {
+	//						paintedScreen.startDrag(foundItem);
+	//					}
+	//				}
+	//
+	//				int ka = -1;
+	//				if (yOffset >= 20) {
+	//					ka = this.getKeyCode(Canvas.DOWN);
+	//					this.dragged = true;
+	//					paintedScreen.keyRepeated(ka);
+	//					this.pressedX = x;
+	//					this.pressedY = y;
+	//					return;
+	//				}
+	//				if (yOffset <= -20) {
+	//					ka = this.getKeyCode(Canvas.UP);
+	//					this.dragged = true;
+	//					paintedScreen.keyRepeated(ka);
+	//					this.pressedX = x;
+	//					this.pressedY = y;
+	//					return;
+	//				}
+	//				if (yOffset >= 15) {
+	//					ka = this.getKeyCode(UICanvas.DOWN);
+	//					this.dragged = true;
+	//					paintedScreen.keyPressed(ka);
+	//					this.pressedX = x;
+	//					this.pressedY = y;
+	//					return;
+	//				}
+	//				if (yOffset <= -15) {
+	//					ka = this.getKeyCode(UICanvas.UP);
+	//					this.dragged = true;
+	//					paintedScreen.keyPressed(ka);
+	//					this.pressedX = x;
+	//					this.pressedY = y;
+	//					return;
+	//				}
+	//
+	//				ka = -1;
+	//				if (xOffset >= 15) {
+	//					this.dragged = true;
+	//					if (foundItem != null) {
+	//						ka = this.getKeyCode(UICanvas.RIGHT);
+	//						foundItem.keyPressed(ka);
+	//					}
+	//					this.pressedX = x;
+	//					this.pressedY = y;
+	//					return;
+	//				}
+	//				if (xOffset <= -15) {
+	//					this.dragged = true;
+	//					if (foundItem != null) {
+	//						ka = this.getKeyCode(UICanvas.LEFT);
+	//						foundItem.keyPressed(ka);
+	//					}
+	//					this.pressedX = x;
+	//					this.pressedY = y;
+	//					return;
+	//				}
+	//				// #ifndef RIM
+	//			}
+	//			// #endif
+	//		} catch (Exception e) {
+	//			// #mdebug
+	//						Logger.log("In key dragged");
+	//						e.printStackTrace();
+	//			// #enddebug
+	//		}
+	//	}
 
 	/**
 	 * <p>
 	 * Handle the pointer pressure.
 	 * </p>
-	 * Determines where the pointer were pressed 
+	 * Determines where the pointer were pressed
 	 * 
 	 * @param key
 	 *            The pressed key.
@@ -499,96 +662,130 @@ public class UICanvas extends GameCanvas {
 	 * @return <code>true</code> if the screen will keep the selection
 	 */
 	public void pointerReleased(int x, int y) {
-		// #mdebug
-//@		this.releasedTime = System.currentTimeMillis();
-//@		//Logger.log("pointerReleased:" + x + " " + y + ":");
-		// #enddebug
+		// #ifdef UI_DEBUG
+		//@				Logger.log("pointerReleased: " + x + " " + y);
+		// #endif
+		// #ifndef RIM
+		this.lastReleaseTime = System.currentTimeMillis();
+		// #endif
 		try {
-			UICanvas.lock();
-			longPressedTask.cancel();
-			if (longPressRun == true) {
-				this.dragged = false;
-				longPressRun = false;
-				return;
+			// #ifndef RIM
+			synchronized (UICanvas.getLock()) {
+				// #endif
+				longPressedTask.cancel();
+				if (longPressRun == true) {
+					this.dragged = false;
+					longPressRun = false;
+					return;
+				}
+				UIScreen paintedScreen = getCurrentScreen();
+				if (paintedScreen == null) {
+					this.dragged = false;
+					return;
+				}
+				if (this.dragged == true) {
+					this.dragged = false;
+					paintedScreen.endDrag();
+					//  #ifndef RIM
+					long timeDiff = lastReleaseTime - lastPressedTime;
+					int spaceDiff = y - pressedY;
+					int speed = (int) ((100 * spaceDiff) / timeDiff);
+					if (Math.abs(speed) > 30) {
+						step = speed > 0 ? -1 : 1;
+						inertia = speed + step;
+						doDrag(x, y, 0, 0);
+					}
+					return;
+					// #endif
+
+				}
+				// #ifdef UI_DEBUG
+				//@				Logger.log("paintedScreen found:");
+				// #endif
+				handlePointEvent(x, y, paintedScreen, true);
+				// #ifndef RIM
 			}
-			UIScreen paintedScreen = getCurrentScreen();
-			if (paintedScreen == null) {
-				this.dragged = false;
-				return;
-			}
-			if (this.dragged == true) {
-				this.dragged = false;
-				paintedScreen.endDrag();
-				return;
-			}
-			// #mdebug
-//@			Logger.log("paintedScreen found:");
-			// #enddebug
-			handlePointEvent(x, y, paintedScreen, true);
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In pointerReleased");
-//@			System.out.println(e.getMessage());
-//@			e.printStackTrace();
+			Logger.log("In pointerReleased");
+			System.out.println(e.getMessage());
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
 	private boolean handlePointEvent(int x, int y, UIScreen paintedScreen,
 			boolean up) {
+		// check if it is the menucursor
+		if (screenList.size() > 1 && up) {
+			if (x < this.lag.getWidth() && y < this.lag.getHeight()) {
+				// check if it is the screen right or left cursor
+				int la = UICanvas.getInstance().getKeyCode(Canvas.LEFT);
+				paintedScreen.keyPressed(la);
+				return false;
+			}
+			if (x > canvasGraphics.getClipWidth() - 2 * this.lag.getWidth()
+					&& y < this.lag.getHeight()) {
+				// check if it is the screen right or left cursor
+				int ra = UICanvas.getInstance().getKeyCode(Canvas.RIGHT);
+				paintedScreen.keyPressed(ra);
+				return false;
+			}
+		}
+
 		UIItem foundItem = null;
 		foundItem = findItem(x, y, paintedScreen, null);
 		if (foundItem != null) {
-			// #mdebug
-//@			try {
-//@				Logger.log("Found item in pointerReleased:");
-//@				Logger
-//@						.log("Pression time: " + releasedTime + " "
-//@								+ pressedTime);
-//@				if (foundItem instanceof UILabel) {
-//@					UILabel new_name = (UILabel) foundItem;
-//@					Logger.log("Label: " + new_name.getText()
-//@							+ foundItem.getWidth() + " "
-//@							+ foundItem.getHeight(canvasGraphics));
-//@				} else if (foundItem instanceof UILayout) {
-//@					UILayout new_name = (UILayout) foundItem;
-//@					Logger.log("Layout " + new_name.getWidth() + " "
-//@							+ new_name.getHeight(canvasGraphics));
-//@				} else if (foundItem instanceof UITextField) {
-//@					UITextField new_name = (UITextField) foundItem;
-//@					Logger.log("TextField " + new_name.getText());
-//@				} else if (foundItem instanceof UIPanel) {
-//@					UIPanel new_name = (UIPanel) foundItem;
-//@					Logger.log("Panel " + new_name.getWidth() + " "
-//@							+ new_name.getHeight(canvasGraphics));
-//@				} else if (foundItem instanceof UIMenu) {
-//@					Logger.log("Menu ");
-//@					UIMenu new_name = (UIMenu) foundItem;
-//@					try {
-//@						Logger.log(((UILabel) new_name.getItems().elementAt(0))
-//@								.getText()
-//@								+ " "
-//@								+ new_name.getWidth()
-//@								+ " "
-//@								+ new_name.getHeight(canvasGraphics));
-//@					} catch (Exception e) {
-//@						Logger.log(e.getMessage() + e.getClass().getName());
-//@					}
-//@				} else {
-//@					Logger.log("Found other ");
-//@					try {
-//@						Logger.log(foundItem.getWidth() + " "
-//@								+ foundItem.getHeight(canvasGraphics));
-//@					} catch (Exception e) {
-//@						Logger.log(e.getMessage() + e.getClass().getName());
-//@					}
-//@				}
-//@			} catch (Exception e) {
-//@			}
-			// #enddebug
+			// #ifdef UI_DEBUG
+			//@			try {
+			//@				Logger.log("Found item in pointerReleased:");
+			//@				Logger
+			//@						.log("Pression time: " + releasedTime + " "
+			//@								+ pressedTime);
+			//@				if (foundItem instanceof UILabel) {
+			//@					UILabel new_name = (UILabel) foundItem;
+			//@					Logger.log("Label: " + new_name.getText()
+			//@							+ foundItem.getWidth() + " "
+			//@							+ foundItem.getHeight(canvasGraphics));
+			//@				} else if (foundItem instanceof UILayout) {
+			//@					UILayout new_name = (UILayout) foundItem;
+			//@					Logger.log("Layout " + new_name.getWidth() + " "
+			//@							+ new_name.getHeight(canvasGraphics));
+			//@				} else if (foundItem instanceof UITextField) {
+			//@					UITextField new_name = (UITextField) foundItem;
+			//@					Logger.log("TextField " + new_name.getText());
+			//@				} else if (foundItem instanceof UIPanel) {
+			//@					UIPanel new_name = (UIPanel) foundItem;
+			//@					Logger.log("Panel " + new_name.getWidth() + " "
+			//@							+ new_name.getHeight(canvasGraphics));
+			//@				} else if (foundItem instanceof UIMenu) {
+			//@					Logger.log("Menu ");
+			//@					UIMenu new_name = (UIMenu) foundItem;
+			//@					try {
+			//@						Logger.log(((UILabel) new_name.getItems().elementAt(0))
+			//@								.getText()
+			//@								+ " "
+			//@								+ new_name.getWidth()
+			//@								+ " "
+			//@								+ new_name.getHeight(canvasGraphics));
+			//@					} catch (Exception e) {
+			//@						Logger.log(e.getMessage() + e.getClass().getName());
+			//@					}
+			//@				} else {
+			//@					Logger.log("Found other ");
+			//@					try {
+			//@						Logger.log(foundItem.getWidth() + " "
+			//@								+ foundItem.getHeight(canvasGraphics));
+			//@					} catch (Exception e) {
+			//@						Logger.log(e.getMessage() + e.getClass().getName());
+			//@					}
+			//@				}
+			//@			} catch (Exception e) {
+			//@			}
+			// #endif
 
+			// #ifndef RIM
 			if (foundItem == paintedScreen.footerLeft) {
 				if (up) {
 					this._keyPressed(UICanvas.MENU_LEFT);
@@ -601,8 +798,17 @@ public class UICanvas extends GameCanvas {
 				}
 				return false;
 			}
+			// #endif
 
-			// check if it is the screen menus list
+			// First check if it's the the title
+			if (foundItem == paintedScreen.titleLabel) {
+				if (up) {
+					this._keyRepeated(UICanvas.KEY_STAR);
+				}
+				return false;
+			}
+
+			// then if it is the screen menus list
 			if (wlist != null && wlist.isOpenedState() == true) {
 				int selectedIndex = wlist.getItems().indexOf(foundItem);
 				if (selectedIndex >= 0) {
@@ -614,13 +820,14 @@ public class UICanvas extends GameCanvas {
 				}
 			}
 
-			// first check if its a menu
+			// then check if its a menu
 			UIMenu paintedMenu = paintedScreen.getMenu();
 			if (paintedMenu != null && paintedMenu.contains(foundItem)) {
 				if (!up) {
 					foundItem.getContainer().setSelectedItem(foundItem);
 					paintedScreen.askRepaint();
 				} else {
+					paintedScreen.firstPaint = true;
 					paintedScreen.handleMenuKey(paintedMenu, UICanvas
 							.getInstance().getKeyCode(UICanvas.FIRE));
 				}
@@ -634,19 +841,13 @@ public class UICanvas extends GameCanvas {
 							foundItem.getContainer().setSelectedItem(foundItem);
 							paintedScreen.askRepaint();
 						} else {
+							paintedScreen.firstPaint = true;
 							paintedScreen.handleMenuKey(ithMenu, UICanvas
 									.getInstance().getKeyCode(UICanvas.FIRE));
 						}
 						return false;
 					}
 				}
-			}
-			// then the title
-			if (foundItem == paintedScreen.titleLabel) {
-				if (up) {
-					this._keyRepeated(UICanvas.KEY_STAR);
-				}
-				return false;
 			}
 			if (foundItem.isFocusable() == false) return false;
 
@@ -656,36 +857,18 @@ public class UICanvas extends GameCanvas {
 
 			if (foundItem.getContainer() != null) {
 				if (!up) {
-					// #mdebug
-//@					Logger.log("pressed");
-					// #enddebug
+					// #ifdef UI_DEBUG
+					//@					Logger.log("pressed");
+					// #endif
 					foundItem.getContainer().setSelectedItem(foundItem);
 					paintedScreen.askRepaint();
 					return true;
 				} else {
-					// #mdebug
-//@					Logger.log("released");
-					// #enddebug
+					// #ifdef UI_DEBUG
+					//@					Logger.log("released");
+					// #endif
 					paintedScreen.keyPressed(UICanvas.getInstance().getKeyCode(
 							UICanvas.FIRE));
-					return false;
-				}
-			}
-		} else {
-			// check if it is the menucursor
-			if (screenList.size() > 1 && up) {
-				if (x < this.lag.getWidth() && y < this.lag.getHeight()) {
-					// check if it is the screen right or left cursor
-					int la = UICanvas.getInstance().getKeyCode(Canvas.LEFT);
-					paintedScreen.keyPressed(la);
-					return false;
-				}
-				if (x > canvasGraphics.getClipWidth() - 2 * this.lag.getWidth()
-						&& y < canvasGraphics.getClipHeight() - 2
-								* this.lag.getHeight()) {
-					// check if it is the screen right or left cursor
-					int ra = UICanvas.getInstance().getKeyCode(Canvas.RIGHT);
-					paintedScreen.keyPressed(ra);
 					return false;
 				}
 			}
@@ -696,7 +879,7 @@ public class UICanvas extends GameCanvas {
 	private UIItem findItem(int x, int y, UIScreen paintedScreen,
 			UIIContainer foundContainer) {
 		UIItem foundItem = (UIItem) foundContainer;
-		// if I find a container i must also check that the click 
+		// if I find a container i must also check that the click
 		// could be propagated to one of its subitems
 		Enumeration en = paintedScreen.getPaintedItems().elements();
 		while (en.hasMoreElements()) {
@@ -706,6 +889,15 @@ public class UICanvas extends GameCanvas {
 			int originalY = coors[1];
 			int w = coors[2];
 			int h = coors[3];
+
+			// #mdebug
+			//			Logger.log("OriginalX: " + originalX);
+			//			Logger.log("OriginalY: " + originalY);
+			//			Logger.log("w: " + w);
+			//			Logger.log("h: " + h);
+			//			Logger.log("x: " + x);
+			//			Logger.log("y: " + y);
+			// #enddebug
 
 			if (x > originalX && x < originalX + w && y > originalY
 					&& y <= originalY + h) {
@@ -724,15 +916,15 @@ public class UICanvas extends GameCanvas {
 
 	public int getGameAction(int keyCode) {
 		// some mobile phones throw an Exception when pressing
-		// a key that is not associated to a game key 
+		// a key that is not associated to a game key
 		// even if the keyCode is a valid key code
 		int retVal = 0;
 		try {
 			retVal = super.getGameAction(keyCode);
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In getGameAction:" + keyCode + " "
-//@					+ e.getClass().getName());
+			Logger.log("In getGameAction:" + keyCode + " "
+					+ e.getClass().getName());
 			// #enddebug
 		}
 		return retVal;
@@ -749,16 +941,20 @@ public class UICanvas extends GameCanvas {
 	 */
 	protected void keyRepeated(int key) {
 		try {
-			UICanvas.lock();
-			_keyRepeated(key);
-			return;
+			// #ifndef RIM
+			synchronized (UICanvas.getLock()) {
+				// #endif
+				_keyRepeated(key);
+				// #ifndef RIM
+			}
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In key repeated");
-//@			e.printStackTrace();
+			Logger.log("In key repeated");
+			e.printStackTrace();
 			// #enddebug
 		} finally {
-			UICanvas.unlock();
+
 		}
 	}
 
@@ -787,8 +983,13 @@ public class UICanvas extends GameCanvas {
 		s0.keyRepeated(key);
 	}
 
-	private Graphics canvasGraphics = this.getGraphics();
+	private UIGraphics canvasGraphics = new UIGraphics(getGraphics());
 	private int clipHeight = canvasGraphics.getClipHeight();
+
+	/*
+	 * The last pressed key; -1 if the pointer was pressed
+	 */
+	private int lastGameAction;
 
 	/**
 	 * Used by screen to ask a repaint.
@@ -799,17 +1000,20 @@ public class UICanvas extends GameCanvas {
 	 *            given screen will be checked if it is the screen currently
 	 *            shown.
 	 */
-	protected void askRepaint(UIScreen screen) {
+	protected void askRepaint(UIScreen screen, Graphics osGraphics) {
 		if (screenList.size() == 0) { return; }
 		if (screen == null) {
 			screen = (UIScreen) _instance.screenList.elementAt(viewedIndex);
 			screen.setDirty(true);
-		} else if (screen != (UIScreen) screenList.elementAt(viewedIndex)) { return; }
-
+		} else if (!isActive()
+				|| screen != (UIScreen) screenList.elementAt(viewedIndex)) { return; }
 		try {
 			if (screen.isFreezed() == false) {
 				screen.setFreezed(true);
-				Graphics g = canvasGraphics; // this.getGraphics();
+				if (osGraphics != null) {
+					canvasGraphics = new UIGraphics(osGraphics);
+				}
+				UIGraphics g = canvasGraphics; // this.getGraphics();
 				g.setFont(UIConfig.font_body);
 
 				// in case a sizeChanged has changed it
@@ -821,35 +1025,32 @@ public class UICanvas extends GameCanvas {
 				int originalClipY = g.getClipY();
 				int originalClipWidth = g.getClipWidth();
 				int originalClipHeight = g.getClipHeight();
-				//				g.translate(-g.getTranslateX(), -g.getTranslateY());
-				//				g.setClip(0, 0, this.getWidth(), this.getHeight());
 				// #mdebug
-//@				//				Logger.log(g.getTranslateX() + " " + g.getTranslateY() + " "
-//@				//						+ g.getClipX() + " " + g.getClipY() + " "
-//@				//						+ g.getClipWidth() + " " + g.getClipHeight() + " "
-//@				//						+ this.getWidth() + " " + this.getHeight());
+				// Logger.log(g.getTranslateX() + " " + g.getTranslateY() + " "
+				// + g.getClipX() + " " + g.getClipY() + " "
+				// + g.getClipWidth() + " " + g.getClipHeight() + " "
+				// + this.getWidth() + " " + this.getHeight());
 				// #enddebug
 
 				setTabs();
 				boolean needFlush = screen.paint(g);
-
 				g.translate(originalX - g.getTranslateX(), originalY
 						- g.getTranslateY());
 				g.setClip(originalClipX, originalClipY, originalClipWidth,
 						originalClipHeight);
-				//				g.translate(-g.getTranslateX(), -g.getTranslateY());
-				//				g.setClip(0, 0, this.getWidth(), this.getHeight());
 
 				if (needFlush) {
+					// #ifndef RIM
 					flushGraphics();
+					// #endif
 				}
 				screen.setFreezed(false);
 			}
 		} catch (Exception ex) {
 			// #mdebug
-//@			Logger.log("In painting UI");
-//@			System.out.println(ex.getMessage());
-//@			ex.printStackTrace();
+			Logger.log("In painting UI");
+			System.out.println(ex.getMessage());
+			ex.printStackTrace();
 			// #enddebug
 		}
 	}
@@ -858,13 +1059,12 @@ public class UICanvas extends GameCanvas {
 		UIScreen cs = this.getCurrentScreen();
 		if (cs == null) return;
 		if (this.screenList.size() <= 1 || cs.isRollEnabled() == false) {
-			cs.ra = rag;
-			cs.la = lag;
+			cs.setRightArrow(rag);
+			cs.setLeftArrow(lag);
 		} else {
-			cs.ra = rab;
-			cs.la = lab;
+			cs.setRightArrow(rab);
+			cs.setLeftArrow(lab);
 		}
-
 	}
 
 	public void open(UIScreen screen, boolean show, UIScreen returnScreen) {
@@ -1016,47 +1216,38 @@ public class UICanvas extends GameCanvas {
 	/**
 	 * Called when the Canvas changes size or even rotation
 	 */
-	protected void sizeChanged(final int w, final int h) {
-		// sizeChanged can be called sometimes from locked method
-		new Thread() {
-			public void run() {
-				UICanvas.lock();
-				try {
-					_sizeChanged(w, h);
-				} finally {
-					UICanvas.unlock();
+	protected void sizeChanged(int w, int h) {
+		synchronized (UICanvas.getLock()) {
+			try {
+				// sometimes the graphics can be null
+				// if the screen cannot be painted
+				// i.e. in N95
+				// #mdebug
+				Logger.log("resizing " + w + " " + h);
+				// #enddebug
+				UIScreen activeScreen = this.getCurrentScreen();
+				// to initialize it at least at start
+				if (activeScreen != null || screenList == null
+						|| screenList.size() == 0) {
+					this.canvasGraphics = new UIGraphics(this.getGraphics());
+					this.clipHeight = canvasGraphics.getClipHeight();
 				}
-			};
-		}.start();
-	}
+				Enumeration en = this.screenList.elements();
+				while (en.hasMoreElements()) {
+					UIScreen screen = (UIScreen) en.nextElement();
+					screen.sizeChanged(w, h);
+				}
+				if (activeScreen != null) {
+					activeScreen.invalidate(w, h);
+					activeScreen.askRepaint();
+				}
 
-	/**
-	 * @param w
-	 * @param h
-	 */
-	private void _sizeChanged(int w, int h) {
-		// _sizechanged does not need to be synch
-		// it is always called by synch method
-		try {
-			// sometimes the graphics can be null
-			// if the screen cannot be painted
-			// i.e. in N95
-			UIScreen activeScreen = this.getCurrentScreen();
-			// to initialize it at least at start
-			if (activeScreen != null || screenList == null
-					|| screenList.size() == 0) {
-				this.canvasGraphics = this.getGraphics();
-				this.clipHeight = canvasGraphics.getClipHeight();
+			} catch (Exception e) {
+				// #mdebug
+				System.out.println(e.getMessage());
+				e.printStackTrace();
+				// #enddebug
 			}
-			if (activeScreen != null) {
-				activeScreen.invalidate(w, h);
-				activeScreen.askRepaint();
-			}
-		} catch (Exception e) {
-			// #mdebug
-//@			System.out.println(e.getMessage());
-//@			e.printStackTrace();
-			// #enddebug
 		}
 	}
 
@@ -1067,9 +1258,13 @@ public class UICanvas extends GameCanvas {
 	 *         available
 	 */
 	public UIScreen getCurrentScreen() {
-		//if (!isShown()) { return null; }
-		return (UIScreen) ((screenList.size() > 0 && viewedIndex >= 0 && viewedIndex < screenList
-				.size()) ? screenList.elementAt(viewedIndex) : null);
+		// if (!isShown()) { return null; }
+		if ((screenList.size() > 0 && viewedIndex >= 0 && viewedIndex < screenList
+				.size())) {
+			return (UIScreen) screenList.elementAt(viewedIndex);
+		} else {
+			return null;
+		}
 	}
 
 	/**
@@ -1088,7 +1283,9 @@ public class UICanvas extends GameCanvas {
 	 * @param _display
 	 *            The display to use.
 	 */
+	// #ifndef RIM
 	public static void setDisplay(Display _display) {
+		// #endif
 		display = _display;
 	}
 
@@ -1111,16 +1308,32 @@ public class UICanvas extends GameCanvas {
 	 * 
 	 * @param disp
 	 */
+	// #ifndef RIM
 	public static void display(Displayable disp) {
-		if (display == null) { return; }
-		/*
-		 * using getInstance() instead of _instance as it may be null so it gets
-		 * created
-		 */
-		display.setCurrent(disp == null ? getInstance() : disp);
-		if (disp == null) {
-			_instance.askRepaint(null);
+		// #endif
+		// #ifndef RIM
+		if (display == null) {
+			active = false;
+			return;
 		}
+		/*
+		* using getInstance() instead of _instance as it may be null so it
+		* // gets
+		* created
+		*/
+		if (disp == null) {
+			active = true;
+			display.setCurrent(getInstance());
+			_instance.askRepaint(null, null);
+		} else {
+			active = false;
+			display.setCurrent(disp);
+		}
+		// #endif
+	}
+
+	private boolean isActive() {
+		return active;
 	}
 
 	/**
@@ -1133,34 +1346,61 @@ public class UICanvas extends GameCanvas {
 	 * @param text
 	 *            Displayed error message
 	 */
-	public static void showAlert(AlertType type, String title, String text) {
+	public static void showAlert(int type, String title, String text) {
+		AlertType nativeType = AlertType.WARNING;
+		switch (type) {
+			case Alerts.CONFIRMATION:
+				nativeType = AlertType.CONFIRMATION;
+				break;
+
+			case Alerts.ERROR:
+				nativeType = AlertType.ERROR;
+				break;
+
+			case Alerts.INFO:
+				nativeType = AlertType.INFO;
+				break;
+
+			case Alerts.WARNING:
+				nativeType = AlertType.WARNING;
+				break;
+
+			case Alerts.ALARM:
+				nativeType = AlertType.ALARM;
+				break;
+
+			default:
+				break;
+		}
 
 		// a native alert screen may be available in case the UI has not
-		// been set alrealy
+		// been set already
+		// #ifndef RIM
 		Displayable cur = display.getCurrent();
 		if (cur.equals(alert)) {
 			alert.setString(alert.getString() + "\n" + text);
 			return;
 		}
+		// #endif
 
-		Image img;
+		UIImage img;
 		try {
-			if (AlertType.INFO.equals(type)) {
-				img = Image.createImage("/icons/warning.png");
-			} else if (AlertType.WARNING.equals(type)) {
-				img = Image.createImage("/icons/warning.png");
-			} else if (AlertType.ERROR.equals(type)) {
-				img = Image.createImage("/icons/error.png");
+			if (Alerts.INFO == type) {
+				img = UIImage.createImage("/icons/warning.png");
+			} else if (Alerts.INFO == type) {
+				img = UIImage.createImage("/icons/warning.png");
+			} else if (Alerts.INFO == type) {
+				img = UIImage.createImage("/icons/error.png");
 			} else {
-				img = Image.createImage("/icons/error.png");
+				img = UIImage.createImage("/icons/error.png");
 			}
 
 		} catch (IOException e) {
 			img = null;
 		}
 
-		Font bigFont = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN,
-				Font.SIZE_MEDIUM);
+		UIFont bigFont = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+				UIFont.STYLE_PLAIN, UIFont.SIZE_MEDIUM);
 
 		UIScreen currentScreen = UICanvas.getInstance().getCurrentScreen();
 		// if no screen is available it means the UI is not "ready"
@@ -1176,17 +1416,19 @@ public class UICanvas extends GameCanvas {
 			textLabel.setWrappable(true, alertMenu.getWidth() - 5);
 			textLabel.setFont(bigFont);
 			alertMenu.setSelectedIndex(1);
-			Graphics cg = UICanvas.getInstance().canvasGraphics;
+			UIGraphics cg = UICanvas.getInstance().canvasGraphics;
 			int offset = (cg.getClipHeight() - alertMenu.getHeight(cg)) / 2;
 			alertMenu.setAbsoluteY(offset);
 			alertMenu.cancelMenuString = "";
 			alertMenu.selectMenuString = "OK";
 			currentScreen.addPopup(alertMenu);
 		} else {
-			Alert alert = new Alert(title, text, img, type);
-			alert.setType(type);
+			// #ifndef RIM
+			Alert alert = new Alert(title, text, img.getImage(), nativeType);
+			alert.setType(nativeType);
 			alert.setTimeout(Alert.FOREVER);
 			display.setCurrent(alert, getInstance());
+			// #endif
 		}
 	}
 
@@ -1197,9 +1439,9 @@ public class UICanvas extends GameCanvas {
 	 * @param imgName
 	 * @return
 	 */
-	public static Image getUIImage(String imgName) {
+	public static UIImage getUIImage(String imgName) {
 		try {
-			return Image.createImage(imgName);
+			return UIImage.createImage(imgName);
 		} catch (IOException e) {
 			System.out.println("Impossible to get : " + imgName);
 
@@ -1222,36 +1464,36 @@ public class UICanvas extends GameCanvas {
 	}
 
 	// #mdebug
-//@	private static UIMenu logMenu = new UIMenu("log");
-//@
-//@	public static void clearLog() {
-//@		logMenu.clear();
-//@	}
-//@
-//@	public static void log(String logString) {
-//@		UILabel uil = new UILabel(logString);
-//@		logMenu.append(uil);
-//@		logMenu.setAbsoluteX(10);
-//@		logMenu.setAbsoluteY(20);
-//@		logMenu.setWidth(UICanvas.getInstance().getWidth());
-//@		UICanvas.getInstance().getCurrentScreen().addPopup(logMenu);
-//@	}
-//@
-//@	public static void log(Vector logStrings) {
-//@		logMenu.setAbsoluteX(10);
-//@		logMenu.setAbsoluteY(20);
-//@		logMenu.setWidth(UICanvas.getInstance().getWidth());
-//@		for (Enumeration en = logStrings.elements(); en.hasMoreElements();) {
-//@			String logString = (String) en.nextElement();
-//@			if (logString != null) {
-//@				UILabel uil = new UILabel(logString);
-//@				logMenu.append(uil);
-//@			}
-//@		}
-//@		UIScreen cs = UICanvas.getInstance().getCurrentScreen();
-//@		if (cs != null) cs.addPopup(logMenu);
-//@	}
-//@
+	private static UIMenu logMenu = new UIMenu("log");
+
+	public static void clearLog() {
+		logMenu.clear();
+	}
+
+	public static void log(String logString) {
+		UILabel uil = new UILabel(logString);
+		logMenu.append(uil);
+		logMenu.setAbsoluteX(10);
+		logMenu.setAbsoluteY(20);
+		logMenu.setWidth(UICanvas.getInstance().getWidth());
+		UICanvas.getInstance().getCurrentScreen().addPopup(logMenu);
+	}
+
+	public static void log(Vector logStrings) {
+		logMenu.setAbsoluteX(10);
+		logMenu.setAbsoluteY(20);
+		logMenu.setWidth(UICanvas.getInstance().getWidth());
+		for (Enumeration en = logStrings.elements(); en.hasMoreElements();) {
+			String logString = (String) en.nextElement();
+			if (logString != null) {
+				UILabel uil = new UILabel(logString);
+				logMenu.append(uil);
+			}
+		}
+		UIScreen cs = UICanvas.getInstance().getCurrentScreen();
+		if (cs != null) cs.addPopup(logMenu);
+	}
+
 	// #enddebug
 
 	public boolean hasQwerty() {
@@ -1261,6 +1503,18 @@ public class UICanvas extends GameCanvas {
 
 	public void setQwerty(boolean qwerty) {
 		this.qwerty = qwerty;
+	}
+
+	public int getLastGameAction() {
+		// TODO Auto-generated method stub
+		return this.lastGameAction;
+	}
+
+	public void setCursors(UIImage lab, UIImage rab, UIImage lag, UIImage rag) {
+		this.lab = lab;
+		this.lag = lag;
+		this.rab = rab;
+		this.rag = rag;
 	}
 
 }

@@ -6,9 +6,9 @@
 
 package it.yup.xmpp;
 
+import it.yup.dispatch.EventQuery;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.EventQuery;
 import it.yup.xmpp.packets.Iq;
 
 import java.util.Enumeration;
@@ -19,15 +19,20 @@ import java.util.Vector;
  * @author luca
  *
  */
-class IqManager extends IQResultListener {
+public class IqManager extends IQResultListener {
 
 	private static IqManager _instance = null;
+	
+	private int maxPermTime = 120000;
 
 	/**
 	 * 
 	 */
 	private IqManager() {
-		// TODO Auto-generated constructor stub
+	}
+	
+	public void setMaxPermTime (int maxPermTime){
+		this.maxPermTime= maxPermTime;
 	}
 
 	private Hashtable iqs = new Hashtable();
@@ -63,9 +68,9 @@ class IqManager extends IQResultListener {
 		synchronized (iqs) {
 			listener = (IQResultListener) iqs.remove(id);
 			// #mdebug
-//@			if (listener != null) {
-//@				System.out.println("IQM Removed: " + id);
-//@			}
+//			if (listener != null) {
+//				System.out.println("IQM Removed: " + id);
+//			}
 			// #enddebug
 		}
 		if (listener != null) if (result) listener.handleResult(e);
@@ -75,6 +80,7 @@ class IqManager extends IQResultListener {
 	}
 
 	private void purge() {
+		// XXX instead of purging it would be better to raise an error
 		synchronized (iqs) {
 			Enumeration en = iqs.keys();
 			Vector keysToRemove = new Vector();
@@ -89,7 +95,7 @@ class IqManager extends IQResultListener {
 				Object key = en.nextElement();
 				iqs.remove(key);
 				// #mdebug
-//@				System.out.println("IQM Purged: " + key);
+				System.out.println("IQM Purged: " + key);
 				// #enddebug
 			}
 		}
@@ -104,11 +110,11 @@ class IqManager extends IQResultListener {
 	 */
 	public void addRegistration(Iq iq, IQResultListener listener, int duration) {
 		synchronized (iqs) {
-			if (duration < 0) duration = Config.MAX_PERM_TIME;
+			if (duration < 0) duration = this.maxPermTime;
 			listener.expireTime = System.currentTimeMillis() + duration;
 			iqs.put(iq.getAttribute(Iq.ATT_ID), listener);
 			// #mdebug
-//@			System.out.println("IQM Added: " + iq.getAttribute(Iq.ATT_ID));
+			//System.out.println("IQM Added: " + iq.getAttribute(Iq.ATT_ID));
 			// #enddebug
 		}
 	}

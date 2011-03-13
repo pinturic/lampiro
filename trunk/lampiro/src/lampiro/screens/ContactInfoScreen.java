@@ -1,14 +1,15 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ContactInfoScreen.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: ContactInfoScreen.java 2329 2010-11-16 14:12:50Z luca $
+ */
 
 /**
  * 
  */
 package lampiro.screens;
 
+import lampiro.screens.rosterItems.UIContact;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIConfig;
 import it.yup.ui.UIHLayout;
@@ -21,19 +22,19 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UIUtils;
 import it.yup.ui.UIVLayout;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.IQResultListener;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
-
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
 import org.bouncycastle.util.encoders.UrlBase64;
 
@@ -61,7 +62,7 @@ public class ContactInfoScreen extends UIScreen {
 	private UIVLayout nickLayout = null;
 	private UIVLayout subLayout = null;
 
-	private Font gFont = null;
+	private UIFont gFont = null;
 
 	private boolean changeColor = false;
 
@@ -82,8 +83,9 @@ public class ContactInfoScreen extends UIScreen {
 	public ContactInfoScreen(Contact contact) {
 		super();
 
-		Font xFont = UIConfig.font_body;
-		gFont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont.getSize());
+		UIFont xFont = UIConfig.font_body;
+		gFont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
+				.getSize());
 
 		this.setTitle(contact.getPrintableName());
 
@@ -98,11 +100,11 @@ public class ContactInfoScreen extends UIScreen {
 		this.append(contactPanel);
 
 		loadingLabel = new UILabel(rm.getString(ResourceIDs.STR_LOADING));
-		loadingLabel.setAnchorPoint(Graphics.HCENTER);
+		loadingLabel.setAnchorPoint(UIGraphics.HCENTER);
 		addToPanel(loadingLabel);
 		imgLabel = new UILabel(UICanvas.getUIImage("/icons/empty_avatar.png"));
 		imgLabel.setFocusable(true);
-		imgLabel.setAnchorPoint(Graphics.HCENTER);
+		imgLabel.setAnchorPoint(UIGraphics.HCENTER);
 		imgLabel.setSelectedColor(0xFFFFFF);
 		addToPanel(imgLabel);
 		imgLabel.setBg_color(0xFFFFFF);
@@ -161,13 +163,13 @@ public class ContactInfoScreen extends UIScreen {
 			UILabel si_rres = new UILabel(rm
 					.getString(ResourceIDs.STR_RESOURCES)
 					+ ":");
-			si_rres.setAnchorPoint(Graphics.HCENTER);
+			si_rres.setAnchorPoint(UIGraphics.HCENTER);
 			addToPanel(si_rres);
 			for (int i = 0; i < resources.length; i++) {
 				String status = resources[i].getStatus();
 				String jid = resources[i].getAttribute(Stanza.ATT_FROM);
-				Image presenceIcon = XMPPClient.getInstance().getPresenceIcon(
-						contact, jid, contact.getAvailability(jid));
+				UIImage presenceIcon = UIContact.getPresenceIcon(contact, jid,
+						contact.getAvailability(jid));
 				UIVLayout resVl = null;
 				if (status != null && status.length() > 0) resVl = new UIVLayout(
 						2, 120);
@@ -175,7 +177,7 @@ public class ContactInfoScreen extends UIScreen {
 					resVl = new UIVLayout(1, 120);
 				resVl.setFocusable(true);
 
-				Graphics g = UICanvas.getInstance().getCurrentScreen()
+				UIGraphics g = UICanvas.getInstance().getCurrentScreen()
 						.getGraphics();
 				String resource = Contact.resource(jid);
 				resource = resource != null ? resource : "";
@@ -208,8 +210,8 @@ public class ContactInfoScreen extends UIScreen {
 
 		// ask avatars
 		Iq iq = new Iq(contact.jid, Iq.T_GET);
-		iq.addElement(XMPPClient.VCARD_TEMP, XMPPClient.VCARD);
-		XMPPClient.getInstance().sendIQ(iq, new IQResultListener() {
+		iq.addElement(XmppConstants.VCARD_TEMP, XmppConstants.VCARD);
+		iq.send(XMPPClient.getInstance().getXmlStream(),new IQResultListener() {
 
 			public void handleError(Element e) {
 				// TODO Auto-generated method stub
@@ -217,53 +219,53 @@ public class ContactInfoScreen extends UIScreen {
 			}
 
 			public void handleResult(Element e) {
-				UICanvas.lock();
-				try {
-					ContactInfoScreen ci = ContactInfoScreen.this;
-					ci.contactPanel.removeItem(loadingLabel);
+				synchronized (UICanvas.getLock()) {
+					try {
+						ContactInfoScreen ci = ContactInfoScreen.this;
+						ci.contactPanel.removeItem(loadingLabel);
 
-					Element vCard = e.getChildByName(null, XMPPClient.VCARD);
-					if (vCard == null) {
+						Element vCard = e
+								.getChildByName(null, XmppConstants.VCARD);
+						if (vCard == null) {
+							ci.askRepaint();
+							return;
+						}
+
+						// full name 
+						Element FN = vCard.getChildByName(null, XmppConstants.FN);
+						updateContactLayout(fnLayout, FN);
+
+						// nickName
+						Element NICK = vCard.getChildByName(null,
+								XmppConstants.NICKNAME);
+						updateContactLayout(nnLayout, NICK);
+
+						// email
+						Element EMAIL = vCard.getChildByName(null,
+								XmppConstants.EMAIL);
+						if (EMAIL != null) updateContactLayout(eeLayout, EMAIL
+								.getChildByName(null, XmppConstants.USERID));
+
+						// photo
+
+						Element BINVAL = vCard.getPath(new String[] { null,
+								null }, new String[] { XmppConstants.PHOTO,
+								XmppConstants.BINVAL });
+						if (BINVAL != null) {
+							String vCardString = BINVAL.getText();
+							byte[] vCardBytes = UrlBase64.decode(vCardString
+									.getBytes());
+							UIImage img = UIImage.createImage(vCardBytes, 0,
+									vCardBytes.length);
+							ContactInfoScreen.this.imgLabel.setImg(img);
+						}
 						ci.askRepaint();
-						return;
+					} catch (Exception ex) {
+						// #mdebug
+						System.out.println(ex.getMessage());
+						ex.printStackTrace();
+						// #enddebug
 					}
-
-					// full name 
-					Element FN = vCard.getChildByName(null, XMPPClient.FN);
-					updateContactLayout(fnLayout, FN);
-
-					// nickName
-					Element NICK = vCard.getChildByName(null,
-							XMPPClient.NICKNAME);
-					updateContactLayout(nnLayout, NICK);
-
-					// email
-					Element EMAIL = vCard
-							.getChildByName(null, XMPPClient.EMAIL);
-					if (EMAIL != null) updateContactLayout(eeLayout, EMAIL
-							.getChildByName(null, XMPPClient.USERID));
-
-					// photo
-
-					Element BINVAL = vCard
-							.getPath(new String[] { null, null }, new String[] {
-									XMPPClient.PHOTO, XMPPClient.BINVAL });
-					if (BINVAL != null) {
-						String vCardString = BINVAL.getText();
-						byte[] vCardBytes = UrlBase64.decode(vCardString
-								.getBytes());
-						Image img = Image.createImage(vCardBytes, 0,
-								vCardBytes.length);
-						ContactInfoScreen.this.imgLabel.setImg(img);
-					}
-					ci.askRepaint();
-				} catch (Exception ex) {
-					// #mdebug
-//@										System.out.println(ex.getMessage());
-//@										ex.printStackTrace();
-					// #enddebug
-				} finally {
-					UICanvas.unlock();
 				}
 			}
 
@@ -283,16 +285,16 @@ public class ContactInfoScreen extends UIScreen {
 	}
 
 	public UIVLayout contactLayout(UILabel typeItem, UILabel valItem) {
-		Graphics g = UICanvas.getInstance().getCurrentScreen().getGraphics();
+		UIGraphics g = UICanvas.getInstance().getCurrentScreen().getGraphics();
 		UIVLayout conLayout = new UIVLayout(2, typeItem.getHeight(g)
 				+ valItem.getHeight(g));
 		int tempWidth = (UICanvas.getInstance().getCurrentScreen().getWidth() - 10);
-		typeItem.setAnchorPoint(Graphics.HCENTER);
+		typeItem.setAnchorPoint(UIGraphics.HCENTER);
 		typeItem.setWrappable(true, tempWidth);
 		typeItem.setFocusable(false);
 		this.setColor(typeItem);
 		valItem.setFont(gFont);
-		valItem.setAnchorPoint(Graphics.HCENTER);
+		valItem.setAnchorPoint(UIGraphics.HCENTER);
 		valItem.setWrappable(true, tempWidth);
 		this.setColor(typeItem);
 		conLayout.setGroup(true);

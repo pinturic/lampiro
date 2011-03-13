@@ -1,15 +1,15 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
  * $Id: UIUtils.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 package it.yup.ui;
+
+import it.yup.ui.wrappers.UIGraphics;
 
 import java.util.Enumeration;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
 public class UIUtils {
 
@@ -24,74 +24,6 @@ public class UIUtils {
 			}
 		}
 		return false;
-	}
-
-	public static Image imageResize(Image image, int finalWidth,
-			int finalHeight, boolean grayScale) {
-		int sourceWidth = image.getWidth();
-		int sourceHeight = image.getHeight();
-		if (finalHeight == -1) finalHeight = finalWidth * sourceHeight
-				/ sourceWidth;
-		int out[] = new int[finalHeight * finalWidth];
-		int rgb[] = new int[50 * 50];
-
-		for (int srcXOrigin = 0; srcXOrigin < sourceWidth; srcXOrigin += 50) {
-			for (int srcYOrigin = 0; srcYOrigin < sourceHeight; srcYOrigin += 50) {
-				int srcBlockWidth = Math.min(50, sourceWidth - srcXOrigin);
-				int srcBlockHeight = Math.min(50, sourceHeight - srcYOrigin);
-
-				float destXOrigin = ((float) (srcXOrigin * finalWidth))
-						/ sourceWidth;
-				float destYOrigin = ((float) (srcYOrigin * finalHeight))
-						/ sourceHeight;
-
-				float destBlockWidth = ((float) (srcBlockWidth * finalWidth))
-						/ sourceWidth;
-				float destBlockHeight = ((float) (srcBlockHeight * finalHeight))
-						/ sourceHeight;
-
-				int destBlockWidthInt = (int) ((destBlockWidth + destXOrigin) - ((srcXOrigin * finalWidth) / sourceWidth));
-				int destBlockHeightInt = (int) ((destBlockHeight + destYOrigin) - ((srcYOrigin * finalHeight) / sourceHeight));
-
-				image.getRGB(rgb, 0, srcBlockWidth, srcXOrigin, srcYOrigin,
-						srcBlockWidth, srcBlockHeight);
-				//				int[] tempRGB = new int[sourceHeight * sourceWidth];
-				//				image.getRGB(tempRGB, 0, sourceWidth, 0, 0, sourceWidth,
-				//						sourceHeight);
-				UIUtils.rescalaArray(out, rgb, srcBlockWidth, srcBlockHeight,
-						destBlockWidthInt, destBlockHeightInt,
-						(int) destXOrigin, (int) destYOrigin, finalWidth);
-			}
-		}
-		if (grayScale) {
-			for (int i = 0; i < out.length; i++) {
-				int newVal = out[i];
-				int alpha = (newVal & 0xff000000);
-				newVal = (((newVal & 0xff0000) >> 16) * 30) / 100
-						+ (((newVal & 0xff00) >> 8) * 59) / 100
-						+ (((newVal & 0xff)) * 11) / 100;
-				newVal = newVal * 0x10101+alpha;
-				out[i] = newVal;
-			}
-		}
-
-		return Image.createRGBImage(out, finalWidth, finalHeight, true);
-	}
-
-	public static void rescalaArray(int out[], int[] ini, int x, int y, int x2,
-			int y2, int destXOrigin, int destYOrigin, int finalWidth) {
-		for (int yy = 0; yy < y2; yy++) {
-			int dy = yy * y / y2;
-			for (int xx = 0; xx < x2; xx++) {
-				int dx = xx * x / x2;
-				out[(finalWidth * (yy + destYOrigin)) + xx + destXOrigin] = ini[(x * dy)
-						+ dx];
-			}
-		}
-	}
-	
-	protected static void drawPixel(Graphics g, int x, int y) {
-		g.drawLine(x, y, x, y);
 	}
 
 	public static int colorize(int inputColor, int percentage) {
@@ -112,15 +44,19 @@ public class UIUtils {
 	 * An helper function that builds and initialize a UIMenu.
 	 * 
 	 * @param item
-	 * 			the UIMenu title
+	 * the UIMenu title
+	 * 
 	 * @param absoluteX
-	 * 			the X position of the UIMenu
+	 * the X position of the UIMenu
+	 * 
 	 * @param absoluteY
-	 * 			the Y position of the UIMenu
+	 * the Y position of the UIMenu
+	 * 
 	 * @param width
-	 * 			the width of the UIMenu
+	 * the width of the UIMenu
+	 * 
 	 * @param firstItem
-	 * 			the first item to add to the UIMenu  
+	 * the first item to add to the UIMenu
 	 */
 	public static UIMenu easyMenu(String title, int absoluteX, int absoluteY,
 			int width, UIItem firstItem) {
@@ -151,21 +87,35 @@ public class UIUtils {
 	 * Size is the size in pixel od the seconde layout element
 	 * 
 	 * @param item
-	 * 			the item to insert in the middle of the layout
+	 * the item to insert in the middle of the layout
+	 * 
 	 * @param size
-	 * 			the size of the middle element of the layout  
+	 * the size of the middle element of the layout
 	 */
 	public static UIHLayout easyCenterLayout(UIItem item, int size) {
 		UIHLayout buttonLayout = new UIHLayout(3);
 		UISeparator dummySeparator = new UISeparator(0);
 		if (item instanceof UILabel) ((UILabel) item)
-				.setAnchorPoint(Graphics.HCENTER);
+				.setAnchorPoint(UIGraphics.TOP | UIGraphics.HCENTER);
 		buttonLayout.setGroup(false);
 		buttonLayout.insert(dummySeparator, 0, 50,
 				UILayout.CONSTRAINT_PERCENTUAL);
 		buttonLayout.insert(item, 1, size, UILayout.CONSTRAINT_PIXELS);
 		buttonLayout.insert(dummySeparator, 2, 50,
 				UILayout.CONSTRAINT_PERCENTUAL);
+		return buttonLayout;
+	}
+
+	public static UIHLayout easyButtonsLayout(UIButton leftButton,
+			UIButton rightButton) {
+		UIHLayout buttonLayout = new UIHLayout(5);
+		UISeparator dummySeparator = new UISeparator(0);
+		buttonLayout.setGroup(false);
+		buttonLayout.insert(dummySeparator, 0, 10, UILayout.CONSTRAINT_PIXELS);
+		buttonLayout.insert(leftButton, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		buttonLayout.insert(dummySeparator, 2, 7, UILayout.CONSTRAINT_PIXELS);
+		buttonLayout.insert(rightButton, 3, 50, UILayout.CONSTRAINT_PERCENTUAL);
+		buttonLayout.insert(dummySeparator, 4, 10, UILayout.CONSTRAINT_PIXELS);
 		return buttonLayout;
 	}
 

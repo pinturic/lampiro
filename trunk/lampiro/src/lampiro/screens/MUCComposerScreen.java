@@ -1,8 +1,8 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: MUCComposerScreen.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: MUCComposerScreen.java 2310 2010-11-04 12:18:13Z luca $
+ */
 
 package lampiro.screens;
 
@@ -26,10 +26,15 @@ public class MUCComposerScreen extends SimpleComposerScreen {
 			sendMessage(Contact.userhost(preferredResource), Message.GROUPCHAT);
 			// the screen must be changed after the message is added to the screen!
 			try {
-				UICanvas.lock();
-				UICanvas.display(null);
+				// #ifndef RIM
+				synchronized (UICanvas.getLock()) {
+					// #endif
+					UICanvas.display(null);
+					// #ifndef RIM
+				}
+				// #endif
 			} finally {
-				UICanvas.unlock();
+
 			}
 			this.charCounter.cancel();
 

@@ -5,8 +5,11 @@
 */
 package it.yup.xml;
 
-// #debug
-//@import it.yup.util.Logger;
+// #mdebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,7 +29,7 @@ public class BSerializer {
 			serializer.flush();
 		} catch (IOException e) {
 			// #debug 
-//@			        	Logger.log("[BElement:toXml] IOException" + e.getMessage());
+			        	Logger.log("[BElement:toXml] IOException" + e.getMessage());
 		}
 		return baos.toByteArray();
 	}
@@ -52,13 +55,13 @@ public class BSerializer {
 			serializer.flush();
 		} catch (IllegalArgumentException e) {
 			// #debug
-//@			        	Logger.log("[BElement::write] IllegalArgumentException:" + e.getMessage());
+			        	Logger.log("[BElement::write] IllegalArgumentException:" + e.getMessage());
 		} catch (IllegalStateException e) {
 			//        	 #debug
-//@			        	Logger.log("[BElement::write] IllegalStateException: " + e.getMessage());
+			        	Logger.log("[BElement::write] IllegalStateException: " + e.getMessage());
 		} catch (IOException e) {
 			//        	 #debug
-//@			        	Logger.log("[BElement::write] IOException: " + e.getMessage());    		
+			        	Logger.log("[BElement::write] IOException: " + e.getMessage());    		
 		}
 	}
 }

@@ -1,21 +1,23 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: XMPPTestClient.java 2039 2010-03-31 07:29:31Z luca $
+ * $Id: XMPPTestClient.java 2329 2010-11-16 14:12:50Z luca $
 */
 
 package it.yup.tests;
 
+import java.util.Vector;
+import it.yup.dispatch.EventDispatcher;
+import it.yup.dispatch.EventListener;
+import it.yup.dispatch.EventQuery;
 import it.yup.transport.BaseChannel;
-import it.yup.transport.SocketChannel;
-import it.yup.util.EventDispatcher;
-import it.yup.util.EventListener;
+import it.yup.transport.MIDPSocketChannel;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.EventQuery;
 import it.yup.xmlstream.PacketListener;
 import it.yup.xmlstream.SocketStream;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
@@ -57,16 +59,16 @@ public class XMPPTestClient {
 	}
 
 	public void startClient() {
-		stream = new SocketStream();
-		channel = new SocketChannel("socket://jabber.bluendo.com:5222", stream);
+		stream = new SocketStream(new Vector());
+		channel = new MIDPSocketChannel("socket://jabber.bluendo.com:5222", stream);
 
 		EventQuery qAuth = new EventQuery(EventQuery.ANY_EVENT, null, null);
 		EventDispatcher.addEventListener(qAuth, listener);
 
-		EventQuery qMessage = new EventQuery("message", null, null);
+		EventQuery qMessage = new EventQuery(Message.MESSAGE, null, null);
 		BasicXmlStream.addPacketListener(qMessage, new Echoer());
 
-		stream.initialize("test_ff@jabber.bluendo.com/pippa", "test_ff");
+		stream.initialize("test_ff@jabber.bluendo.com/pippa", "test_ff","en");
 		channel.open();
 
 	}

@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: SubscribeScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
@@ -26,16 +26,16 @@ import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
-import it.yup.xmpp.Config;
+import it.yup.client.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.Roster;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Presence;
 import it.yup.xmpp.packets.Stanza;
 
 /**
  * @author luca
- *
+ * 
  */
 public class SubscribeScreen extends UIScreen {
 
@@ -97,7 +97,7 @@ public class SubscribeScreen extends UIScreen {
 		acceptLayout.insert(accept, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
 		acceptLayout.insert(close, 1, 50, UILayout.CONSTRAINT_PERCENTUAL);
 
-		//close.setImg(UICanvas.getUIImage("/icons/contact_delete.png"));
+		close.setFont(UIConfig.small_font);
 		//acceptLayout.setSelectedItem(acceptAll);
 		//accept.setImg(UICanvas.getUIImage("/icons/contact_add_all.png"));
 		accept.setFont(UIConfig.small_font);
@@ -127,7 +127,8 @@ public class SubscribeScreen extends UIScreen {
 			UILabel selLabel = (UILabel) en.nextElement();
 			Object[] objects = (Object[]) this.subscriptions.get(selLabel);
 			Contact ithC = (Contact) objects[0];
-			if (Contact.userhost(ithC.jid).compareTo(c.jid) == 0) return false;
+			if (Contact.userhost(ithC.jid).compareTo(c.jid) == 0)
+				return false;
 		}
 		// then insert it
 		String upAction = "";
@@ -174,7 +175,8 @@ public class SubscribeScreen extends UIScreen {
 				} catch (Exception ex) {
 				}
 			}
-			if (parsedAgb == null) parsedAgb = new Element("", "agb");
+			if (parsedAgb == null)
+				parsedAgb = new Element("", "agb");
 
 			agEl = parsedAgb;
 
@@ -186,8 +188,8 @@ public class SubscribeScreen extends UIScreen {
 					break;
 				}
 			}
-			if (found == false) agEl.addElement(null, "agw").addText(
-					this.fromContact);
+			if (found == false)
+				agEl.addElement(null, "agw").addText(this.fromContact);
 			agb = BProcessor.toBinary(agEl);
 			cfg.setProperty(Config.ACCEPTED_GATEWAYS, Utils.getStringUTF8(agb));
 			cfg.saveToStorage();
@@ -244,7 +246,8 @@ public class SubscribeScreen extends UIScreen {
 	 * Returns a user subscription screen useful for "normal" contacts (not for gateway ones)
 	 */
 	public synchronized static SubscribeScreen getUserSubscription() {
-		if (userSubscriptionScreen == null) userSubscriptionScreen = new SubscribeScreen();
+		if (userSubscriptionScreen == null)
+			userSubscriptionScreen = new SubscribeScreen();
 		return userSubscriptionScreen;
 	}
 
@@ -252,8 +255,8 @@ public class SubscribeScreen extends UIScreen {
 			Contact componentJid) {
 		SubscribeScreen subscribeScreen = (SubscribeScreen) componentSubscriptionsScreen
 				.get(componentJid.jid);
-		if (subscribeScreen == null) subscribeScreen = new SubscribeScreen(
-				componentJid);
+		if (subscribeScreen == null)
+			subscribeScreen = new SubscribeScreen(componentJid);
 		return subscribeScreen;
 	}
 

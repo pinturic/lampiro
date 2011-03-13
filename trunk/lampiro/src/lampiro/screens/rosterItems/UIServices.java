@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: UIServices.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 package lampiro.screens.rosterItems;
 
 import lampiro.screens.RosterScreen;
@@ -53,6 +53,7 @@ public class UIServices extends UIContactGroup {
 		int oldAccordionSize = accordion.getPanelSize(this);
 		boolean needReinsert = (uic == null);
 
+		// XXX check if something better
 		if (uic != null || c.isVisible() || rs.isShow_offlines()) {
 			// reinsert if it is visible
 			if (showUIContact(c)) {
@@ -76,13 +77,14 @@ public class UIServices extends UIContactGroup {
 		}
 
 		if (rs.isFiltering() == false
-				&& rs.getAccordion() == rs.searchAccordion) needRepaint |= rs
-				.filterContacts(true);
+				&& rs.getAccordion() == rs.searchAccordion)
+			needRepaint |= rs.filterContacts(true);
 		int newAccordionSize = accordion.getPanelSize(this);
 		if (newAccordionSize == 0) {
 			accordion.removeItem(this);
 			uiGroups.remove(this.getText());
-			if (oldAccordionSize != 0) needRepaint = true;
+			if (oldAccordionSize != 0)
+				needRepaint = true;
 		}
 		return needRepaint;
 	}

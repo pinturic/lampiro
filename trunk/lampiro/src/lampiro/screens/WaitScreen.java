@@ -1,5 +1,6 @@
 package lampiro.screens;
 
+import it.yup.dispatch.EventListener;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIGauge;
 import it.yup.ui.UIItem;
@@ -7,14 +8,13 @@ import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
-import it.yup.util.EventListener;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import javax.microedition.lcdui.Gauge;
@@ -56,15 +56,14 @@ public class WaitScreen extends UIScreen implements EventListener {
 
 	public void gotStreamEvent(String event, Object source) {
 		try {
-			UICanvas.lock();
-			stopWaiting();
+			synchronized (UICanvas.getLock()) {
+				stopWaiting();
+			}
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In handling cmd error:");
-//@			e.printStackTrace();
+			Logger.log("In handling cmd error:");
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 }

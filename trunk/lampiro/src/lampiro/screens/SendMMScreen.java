@@ -13,13 +13,13 @@ import it.yup.ui.UIHLayout;
 import it.yup.ui.UIItem;
 import it.yup.ui.UILayout;
 import it.yup.ui.UIUtils;
+import it.yup.util.Digests;
 import it.yup.util.ResourceIDs;
-import it.yup.util.Utils;
 import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.FTSender;
 import it.yup.xmpp.MUC;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.FTSender.FTSEventHandler;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
@@ -31,47 +31,46 @@ public class SendMMScreen extends ShowMMScreen {
 
 	class UploadHandler implements FTSEventHandler {
 
-		private String receipientJid;
+		private String recipientJid;
 		private String originalFileName;
 
 		public UploadHandler(String receipientJid, String originalFileName) {
-			this.receipientJid = receipientJid;
+			this.recipientJid = receipientJid;
 			this.originalFileName = originalFileName;
 		}
 
-		public void fileAcceptance(Contact c, String fileName, boolean accept,
+		public void fileAcceptance(String jid, String fileName, boolean accept,
 				FTSender sender) {
 			RosterScreen rs = RosterScreen.getInstance();
 			XMPPClient xmppClient = XMPPClient.getInstance();
 			Contact recipientContact = xmppClient.getRoster().getContactByJid(
-					receipientJid);
+					recipientJid);
 			if (recipientContact != null) {
-				rs.fileAcceptance(recipientContact, originalFileName, accept,
-						sender);
+				rs.fileAcceptance(jid, originalFileName, accept, sender);
 			}
 
 		}
 
-		public void fileError(Contact c, String fileName, Element e) {
+		public void fileError(String jid, String fileName, Element e) {
 			RosterScreen rs = RosterScreen.getInstance();
 			XMPPClient xmppClient = XMPPClient.getInstance();
 			Contact recipientContact = xmppClient.getRoster().getContactByJid(
-					receipientJid);
+					recipientJid);
 			if (recipientContact != null) {
-				rs.fileError(recipientContact, originalFileName, e);
+				rs.fileError(recipientJid, originalFileName, e);
 			}
 		}
 
-		public void fileSent(Contact c, String fileName, boolean b,
+		public void fileSent(String jid, String fileName, boolean b,
 				FTSender sender) {
 			RosterScreen rs = RosterScreen.getInstance();
 			XMPPClient xmppClient = XMPPClient.getInstance();
 			Contact recipientContact = xmppClient.getRoster().getContactByJid(
-					receipientJid);
+					recipientJid);
 			if (recipientContact != null) {
-				rs.fileSent(recipientContact, originalFileName, b, sender);
+				rs.fileSent(recipientJid, originalFileName, b, sender);
 			}
-			Message m = new Message(this.receipientJid,
+			Message m = new Message(this.recipientJid,
 					recipientContact instanceof MUC ? Message.GROUPCHAT
 							: Message.CHAT);
 			m.setBody(rm.getString(ResourceIDs.STR_UPLOAD_TEXT) + " "
@@ -79,14 +78,13 @@ public class SendMMScreen extends ShowMMScreen {
 			XMPPClient.getInstance().sendPacket(m);
 		}
 
-		public void sessionInitated(Contact contactByJid, String fileName,
-				FTSender sender) {
+		public void sessionInitated(String jid, String fileName, FTSender sender) {
 			RosterScreen rs = RosterScreen.getInstance();
 			XMPPClient xmppClient = XMPPClient.getInstance();
 			Contact recipientContact = xmppClient.getRoster().getContactByJid(
-					receipientJid);
+					recipientJid);
 			if (recipientContact != null) {
-				rs.sessionInitated(recipientContact, originalFileName, sender);
+				rs.sessionInitated(recipientJid, originalFileName, sender);
 			}
 		}
 
@@ -109,8 +107,6 @@ public class SendMMScreen extends ShowMMScreen {
 
 	protected UIHLayout cmd_layout_send_save = UIUtils.easyCenterLayout(
 			cmd_send_save, 150);
-
-	private String fileType = "";
 
 	private Vector orderedContacts;
 
@@ -152,7 +148,7 @@ public class SendMMScreen extends ShowMMScreen {
 			if ((ps == null || ps.length == 1) || isMUC) {
 				this.rosterCombo.append(printableName);
 				String tempJid = c.jid;
-				if (isMUC == false && ps!=null){
+				if (isMUC == false && ps != null) {
 					tempJid = ps[0].getAttribute(Message.ATT_FROM);
 				}
 				this.sendCandidates.addElement(tempJid);
@@ -214,16 +210,18 @@ public class SendMMScreen extends ShowMMScreen {
 
 			// if the contact does not support FT i check if I have an 
 			// upload component on the server and send to him.
-			if (FTSender.supportFT(contact) == false && uploadJid != null) {
+			if (RosterScreen.supportFT(contact) == false && uploadJid != null) {
 				effectiveReceiver = uploadJid;
 				ftsHandler = new UploadHandler(contact, ftFileName);
-				ftFileName = Utils.hexDigest(
+				ftFileName = Digests.hexDigest(
 						System.currentTimeMillis() + ftFileName, "sha1")
 						.substring(0, 10)
 						+ "-" + ftFileName;
 			}
 
-			FTSender fts = new FTSender(ftFileName, this.originalImage,
+			XMPPClient xmppClient = XMPPClient.getInstance();
+			FTSender fts = new FTSender(xmppClient.my_jid, xmppClient
+					.getXmlStream(), ftFileName, this.originalImage,
 					effectiveReceiver, ftFileDesc, ftsHandler);
 			fts.sessionInitiate();
 			FTScreen frs = FTScreen.getInstance();

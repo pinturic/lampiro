@@ -1,26 +1,29 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UITextField.java 2056 2010-04-13 17:51:13Z luca $
-*/
+ * $Id: UITextField.java 2407 2011-01-20 23:38:44Z luca $
+ */
 
 package it.yup.ui;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import java.util.Vector;
-import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
+import javax.microedition.lcdui.game.Sprite;
+
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
+import it.yup.ui.wrappers.UITextbox;
 
 /**
  * Resembles a {@link TextField} from standard microedition.lcdui package,
@@ -53,7 +56,7 @@ public class UITextField extends UIItem implements CommandListener {
 	/** ok command for the TextBox */
 	private static Command cmd_cancel = null;
 	/** the TextBox used */
-	private static TextBox tb;
+	private static UITextbox tb;
 
 	private UITextPanel innerPanel;
 
@@ -65,15 +68,15 @@ public class UITextField extends UIItem implements CommandListener {
 	private boolean groupSelected = false;
 
 	/*
-	 * Must be set to true when the UITextfield must automatically unexpand
-	 * when loosing focus 
+	 * Must be set to true when the UITextfield must automatically unexpand when
+	 * loosing focus
 	 */
 	private boolean autoUnexpand = true;
 
 	/*
 	 * Must be set to true when the UITextfield can be expanded and unexpanded
-	 * by the control itself in response to a keyPress (programmatically it still can be 
-	 * epanded or unexpanded )
+	 * by the control itself in response to a keyPress (programmatically it
+	 * still can be epanded or unexpanded )
 	 */
 	private boolean expandable = true;
 
@@ -96,6 +99,8 @@ public class UITextField extends UIItem implements CommandListener {
 	private int maxLines = 4;
 	private int minLines = 1;
 
+	private UIFont font = null;
+
 	private boolean isEditable() {
 		return !((constraints & TextField.UNEDITABLE) > 0);
 	}
@@ -109,16 +114,16 @@ public class UITextField extends UIItem implements CommandListener {
 	public UITextField(String label, String text, int maxSize, int constraints) {
 		this.label.setText(label == null ? "" : label);
 		this.label.setWrappable(true, UICanvas.getInstance().getWidth() - 10);
-		Font xFont = UIConfig.font_body;
-		Font lfont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+		UIFont xFont = UIConfig.font_body;
+		UIFont lfont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
 				.getSize());
 		this.label.setFont(lfont);
 		this.innerPanel = new UITextPanel(this);
 		innerPanel.setContainer(this);
 		innerPanel.setText(text == null ? "" : text);
 		innerPanel.setBg_color(UIConfig.input_color);
-		//		innerPanel.setFg_color(UIConfig.fg_color);
-		//		innerPanel.setSelectedColor(UIConfig.input_color);
+		// innerPanel.setFg_color(UIConfig.fg_color);
+		// innerPanel.setSelectedColor(UIConfig.input_color);
 		this.maxSize = maxSize;
 		this.constraints = constraints;
 		setFocusable(true);
@@ -126,9 +131,9 @@ public class UITextField extends UIItem implements CommandListener {
 		dirty = true;
 		// the minimum height is the one of a UILabel
 		int tempHeight = UIConfig.font_body.getHeight() + 2 + 7;
-		if (label != null && label.length() > 0) {
-			Graphics g = UICanvas.getInstance().getCurrentScreen()
-					.getGraphics();
+		UIScreen currentScreen = UICanvas.getInstance().getCurrentScreen();
+		if (label != null && label.length() > 0 && currentScreen != null) {
+			UIGraphics g = currentScreen.getGraphics();
 			tempHeight += this.label.getHeight(g);
 		}
 
@@ -182,12 +187,17 @@ public class UITextField extends UIItem implements CommandListener {
 		return innerPanel.getText();
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		this.width = w;
-		Font xFont = g.getFont();
-		Font tfont = Font.getFont(xFont.getFace(), Font.STYLE_PLAIN, xFont
-				.getSize());
-		innerPanel.setFont(tfont);
+		UIFont tfont = null;
+		UIFont xFont = g.getFont();
+		int oldColor = g.getColor();
+		if (this.font == null) {
+			tfont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_PLAIN, xFont
+					.getSize());
+		} else {
+			tfont = this.font;
+		}
 
 		int tempBc_color = getBg_color() >= 0 ? getBg_color()
 				: UIConfig.bg_color;
@@ -195,28 +205,47 @@ public class UITextField extends UIItem implements CommandListener {
 		int offset = (h - this.getHeight(g)) / 2 - 1;
 		if (offset < 0) offset = 0;
 		int labelHeight = 0;
-		g.fillRect(0, 0, w, offset);
+		if (this.getBgImage() != null) {
+			paintBGRegion(g, 0, 0, w, offset);
+		} else {
+			if (this.getBg_color() != UIItem.TRANSPARENT_COLOR) {
+				g.fillRect(0, 0, w, offset);
+			}
+		}
 		labelHeight = label.getHeight(g);
+
 		if (label.isDirty()) {
-			g.fillRect(0, offset, w, labelHeight + 2);
+			if (this.getBgImage() != null) {
+				paintBGRegion(g, 0, offset, w, labelHeight + 2);
+			} else {
+				if (this.getBg_color() != UIItem.TRANSPARENT_COLOR) {
+					g.fillRect(0, offset, w, labelHeight + 2);
+				}
+			}
 			if (label.getText().length() > 0) {
 				g.translate(2, 1 + offset);
 				label.paint0(g, w, label.getHeight(g));
 				g.translate(-2, -1 - offset);
 			}
+			label.setDirty(false);
 		}
 
 		if (innerPanel.isDirty()) {
+			// to be sure to reset all the items
+			innerPanel.setDirty(true);
 			g.setFont(tfont);
-			// the innerPanel can have a maxHeight too big 
+			// the innerPanel can have a maxHeight too big
 			// a magic number due to the space between items
 			int innerPanelHeight = this.height - 7 - labelHeight;
-			// first draw the outer  borders and then the inner one 
+			// first draw the outer borders and then the inner one
 			int x0 = 1, y0 = 2 + labelHeight + offset, x1 = w - 3 + x0, y1 = 3
 					+ innerPanelHeight + y0;
-			g.fillRect(0, labelHeight + 2, w, h - (labelHeight + 2));
-			drawInput(g, x0, y0, x1, y1);
-			g.setColor(UIConfig.fg_color);
+			if (this.getBgImage() != null) {
+				paintBGRegion(g, 0, labelHeight + 2, w, h - (labelHeight + 2));
+			} else {
+				g.fillRect(0, labelHeight + 2, w, h - (labelHeight + 2));
+				drawInput(g, x0, y0, x1, y1);
+			}
 			String innerText = innerPanel.getText();
 			String t = innerText;
 			if (this.wrappable == false) {
@@ -246,10 +275,17 @@ public class UITextField extends UIItem implements CommandListener {
 				innerPanel.setText(innerText);
 			}
 			g.setFont(xFont);
+			g.setColor(oldColor);
 		}
 	}
 
-	public int getHeight(Graphics g) {
+	private void paintBGRegion(UIGraphics g, int x, int y, int w, int h) {
+		UIImage tmpImg = isSelected() ? getBgSelImage() : getBgImage();
+		g.drawRegion(tmpImg, x, y, w, h, Sprite.TRANS_NONE, x, y,
+				UIGraphics.TOP | UIGraphics.LEFT);
+	}
+
+	public int getHeight(UIGraphics g) {
 		if (dirty) {
 			// if label is different from "" add its text
 			// a magic number due to the space between items
@@ -259,6 +295,9 @@ public class UITextField extends UIItem implements CommandListener {
 				height += labelHeight;
 			}
 			if (height > this.maxHeight && this.maxHeight > 0) this.height = this.maxHeight;
+		}
+		if (this.getBgImage() != null && this.getBgImage().getHeight() > height) {
+			height = getBgImage().getHeight();
 		}
 		return height;
 	}
@@ -294,7 +333,7 @@ public class UITextField extends UIItem implements CommandListener {
 	}
 
 	private void computeRealHeight() {
-		//needed for the borders
+		// needed for the borders
 		int w = this.width - 14;
 		if (w < 0) w = UICanvas.getInstance().getWidth() - 14
 				- UIConfig.scrollbarWidth;
@@ -305,19 +344,25 @@ public class UITextField extends UIItem implements CommandListener {
 			// at least minLines will be shown; and at most maxLines
 			// hence I need to compute them to paint
 			if (maxLines > 0) {
-				for (int i = 0; i < ti.getLinesNumber() && i < maxLines; i++) {
+				int tempMaxLines = maxLines;
+				// compute all the lines since it must be shown 
+				if (UICanvas.getInstance().hasPointerMotionEvents()) tempMaxLines = Integer.MAX_VALUE;
+				for (int i = 0; i < ti.getLinesNumber() && i < tempMaxLines; i++) {
 					ti.elementAt(i);
 				}
 			}
 		}
 		int nLines = ti.getLinesNumber();
-		if (nLines > this.maxLines) nLines = this.maxLines;
+		int tempMaxLines = this.maxLines;
+		// compute all the lines since it must be shown 
+		if (UICanvas.getInstance().hasPointerMotionEvents()) tempMaxLines = Integer.MAX_VALUE;
+		if (nLines > tempMaxLines) nLines = tempMaxLines;
 		if (nLines < this.minLines) nLines = this.minLines;
 		// if nothing is inside at least one row should be present
 		if (nLines == 0) nLines = 1;
 		int textHeight = nLines * (UIConfig.font_body.getHeight() + 2) + 8;
 		if (label.getText() != null && label.getText().length() > 0) {
-			Graphics g = UICanvas.getInstance().getCurrentScreen()
+			UIGraphics g = UICanvas.getInstance().getCurrentScreen()
 					.getGraphics();
 			textHeight += this.label.getHeight(g);
 		}
@@ -328,7 +373,7 @@ public class UITextField extends UIItem implements CommandListener {
 	public boolean keyPressed(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
 		if (wrappable && groupSelected) {
-			if (ga != Canvas.FIRE) {
+			if (ga != UICanvas.FIRE) {
 				boolean innerKeyKeep = innerPanel.keyPressed(key);
 				if (innerKeyKeep == false && this.autoUnexpand
 						&& this.expandable) {
@@ -345,28 +390,30 @@ public class UITextField extends UIItem implements CommandListener {
 		// and print it!!!
 		int keyNum = -1;
 		switch (key) {
-			case Canvas.KEY_NUM0:
-			case Canvas.KEY_NUM1:
-			case Canvas.KEY_NUM2:
-			case Canvas.KEY_NUM3:
-			case Canvas.KEY_NUM4:
-			case Canvas.KEY_NUM5:
-			case Canvas.KEY_NUM6:
-			case Canvas.KEY_NUM7:
-			case Canvas.KEY_NUM8:
-			case Canvas.KEY_NUM9:
+			case UICanvas.KEY_NUM0:
+			case UICanvas.KEY_NUM1:
+			case UICanvas.KEY_NUM2:
+			case UICanvas.KEY_NUM3:
+			case UICanvas.KEY_NUM4:
+			case UICanvas.KEY_NUM5:
+			case UICanvas.KEY_NUM6:
+			case UICanvas.KEY_NUM7:
+			case UICanvas.KEY_NUM8:
+			case UICanvas.KEY_NUM9:
 				keyNum = key;
 		}
-		if (keyNum == -1 && ga != Canvas.FIRE) { return false; }
+		if (keyNum == -1 && ga != UICanvas.FIRE) { return false; }
 		// the only need for expansion is when:
 		// 1) fire is pressed
-		// 2) the object is wrappable and hence could need the innerPanel to open
+		// 2) the object is wrappable and hence could need the innerPanel to
+		// open
 		// 3) this has not yet been selected.
-		// 4) this object is editable 
-		// 5) the scrollbar is visible 
+		// 4) this object is editable
+		// 5) the scrollbar is visible
 		// 6) the UITextfield is expandable ||or is modal
-		if (ga == Canvas.FIRE && this.wrappable && this.groupSelected == false
-				&& isEditable() == false && innerPanel.needScrollbar) {
+		if (ga == UICanvas.FIRE && this.wrappable
+				&& this.groupSelected == false && isEditable() == false
+				&& innerPanel.needScrollbar) {
 			if (this.expandable) expand();
 			return true;
 		}
@@ -375,9 +422,7 @@ public class UITextField extends UIItem implements CommandListener {
 			// some mobile phones crash when a label is ""
 			handleScreen();
 			tb.setCommandListener(this);
-			UICanvas.display(tb);
 		}
-
 		return true;
 	}
 
@@ -402,25 +447,27 @@ public class UITextField extends UIItem implements CommandListener {
 		innerPanel.setSelected(false);
 		if (innerPanel.tokenIterator.isComputed()) {
 			int nLines = innerPanel.tokenIterator.getLinesNumber();
-			Graphics g = this.screen.getGraphics();
+			UIGraphics g = this.screen.getGraphics();
 			int neededHeight = nLines * (UIConfig.font_body.getHeight() + 2)
 					+ 7 + 5 + label.getHeight(g);
 
-			// The height is computed easily if the container has a fixed size 
+			// The height is computed easily if the container has a fixed size
 			// otherwise make an approximation
 			int maxHeight = 0;
 			if (this.getContainer() instanceof UIMenu == false) {
 				maxHeight = ((UIItem) this.getContainer()).getHeight(g) - 7
-						- label.getHeight(g); /* a little bit of margin*/
+						- label.getHeight(g); /* a little bit of margin */
 			} else {
 				maxHeight = UICanvas.getInstance().getClipHeight();
 				maxHeight -= this.screen.headerLayout.getHeight(g);
+				// #ifndef RIM
 				maxHeight -= this.screen.footer.getHeight(g);
+				// #endif
 				// a little bit of margin for the label...
 				maxHeight -= 35;
 			}
-
-			if (neededHeight > maxHeight) neededHeight = maxHeight;
+			int tempMaxHeight = maxHeight;
+			if (neededHeight > tempMaxHeight) neededHeight = tempMaxHeight;
 			this.setMaxHeight(neededHeight);
 		}
 		this.setDirty(true);
@@ -430,39 +477,50 @@ public class UITextField extends UIItem implements CommandListener {
 	public void handleScreen() {
 		String tempLabel = null;
 		tempLabel = (label.getText().length() == 0) ? "_" : label.getText();
-		tb = new TextBox(tempLabel, innerPanel.getText(), maxSize, constraints);
+		tb = new UITextbox(tempLabel, innerPanel.getText(), maxSize,
+				constraints);
 		tb.addCommand(cmd_cancel);
 		tb.addCommand(cmd_ok);
 		tb.setCommandListener(this);
-		UICanvas.display(tb);
+		UICanvas.display(tb.getTextBox());
 	}
 
 	public void commandAction(Command cmd, Displayable disp) {
 		try {
-			UICanvas.lock();
-			if (cmd == cmd_ok) {
-				setText(tb.getString());
-				if (this.wrappable) this.setWrappable(true);
-				screen.itemAction(this);
-				UICanvas.display(null);
-			} else if (cmd == cmd_cancel) {
-				UICanvas.display(null);
+			// #ifndef RIM
+			synchronized (UICanvas.getLock()) {
+				// #endif
+				if (cmd == cmd_ok) {
+					setText(tb.getString());
+					if (this.wrappable) this.setWrappable(true);
+					screen.itemAction(this);
+					UICanvas.display(null);
+				} else if (cmd == cmd_cancel) {
+					UICanvas.display(null);
+				}
+				this.setDirty(true);
+				this.askRepaint();
+				// #ifndef RIM
 			}
-			this.dirty = true;
-			this.askRepaint();
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log("In text field command action: " + e.getClass());
+						e.printStackTrace();
+						Logger.log("In text field command action: " + e.getClass());
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
 	public void setMaxHeight(int maxHeight) {
 		this.maxHeight = maxHeight;
 		innerPanel.setMaxHeight(maxHeight - 7);
+	}
+	
+	public void setWidth(int width) {
+		if (width != this.width){
+			this.innerPanel.tokenIterator.reset();
+		}
+		this.width = width;
 	}
 
 	public void setMaxLines(int maxLines) {
@@ -520,5 +578,24 @@ public class UITextField extends UIItem implements CommandListener {
 	 */
 	public UITextPanel getInnerPanel() {
 		return innerPanel;
+	}
+
+	public void setBg_color(int bg_color) {
+		super.setBg_color(bg_color);
+		label.setBg_color(bg_color);
+	}
+
+	public void setBgImages(UIImage bgImg, UIImage bgSelImg) {
+		super.setBgImages(bgImg, bgSelImg);
+		label.setBg_color(UIItem.TRANSPARENT_COLOR);
+		innerPanel.setBg_color(UIItem.TRANSPARENT_COLOR);
+	}
+
+	public void setAnchor(int anchor) {
+		this.innerPanel.setAnchor(anchor);
+	}
+
+	public void setFont(UIFont font) {
+		this.font = font;
 	}
 }

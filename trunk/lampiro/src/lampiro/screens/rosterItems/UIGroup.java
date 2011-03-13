@@ -4,10 +4,6 @@ import java.util.Enumeration;
 import java.util.Hashtable;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-
 import lampiro.screens.RosterScreen;
 
 import it.yup.ui.UIAccordion;
@@ -18,18 +14,20 @@ import it.yup.ui.UILabel;
 import it.yup.ui.UILayout;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
-import it.yup.xmpp.Config;
+import it.yup.client.Config;
 import it.yup.xmpp.MUC;
 import it.yup.xmpp.Roster;
 
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 public class UIGroup extends UILabel {
@@ -39,7 +37,7 @@ public class UIGroup extends UILabel {
 	public static final int END = 2;
 
 	/*
-	 * Shows if the contact must be put at th start in the middle or at the end of the roster 
+	 * Shows if the contact must be put at th start in the middle or at the end of the roster
 	 */
 	int groupConstraint = MIDDLE;
 
@@ -70,8 +68,8 @@ public class UIGroup extends UILabel {
 	static Vector groupsPosition = new Vector();
 
 	/*
-	* Used to know that any of the painted groups is moving; -1 means noone
-	*/
+	 * Used to know that any of the painted groups is moving; -1 means noone
+	 */
 	public static UIGroup movingGroup = null;
 
 	int movingColor = UIUtils.colorize(UIConfig.bg_color, -50);
@@ -111,22 +109,24 @@ public class UIGroup extends UILabel {
 	protected UIGroup(String groupName, UIAccordion accordion, int constraint) {
 		super(groupName);
 		this.groupConstraint = constraint;
-		if (groupName == MUC.GROUP_CHATS) this.virtualGroup = true;
+		if (groupName == MUC.GROUP_CHATS)
+			this.virtualGroup = true;
 		this.name = groupName;
 		this.accordion = accordion;
 		this.setSubmenu(groupActionsMenu);
 
-		Font xFont = UIConfig.font_body;
-		Font lfont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+		UIFont xFont = UIConfig.font_body;
+		UIFont lfont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
 				.getSize());
 		setFont(lfont);
 		Vector newGroup = new Vector();
 		uiGroups.put(groupName, this);
 
 		if (groupsPosition.contains(groupName) == false) {
-			if (constraint == UIGroup.END) groupsPosition.addElement(groupName);
-			else if (constraint == UIGroup.BEGINNING) groupsPosition
-					.insertElementAt(groupName, 0);
+			if (constraint == UIGroup.END)
+				groupsPosition.addElement(groupName);
+			else if (constraint == UIGroup.BEGINNING)
+				groupsPosition.insertElementAt(groupName, 0);
 			else if (constraint == UIGroup.MIDDLE) {
 				int foundPosition = groupsPosition.size();
 				for (int i = 0; i < groupsPosition.size(); i++) {
@@ -153,11 +153,20 @@ public class UIGroup extends UILabel {
 		updateColors();
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	public int getHeight(UIGraphics g) {
+		this.height = super.getHeight(g);
+		if (this.height < UIRosterItem.minHeight
+				&& UICanvas.getInstance().hasPointerEvents()) {
+			this.height = UIRosterItem.minHeight;
+		}
+		return this.height;
+	}
+
+	protected void paint(UIGraphics g, int w, int h) {
 		int oldFontColor = this.getFg_color();
-		Font oldFont = this.getFont();
+		UIFont oldFont = this.getFont();
 		if (isSelected()) {
-			Font lFont = Font.getFont(oldFont.getFace(), Font.STYLE_BOLD,
+			UIFont lFont = UIFont.getFont(oldFont.getFace(), UIFont.STYLE_BOLD,
 					oldFont.getSize());
 			this.setFont(lFont);
 			this.setFg_color(UIConfig.menu_title);
@@ -188,7 +197,7 @@ public class UIGroup extends UILabel {
 			Element group = el.addElement(null, "group");
 			group.addElement(null, "name").addText(ithName);
 			// #mdebug 
-//@			Logger.log("Saving group: " + ithName);
+			Logger.log("Saving group: " + ithName);
 			// #enddebug
 		}
 		cfg.setData(Config.GROUPS_POSITION.getBytes(), BProcessor.toBinary(el));
@@ -245,7 +254,8 @@ public class UIGroup extends UILabel {
 	}
 
 	public boolean keyPressed(int key) {
-		if (UIGroup.movingGroup == null) return super.keyPressed(key);
+		if (UIGroup.movingGroup == null)
+			return super.keyPressed(key);
 		if (UIGroup.movingGroup != null && UIGroup.movingGroup != this) {
 			UIItem[] labels = accordion.getItemLabels();
 			int myIndex = 0;
@@ -253,8 +263,10 @@ public class UIGroup extends UILabel {
 			boolean oldFreezed = this.getScreen().isFreezed();
 			this.getScreen().setFreezed(true);
 			for (int i = 0; i < labels.length; i++) {
-				if (labels[i] == this) myIndex = i;
-				else if (labels[i] == UIGroup.movingGroup) movingIndex = i;
+				if (labels[i] == this)
+					myIndex = i;
+				else if (labels[i] == UIGroup.movingGroup)
+					movingIndex = i;
 			}
 			moveGroups(this.accordion, movingIndex, myIndex, false);
 			UIGroup.movingGroup.stopMoving();
@@ -272,36 +284,36 @@ public class UIGroup extends UILabel {
 		int index = 0;
 		UIItem[] labels = null;
 		switch (ga) {
-			case Canvas.UP:
-				labels = accordion.getItemLabels();
-				for (int i = 0; i < labels.length; i++) {
-					if (labels[i] == this) {
-						index = i;
-						break;
-					}
+		case UICanvas.UP:
+			labels = accordion.getItemLabels();
+			for (int i = 0; i < labels.length; i++) {
+				if (labels[i] == this) {
+					index = i;
+					break;
 				}
-				if (index > 0) moveGroups(this.accordion, index, index - 1,
-						true);
-				break;
+			}
+			if (index > 0)
+				moveGroups(this.accordion, index, index - 1, true);
+			break;
 
-			case Canvas.DOWN:
-				labels = accordion.getItemLabels();
-				for (int i = 0; i < labels.length; i++) {
-					if (labels[i] == this) {
-						index = i;
-						break;
-					}
+		case UICanvas.DOWN:
+			labels = accordion.getItemLabels();
+			for (int i = 0; i < labels.length; i++) {
+				if (labels[i] == this) {
+					index = i;
+					break;
 				}
-				if (index < accordion.getItems().size() - 1) moveGroups(
-						this.accordion, index, index + 1, true);
-				break;
+			}
+			if (index < accordion.getItems().size() - 1)
+				moveGroups(this.accordion, index, index + 1, true);
+			break;
 
-			case Canvas.FIRE:
-				this.stopMoving();
-				break;
+		case UICanvas.FIRE:
+			this.stopMoving();
+			break;
 
-			default:
-				break;
+		default:
+			break;
 		}
 
 		return true;
@@ -323,7 +335,8 @@ public class UIGroup extends UILabel {
 		groupsPosition.setElementAt(secondLabel.name, firstPosition);
 		groupsPosition.setElementAt(firstLabel.name, secondPosition);
 
-		if (swap) accordion.swap(firstIndex, secondIndex);
+		if (swap)
+			accordion.swap(firstIndex, secondIndex);
 		else {
 			accordion.move(firstIndex, secondIndex);
 			// now it can be another one!!! set it to dirty
@@ -354,17 +367,19 @@ public class UIGroup extends UILabel {
 
 		// In the roster the contacts without group
 		// are in the "ungrouped" group with label == Roster.unGroupedCode 
-		if (group.equals(Roster.unGroupedCode)) group = UIGroup.ungrouped;
+		if (group.equals(Roster.unGroupedCode))
+			group = UIGroup.ungrouped;
 
 		Hashtable tempGroups = uiGroups;
 		UIGroup groupLabel = (UIGroup) tempGroups.get(group);
 		if (groupLabel == null && allocate == true) {
-			if (group == highLightString) groupLabel = new UIContactGroup(
-					highLightString, accordion, UIGroup.BEGINNING);
-			else if (group == MUC.GROUP_CHATS) groupLabel = new UIContactGroup(
-					group, accordion, UIGroup.END);
-			else if (group == NETWORKS) groupLabel = new UIGatewayGroup(
-					accordion);
+			if (group == highLightString)
+				groupLabel = new UIContactGroup(highLightString, accordion,
+						UIGroup.BEGINNING);
+			else if (group == MUC.GROUP_CHATS)
+				groupLabel = new UIContactGroup(group, accordion, UIGroup.END);
+			else if (group == NETWORKS)
+				groupLabel = new UIGatewayGroup(accordion);
 			else
 				groupLabel = new UIContactGroup(group, accordion,
 						UIGroup.MIDDLE);

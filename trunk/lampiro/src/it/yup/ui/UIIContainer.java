@@ -1,3 +1,4 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
@@ -14,5 +15,5 @@ public interface UIIContainer {
 	public boolean contains (UIItem item);
 	
 	public Vector getItems ();
-
+	
 }

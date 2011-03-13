@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: StatusScreen.java 2025 2010-03-23 14:27:59Z luca $
+ * $Id: StatusScreen.java 2329 2010-11-16 14:12:50Z luca $
 */
 
 package lampiro.screens;
@@ -16,9 +16,9 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UITextField;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
-import it.yup.xmpp.Config;
+import it.yup.client.Config;
 import it.yup.xmpp.Contact;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Presence;
 
 import javax.microedition.lcdui.TextField;

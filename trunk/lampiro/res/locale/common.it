@@ -25,7 +25,7 @@
 25	Avanti
 26	Registra
 27	E' necessario completare il form prima di continuare
-28	Jabber ID
+28	Autoriconnessione
 29	Informazioni
 30	Attenzione
 31	Nascondi
@@ -87,6 +87,8 @@
 87	from
 88	unknown
 89	none
+90	Vuoi effettuare nuovamente il login?
+91	Abilita
 100	Scrivi messaggio
 101	Chatta con
 102	Azzera chat
@@ -104,7 +106,8 @@
 114	Manuale
 115	OK
 200	Jabber ID
-202	Indirizzo email (opzionale)
+201	opzionale
+202	Indirizzo email
 203	Registra un nuovo account
 204	Login del Lampiro
 205	Registrazione fallita
@@ -204,7 +207,7 @@
 730	Aggiorna lista contatti
 731	Invia immagine
 732	Invia audio
-733	Non raggruppati
+733	Contatti
 734	Cerca
 735	In evidenza
 736	Imposta gruppi
@@ -231,6 +234,8 @@
 758	Deregistrare network
 759	Sessioni attive
 760	Cambia nome gruppo
+761	Nuova versione
+762	Questa release di Lampiro non è più utilizzabile. Aggiornare alla versione successiva dal sito opportuno. 
 800	Imposta status
 801	Scegli status
 802	Messaggio di status
@@ -280,6 +285,7 @@
 1226	Alta <640x480>
 1227	Molto alta <1024x768>
 1228	Errore durante l'accesso alla fotocamera
+1229	Dimensione testo menu
 1300	nuove news
 1301	Numero di news memorizzate
 1302	Marca non letta

@@ -2,13 +2,10 @@
  * See about.html for details about license.
  *
  * $Id: UIRosterItem.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 package lampiro.screens.rosterItems;
 
 import java.util.Vector;
-
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Font;
 
 import lampiro.screens.RosterScreen;
 
@@ -22,9 +19,11 @@ import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 
 public class UIRosterItem extends UIHLayout {
 
@@ -36,8 +35,13 @@ public class UIRosterItem extends UIHLayout {
 	public static UILabel optionsLabel = null;
 	public static Vector optionsVector = null;
 	public static XMPPClient xmppClient = XMPPClient.getInstance();
+	
+	/*
+	 * When using a touchscreen it is necessery to have a minHeight
+	 */
+	public static int minHeight=42;
 
-	/* 
+	/*
 	 * the image to be shown on the left
 	 */
 	protected UILabel statusLabel = new UILabel("");
@@ -53,8 +57,9 @@ public class UIRosterItem extends UIHLayout {
 	static ResourceManager rm = ResourceManager.getManager();
 
 	protected UISeparator sep = new UISeparator(1);
-	
-	public static int contactSelectedColor = UIUtils.colorize(UIConfig.header_bg, +20);
+
+	public static int contactSelectedColor = UIUtils.colorize(
+			UIConfig.header_bg, +20);
 
 	protected static int sepColor = 0x00CCCCCC;
 
@@ -77,28 +82,27 @@ public class UIRosterItem extends UIHLayout {
 		this.setSubmenu(UIContact.actionsMenu);
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		int superHeight = super.getHeight(g);
 		this.height = superHeight + sep.getHeight(g);
-		// a minimum width in case it is 0 (and hence not painted yet)
 		return this.height;
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-		int statusLabelWidth = statusLabel.getImg().getWidth();
-		g.fillRect(0, 0, statusLabelWidth, h);
+		//int statusLabelWidth = statusLabel.getImg().getWidth();
+		g.fillRect(0, 0, w, h);
 		int yoffset = super.getHeight(g);
 		int oldStatusLabelColor = statusLabel.getBg_color();
 		int oldContactFontColor = contactLabel.getFg_color();
 		int oldContactSelectedColor = contactLabel.getSelectedColor();
-		Font oldFont = contactLabel.getFont();
+		UIFont oldFont = contactLabel.getFont();
 		if (this.isSelected()) {
 			statusLabel.setBg_color(contactSelectedColor);
 			contactLabel.setSelectedColor(contactSelectedColor);
 			contactLabel.setFg_color(UIConfig.menu_title);
-			Font lFont = Font.getFont(UIConfig.font_body.getFace(),
-					Font.STYLE_BOLD, UIConfig.font_body.getSize());
+			UIFont lFont = UIFont.getFont(UIConfig.font_body.getFace(),
+					UIFont.STYLE_BOLD, UIConfig.font_body.getSize());
 			contactLabel.setFont(lFont);
 		}
 		super.paint(g, w, yoffset);
@@ -124,12 +128,12 @@ public class UIRosterItem extends UIHLayout {
 			sep.paint0(g, w, sepHeight);
 			g.translate(0, -1);
 		}
-                UIScreen cs = this.getScreen();
-                if (cs!=null){
-                cs.removePaintedItem(statusLabel);
-                cs.removePaintedItem(contactLabel);
+		UIScreen cs = this.getScreen();
+		if (cs != null) {
+			cs.removePaintedItem(statusLabel);
+			cs.removePaintedItem(contactLabel);
+		}
 	}
-        }
 
 	public void executeAction() {
 		// TODO Auto-generated method stub
