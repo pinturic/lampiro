@@ -8,9 +8,6 @@ package lampiro.screens;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UIHLayout;
@@ -22,12 +19,15 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UIUtils;
-import it.yup.util.RMSIndex;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.util.storage.KeyStore;
+import it.yup.util.storage.KeyStoreFactory;
 import it.yup.xml.BProcessor;
 import it.yup.xml.Element;
-import it.yup.xmpp.Config;
+import it.yup.xmpp.XmppConstants;
 
 /**
  * @author luca
@@ -37,13 +37,13 @@ public class AlbumScreen extends UIScreen {
 
 	private static String ALBUM = "album";
 
-	private static RMSIndex album = new RMSIndex(ALBUM);;
+	private static KeyStore album = KeyStoreFactory.getStore(ALBUM);
 
 	private static Element albumEl;
 
 	public static int getCount(int type) {
 		synchronized (album) {
-			String sType = (type == Config.IMG_TYPE ? "img" : "snd");
+			String sType = (type == XmppConstants.IMG_TYPE ? "img" : "snd");
 			Element child = albumEl.getChildByName(null, sType);
 			if (child != null) return Integer.parseInt(child.getText());
 			return 0;
@@ -119,9 +119,9 @@ public class AlbumScreen extends UIScreen {
 
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_capture_img) {
-			RosterScreen.getInstance().captureMedia(null, Config.IMG_TYPE);
+			RosterScreen.getInstance().captureMedia(null, XmppConstants.IMG_TYPE);
 		} else if (cmd == cmd_capture_aud) {
-			RosterScreen.getInstance().captureMedia(null, Config.AUDIO_TYPE);
+			RosterScreen.getInstance().captureMedia(null, XmppConstants.AUDIO_TYPE);
 		} else if (cmd == cmd_exit) {
 			UICanvas.getInstance().close(this);
 			_instance = null;
@@ -264,8 +264,8 @@ public class AlbumScreen extends UIScreen {
 		actionMenu.append(this.deleteLabel);
 
 		buttonLayout = new UIHLayout(3);
-		prevCmd.setAnchorPoint(Graphics.HCENTER);
-		nextCmd.setAnchorPoint(Graphics.HCENTER);
+		prevCmd.setAnchorPoint(UIGraphics.HCENTER);
+		nextCmd.setAnchorPoint(UIGraphics.HCENTER);
 		buttonLayout.setGroup(false);
 		buttonLayout.insert(prevCmd, 0, 50, UILayout.CONSTRAINT_PERCENTUAL);
 		buttonLayout.insert(dummySeparator, 1, 20, UILayout.CONSTRAINT_PIXELS);
@@ -308,19 +308,19 @@ public class AlbumScreen extends UIScreen {
 			mmType = Integer.parseInt(typeEl.getText());
 			Element nameEl = ithChild.getChildByName(null, "name");
 			fileName = nameEl.getText();
-			Image resImg = null;
+			UIImage resImg = null;
 			int imgWidth = -1;
 			int imgHeight = -1;
 			byte[] fileData = album.load(fileId.getBytes());
 			// this happens when a file cannot be loaded 
 			// XXX: delete the file in album ?
 			if (fileData == null) continue;
-			if (mmType == Config.IMG_TYPE) {
-				Image convImage = null;
-				convImage = Image.createImage(fileData, 0, fileData.length);
+			if (mmType == XmppConstants.IMG_TYPE) {
+				UIImage convImage = null;
+				convImage = UIImage.createImage(fileData, 0, fileData.length);
 				imgWidth = convImage.getWidth();
 				imgHeight = convImage.getHeight();
-				resImg = UIUtils.imageResize(convImage, UICanvas.getInstance()
+				resImg = convImage.imageResize(UICanvas.getInstance()
 						.getWidth() / 2, -1, false);
 			} else {
 				resImg = UICanvas.getUIImage("/icons/mic.png");
@@ -330,12 +330,12 @@ public class AlbumScreen extends UIScreen {
 					UICanvas.getInstance().getWidth() / 2,
 					UILayout.CONSTRAINT_PIXELS);
 			String fileString = fileName + " " + fileData.length / 1000 + "Kb";
-			if (mmType == Config.IMG_TYPE) {
+			if (mmType == XmppConstants.IMG_TYPE) {
 				fileString += " ";
 				fileString += (imgWidth + "x" + imgHeight);
 			}
 			UILabel filenameLabel = new UILabel(fileString);
-			filenameLabel.setAnchorPoint(Graphics.HCENTER);
+			filenameLabel.setAnchorPoint(UIGraphics.HCENTER);
 			ithLayout.insert(filenameLabel, 1, 100,
 					UILayout.CONSTRAINT_PERCENTUAL);
 			filenameLabel.setWrappable(true, UICanvas.getInstance().getWidth()
@@ -415,7 +415,7 @@ public class AlbumScreen extends UIScreen {
 			fileEL.addElementAndContent(null, "desc", fileDescription);
 			fileEL.addElementAndContent(null, "type", mmType + "");
 
-			String sType = (mmType == Config.IMG_TYPE ? "img" : "snd");
+			String sType = (mmType == XmppConstants.IMG_TYPE ? "img" : "snd");
 			Element child = albumEl.getChildByName(null, sType);
 			if (child != null) {
 				int count = Integer.parseInt(child.getText()) + 1;

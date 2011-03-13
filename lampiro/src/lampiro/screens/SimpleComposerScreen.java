@@ -1,28 +1,28 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SimpleComposerScreen.java 2032 2010-03-25 17:30:11Z luca $
-*/
+ * $Id: SimpleComposerScreen.java 2440 2011-01-31 17:32:28Z luca $
+ */
 
 package lampiro.screens;
 
 import java.util.TimerTask;
 
 import it.yup.ui.UICanvas;
+import it.yup.ui.wrappers.UITextbox;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xmpp.Contact;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.TextBox;
 import javax.microedition.lcdui.TextField;
 
-public class SimpleComposerScreen extends TextBox implements CommandListener {
+public class SimpleComposerScreen extends UITextbox implements CommandListener {
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -37,14 +37,17 @@ public class SimpleComposerScreen extends TextBox implements CommandListener {
 	private ChatScreen parentScreen;
 
 	private String baseText = "";
-	
+
 	CharCounter charCounter = new CharCounter();
 
 	class CharCounter extends TimerTask {
 
 		public void run() {
-			int length = SimpleComposerScreen.this.getString().length();
-			SimpleComposerScreen.this.setTitle(baseText + "(" + length + ")");
+			synchronized (UICanvas.getLock()) {
+				int length = SimpleComposerScreen.this.getString().length();
+				SimpleComposerScreen.this.setTitle(baseText + "(" + length
+						+ ")");
+			}
 		}
 	}
 
@@ -63,10 +66,11 @@ public class SimpleComposerScreen extends TextBox implements CommandListener {
 		this.preferredResource = preferredResource;
 		//an offline contact may have no resources in that case
 		// I use its jid and nothing else
-		if (preferredResource == null) { 
+		if (preferredResource == null) {
 			Presence presence = u.getPresence(null);
-			if (presence!=null)
-				this.preferredResource = presence.getAttribute(Message.ATT_FROM);
+			if (presence != null)
+				this.preferredResource = presence
+						.getAttribute(Message.ATT_FROM);
 		}
 		UICanvas.getTimer().scheduleAtFixedRate(charCounter, 1000, 1000);
 	}
@@ -81,10 +85,16 @@ public class SimpleComposerScreen extends TextBox implements CommandListener {
 			parentScreen.updateConversation();
 			// the screen must be changed after the message is added to the screen!
 			try {
-				UICanvas.lock();
+				// #ifndef RIM
+				synchronized (UICanvas.getLock()){
+				// #endif
 				UICanvas.display(null);
+				parentScreen.askRepaint();
+				// #ifndef RIM
+				}
+				// #endif
 			} finally {
-				UICanvas.unlock();
+
 			}
 			//UICanvas.getInstance().askRepaint(
 			//		UICanvas.getInstance().getCurrentScreen());

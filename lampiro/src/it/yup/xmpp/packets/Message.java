@@ -1,13 +1,13 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Message.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Message.java 2325 2010-11-15 20:07:28Z luca $
 */
 
 package it.yup.xmpp.packets;
 
 import it.yup.xml.Element;
-import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 
 public class Message extends Stanza {
 
@@ -42,7 +42,7 @@ public class Message extends Stanza {
 		if (el == null) return null;
 
 		Element txt = el.getChildByName("urn:ietf:params:xml:ns:xmpp-stanzas",
-				XMPPClient.TEXT);
+				XmppConstants.TEXT);
 		if (txt == null) { return null; }
 
 		return txt.getText();

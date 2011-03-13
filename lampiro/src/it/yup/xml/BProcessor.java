@@ -5,9 +5,13 @@
 */
 package it.yup.xml;
 
-// #debug
-//@import it.yup.util.Logger;
 import it.yup.util.Utils;
+// #mdebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
+
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -102,8 +106,8 @@ public class BProcessor {
 			}
 		} catch (IOException e) {
 			// #mdebug
-//@			e.printStackTrace();
-//@			Logger.log("In BProcessor parsing ");
+			e.printStackTrace();
+			Logger.log("In BProcessor parsing ");
 			// #enddebug
 		}
 
@@ -148,7 +152,7 @@ public class BProcessor {
 			writeBinary(el, null, baos);
 		} catch (IOException e) {
 			// #debug 
-//@			Logger.log("[BElement:toXml] IOException" + e.getMessage());
+			Logger.log("[BElement:toXml] IOException" + e.getMessage());
 		}
 		return baos.toByteArray();
 	}

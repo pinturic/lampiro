@@ -1,15 +1,14 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UICheckbox.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: UICheckbox.java 2386 2011-01-17 11:55:37Z luca $
+ */
 
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIImage;
 import java.io.IOException;
-
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Image;
 
 /**
  * 
@@ -20,13 +19,8 @@ import javax.microedition.lcdui.Image;
  * 
  */
 public class UICheckbox extends UILabel {
-	private Image checkedImg=null;
-	private Image uncheckedImg=null;
-	
-	{
-	checkedImg = UICanvas.getUIImage("/icons/checked.png");
-	uncheckedImg = UICanvas.getUIImage("/icons/unchecked.png");
-	}
+	private UIImage checkedImg = UICanvas.getUIImage("/icons/checked.png");
+	private UIImage uncheckedImg = UICanvas.getUIImage("/icons/unchecked.png");
 
 	/**
 	 * Keeps the checked state of the Checkbox
@@ -42,6 +36,8 @@ public class UICheckbox extends UILabel {
 		super(UICanvas.getUIImage("/icons/unchecked.png"), text);
 		this.focusable = true;
 		this.wrappable = false;
+		if (UICanvas.getInstance().hasPointerMotionEvents()) this.setPaddings(
+				2, 6);
 	}
 
 	public UICheckbox(String text, boolean checked) {
@@ -55,12 +51,10 @@ public class UICheckbox extends UILabel {
 
 	public void setChecked(boolean checked) {
 		boolean changed = false;
-		if (checked != this.checked)
-			changed = true;
+		if (checked != this.checked) changed = true;
 		this.checked = checked;
 		if (changed == true) {
-			if (checked == true)
-				this.img = this.checkedImg;
+			if (checked == true) this.img = this.checkedImg;
 			else
 				this.img = this.uncheckedImg;
 			this.dirty = true;
@@ -73,16 +67,18 @@ public class UICheckbox extends UILabel {
 	 * 
 	 */
 	public boolean keyPressed(int key) {
-		if (UICanvas.getInstance().getGameAction(key) == Canvas.FIRE)
-			this.setChecked(!this.checked);
+		if (UICanvas.getInstance().getGameAction(key) == UICanvas.FIRE) this
+				.setChecked(!this.checked);
 		return false;
 	}
 
 	/**
-	 * @param checkedImg the checkedImg to set
+	 * @param checkedImg
+	 *            the checkedImg to set
 	 */
-	public void setCheckedImg(Image checkedImg) {
+	public void setCheckedImg(UIImage checkedImg) {
 		this.checkedImg = checkedImg;
+		if (this.isChecked()) setImg(checkedImg);
 		this.dirty = true;
 		this.askRepaint();
 	}
@@ -90,15 +86,17 @@ public class UICheckbox extends UILabel {
 	/**
 	 * @return the checkedImg
 	 */
-	public Image getCheckedImg() {
+	public UIImage getCheckedImg() {
 		return checkedImg;
 	}
 
 	/**
-	 * @param uncheckedImg the uncheckedImg to set
+	 * @param uncheckedImg
+	 *            the uncheckedImg to set
 	 */
-	public void setUncheckedImg(Image uncheckedImg) {
+	public void setUncheckedImg(UIImage uncheckedImg) {
 		this.uncheckedImg = uncheckedImg;
+		if (this.isChecked() == false) setImg(uncheckedImg);
 		this.dirty = true;
 		this.askRepaint();
 	}
@@ -106,7 +104,7 @@ public class UICheckbox extends UILabel {
 	/**
 	 * @return the uncheckedImg
 	 */
-	public Image getUncheckedImg() {
+	public UIImage getUncheckedImg() {
 		return uncheckedImg;
 	}
 }

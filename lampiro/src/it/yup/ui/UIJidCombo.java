@@ -1,3 +1,4 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
@@ -6,7 +7,7 @@
 package it.yup.ui;
 
 import it.yup.util.Utils;
-import javax.microedition.lcdui.Canvas;
+
 import javax.microedition.lcdui.TextField;
 
 public class UIJidCombo extends UICombobox {
@@ -28,7 +29,7 @@ public class UIJidCombo extends UICombobox {
 							.isOpenedState())) { return super.keyPressed(key); }
 
 			int ga = UICanvas.getInstance().getGameAction(key);
-			if (ga == Canvas.FIRE) {
+			if (ga == UICanvas.FIRE) {
 				UIItem selItem = this.getSelectedItem();
 				if (selItem == this.jidField) { return jidField.keyPressed(key); }
 			}

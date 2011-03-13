@@ -1,22 +1,22 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIMenu.java 2002 2010-03-06 19:02:12Z luca $
-*/
+ * $Id: UIMenu.java 2439 2011-01-31 17:32:15Z luca $
+ */
 
 /**
  * 
  */
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
+
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
 /**
  * Generico menu da inserire in uno {@link UIScreen}.
@@ -61,7 +61,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	/*
 	 * The title label if present
 	 */
-	UILabel titleLabel;
+	private UILabel titleLabel;
 
 	/*
 	 * The name of the menu
@@ -88,19 +88,43 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 	int borderSize = 0;
 
+	private int neededHeight = 0;
+
+	// #ifndef RIM
+	/*
+	 * The offset used for scrolling
+	 */
+	int paintOffset = 0;
+
+	// #endif
+
 	/**
 	 * The images used for submenus
 	 */
-	static public Image menuImage = null;
+	static public UIImage menuImage = null;
 	static {
 		try {
-			menuImage = Image.createImage("/icons/menuarrow.png");
+			menuImage = UIImage.createImage("/icons/menuarrow.png");
 		} catch (IOException e) {
 			// #mdebug
-//@			System.out.println("In allocating menuImage" + e.getMessage());
+						System.out.println("In allocating menuImage" + e.getMessage());
 			// #enddebug
 		}
 	}
+
+	// #ifndef RIM
+	/**
+	 * @param paintOffset the paintOffset to set
+	 */
+	protected void addPaintOffset(int paintOffset) {
+		this.paintOffset += paintOffset;
+		if (this.paintOffset > 0) this.paintOffset = 0;
+		if (neededHeight + this.paintOffset < height) {
+			this.paintOffset = height - neededHeight;
+		}
+	}
+
+	// #endif
 
 	protected int traverseFocusable(int startingIndex, boolean directionDown) {
 		if (directionDown) {
@@ -135,15 +159,15 @@ public class UIMenu extends UIItem implements UIIContainer {
 		if (_name != null && _name.length() > 0
 				&& this instanceof UIScreen == false) {
 			titleLabel = new UILabel(_name);
-			Font font_body = UIConfig.font_body;
-			Font title_font = Font.getFont(font_body.getFace(),
-					Font.STYLE_BOLD, font_body.getSize());
+			UIFont font_body = UIConfig.font_menu;
+			UIFont title_font = UIFont.getFont(font_body.getFace(),
+					UIFont.STYLE_BOLD, font_body.getSize());
 			titleLabel.setFont(title_font);
 			this.append(titleLabel);
 			titleLabel.setBg_color(UIConfig.header_bg);
 			titleLabel.setFg_color(UIConfig.menu_title);
 			titleLabel.setFocusable(false);
-			titleLabel.setAnchorPoint(Graphics.HCENTER);
+			titleLabel.setAnchorPoint(UIGraphics.HCENTER);
 		}
 		borderSize = 2;
 	}
@@ -168,15 +192,26 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 */
 	public int append(UIItem ui) {
 		// UIMenu subMenu is not here anymore I add it outside
+		setupNewItem(ui);
+		items.addElement(ui);
+		return items.size() - 1;
+	}
+
+	private void setupNewItem(UIItem ui) {
 		ui.setFocusable(true);
 		ui.setDirty(true);
 		ui.setBg_color(UIConfig.menu_color);
-
-		items.addElement(ui);
+		if (ui instanceof UILabel) {
+			int hPadding = 2;
+			int vPadding = 0;
+			UILabel uiLabel = (UILabel) ui;
+			uiLabel.setFont(UIConfig.font_menu);
+			if (UICanvas.getInstance().hasPointerEvents()) vPadding = UIConfig.menu_padding;
+			uiLabel.setPaddings(hPadding, vPadding);
+		}
 		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
 		ui.setScreen(this.screen);
 		ui.setContainer(this);
-		return items.size() - 1;
 	}
 
 	/**
@@ -190,13 +225,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	public void insert(int pos, UIItem ui) {
 		if (pos < 0 || pos >= items.size()) { throw new ArrayIndexOutOfBoundsException(
 				"Invalid menu pos: " + pos + ", " + items.size()); }
-		ui.setFocusable(true);
-		ui.setDirty(true);
-		ui.setBg_color(UIConfig.menu_color);
-
-		if (ui.getSubmenu() != null) ui.getSubmenu().setParentMenu(this);
-		ui.setScreen(this.screen);
-		ui.setContainer(this);
+		setupNewItem(ui);
 		items.insertElementAt(ui, pos);
 	}
 
@@ -305,13 +334,14 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 * @param h
 	 *            l'altezza massima da riempire
 	 */
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		this.width = w;
 		if (this instanceof UIScreen) this.height = 0;
 		else {
 			this.height = 1;
 		}
-		int neededHeight = 0;
+		neededHeight = 0;
+		int ox = g.getTranslateX();
 		int oy = g.getTranslateY();
 		g.translate(0, 1);
 		for (Enumeration en = items.elements(); en.hasMoreElements();) {
@@ -336,68 +366,35 @@ public class UIMenu extends UIItem implements UIIContainer {
 		boolean oldNeedScrollbar = needScrollbar;
 		needScrollbar = false;
 
-		// is it too big and it doesn't fit ?
-		if (this.height > h) {
-			// can we move it ?
-			// use an offset from up
-			int Y = this.absoluteY;
-			int clipY = g.getClipY();
-			int translateY = g.getTranslateY();
-			if ((Y - clipY - translateY) > (this.height - h)) {
-				this.absoluteY -= (this.height - h);
-				// System.out.println("Translate 1: 0, " + (h - this.height));
-				g.translate(0, (h - this.height));
-				h = this.height;
-			} else {
-				int offset = 0;
-				// an offset is used for popup to avoid their
-				// touching the upper border
-				if (this instanceof UIScreen == false) offset = g
-						.getClipHeight() / 7;
-				this.absoluteY = translateY + clipY + offset;// offset;
-				this.height = g.getClipHeight() - offset;// - offset;
-				g.translate(0, this.absoluteY - g.getTranslateY());// +
-				needScrollbar = true;
-				// recompute height only if not a screen:
-				// screens have fixed size
-				if (this instanceof UIScreen == false) h = this.height;
-			}
-		}
-		if (needScrollbar == false && oldNeedScrollbar) {
-			for (int i = firstVisibleIndex; i < this.lastVisibleIndex; i++) {
-				UIItem uith = (UIItem) this.items.elementAt(i);
-				uith.setDirty(true);
-			}
-		}
+		h = resizeHeight(g, h);
+
+		checkScrollbar(oldNeedScrollbar);
 
 		int initialX = g.getTranslateX();
 		int initialY = g.getTranslateY();
 		// notify the screen my coordinates 
 		coors[1] = initialY;
 		coors[3] = this.height;
-
+		int originalClipX = g.getClipX();
+		int originalClipY = g.getClipY();
+		int originalClipHeight = g.getClipHeight();
+		int originalClipWidth = g.getClipWidth();
+		computeClip(g, width, height);
 		// moving down or up the screen can cause the lastVisible or
 		// firstVisible
 		// items not to be fully visible. Recheck !!!
 		boolean paintNeeded = true;
 		while (paintNeeded == true) {
 			paintNeeded = false;
+			setTranslation(g, initialX, initialY);
 
-			g.translate(1 - g.getTranslateX() + initialX,
-					1 - g.getTranslateY() + initialY);
-			g.translate(borderSize, borderSize);
-			int scrollbarHeight = (h * h) / neededHeight;
-			// to avoid a too big scrollbar;
-			if (scrollbarHeight > (2 * h) / 3) {
-				scrollbarHeight = (2 * h) / 3;
-			}
+			int scrollbarHeight = 0;
 			int scrollbarPosition = 0;
-			for (int i = 0; i < this.firstVisibleIndex; i++) {
-				UIItem uith = (UIItem) this.items.elementAt(i);
-				scrollbarPosition += uith.getHeight(g);
+
+			if (needScrollbar) {
+				scrollbarHeight = getScrollbarHeight(h, neededHeight);
+				scrollbarPosition = getScrollbarPosition(g, h, scrollbarHeight);
 			}
-			scrollbarPosition *= h;
-			scrollbarPosition /= neededHeight;
 
 			int lastHeight = borderSize;
 			// if a control is dirty all the subsequent must be set as dirty since the height
@@ -429,7 +426,17 @@ public class UIMenu extends UIItem implements UIIContainer {
 						this.screen.invalidatePopups(this, coors);
 					}
 
-					uith.paint0(g, reservedWidth, uithHeight);
+					if (!UICanvas.getInstance().hasPointerMotionEvents()
+							|| isOnscreen(g, uith, initialY, uithHeight)) {
+						if (this.getBgImage() != null
+								&& uith.getBg_color() == UIItem.TRANSPARENT_COLOR) {
+							// if I paint a bg i need to invalidate all the item!!!
+							paintBGRegion(g, getBgImage(), 0, lastHeight,
+									reservedWidth, uithHeight, 0, 0);
+							uith.setDirty(true);
+						}
+						uith.paint0(g, reservedWidth, uithHeight);
+					}
 
 					// if I am not a Screen I must show arrows to show there
 					// are submenus
@@ -440,7 +447,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 							&& selectedSubmenu != null) g.drawImage(menuImage,
 							reservedWidth + 1 - UIMenu.menuImage.getWidth(),
 							(uithHeight - UIMenu.menuImage.getHeight()) / 2,
-							Graphics.TOP | Graphics.LEFT);
+							UIGraphics.TOP | UIGraphics.LEFT);
 					changed = true;
 				}
 				int itemHeight = uith.getHeight(g);
@@ -449,7 +456,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				this.lastVisibleIndex = i;
 
 				// only the visible UIItem
-				if (lastHeight > h - borderSize) {
+				if (heightReached(h, lastHeight)) {
 					/* last item is only "partially visible" */
 					this.lastVisibleIndex--;
 					lastHeight -= itemHeight;
@@ -461,59 +468,40 @@ public class UIMenu extends UIItem implements UIIContainer {
 					g.setColor(getBg_color() >= 0 ? getBg_color()
 							: UIConfig.menu_color);
 					int yGapHeight = this.height - lastHeight - 1;
-					if (this.needScrollbar == false) {
-						g.fillRect(0, 0, w - 1, yGapHeight - borderSize);
+					if (getBgImage() != null) {
+						int bgWidth = getBgImage().getWidth();
+						if (needScrollbar) bgWidth -= UIConfig.scrollbarWidth;
+						if (yGapHeight > 0) {
+							paintBGRegion(g, getBgImage(), g.getTranslateX()
+									- ox, g.getTranslateY() - oy, bgWidth,
+									yGapHeight, 0, 0);
+						}
 					} else {
-						g.fillRect(0, 0, w - UIConfig.scrollbarWidth - 1,
-								yGapHeight - borderSize);
+						if (this.needScrollbar == false) {
+							g.fillRect(0, 0, w - 1, yGapHeight - borderSize);
+						} else {
+							g.fillRect(0, 0, w - UIConfig.scrollbarWidth - 1,
+									yGapHeight - borderSize);
+						}
 					}
 				}
 
-				if (lastHeight == h) {
+				if (lastItemReached(h, lastHeight)) {
 					/* last item is perfectly visible */
 					break;
 				}
 			}
-
+			resetTranslation(g);
 			// draw the scrollbar
 			if (needScrollbar == true) {
-				g.translate(w - UIConfig.scrollbarWidth - borderSize + initialX
-						- g.getTranslateX(), initialY - g.getTranslateY() + 1);
-				g.setColor(UIConfig.scrollbar_bg);
-				g.fillRect(0, 0, UIConfig.scrollbarWidth, height - 1);
-				g.setColor(UIConfig.scrollbar_fg);
-				if (this.lastVisibleIndex != this.items.size() - 1) {
-					g.translate(0, scrollbarPosition);
-				} else {
-					g.translate(0, h - scrollbarHeight);
-				}
-				g.fillRect(1, 0, UIConfig.scrollbarWidth - 2, scrollbarHeight);
+				drawScrollbar(g, w, h, initialX, initialY, scrollbarHeight,
+						scrollbarPosition);
 			}
 
 			g.translate(initialX - g.getTranslateX(), initialY
 					- g.getTranslateY());
 			// the border is painted later if I am a screen
 			if (this instanceof UIScreen == false) {
-				//				g.setColor(UIConfig.menu_border);
-				//				g.drawRect(1, 1, width - 2, height - 2);
-				//				int col_lighter;
-				//				int col_darker;
-				//				if (UIConfig.menu_3d == true) {
-				//					col_lighter = getBg_color() >= 0 ? getBg_color()
-				//							: UIConfig.menu_color;
-				//					col_darker = UIUtils.colorize(col_lighter, -50);
-				//					col_lighter = UIUtils.colorize(col_lighter, 50);
-				//				} else {
-				//					col_lighter = UIConfig.menu_border;
-				//					col_darker = UIConfig.menu_border;
-				//				}
-				//				g.setColor(col_lighter);
-				//				g.drawLine(2, 2, width - 2, 2);
-				//				g.drawLine(2, 2, 2, height - 2);
-				//				g.setColor(col_darker);
-				//				g.drawLine(width - 2, 2, width - 2, height - 2);
-				//				g.drawLine(2, height - 2, width - 2, height - 2);
-
 				int currentbbColor = UIConfig.menu_border;
 				int innerUp = 0;
 				int innerDown = 0;
@@ -542,9 +530,9 @@ public class UIMenu extends UIItem implements UIIContainer {
 						colors, border);
 				if (UIConfig.menu_3d == true) {
 					g.setColor(innerDown);
-					UIUtils.drawPixel(g, width - 2, 2);
-					UIUtils.drawPixel(g, 2, height - 2);
-					UIUtils.drawPixel(g, width - 2, height - 2);
+					g.drawPixel(width - 2, 2);
+					g.drawPixel(2, height - 2);
+					g.drawPixel(width - 2, height - 2);
 				}
 			}
 
@@ -586,6 +574,184 @@ public class UIMenu extends UIItem implements UIIContainer {
 				this.setDirty(true);
 			}
 		}
+		g.setClip(originalClipX, originalClipY, originalClipWidth,
+				originalClipHeight);
+	}
+
+	/**
+	 * @param oldNeedScrollbar
+	 */
+	protected void checkScrollbar(boolean oldNeedScrollbar) {
+		if (needScrollbar == false && oldNeedScrollbar) {
+			// #ifndef RIM
+			paintOffset = 0;
+			// #endif
+			Enumeration en = this.items.elements();
+			while (en.hasMoreElements()) {
+				UIItem ithItem = (UIItem) en.nextElement();
+				ithItem.setDirty(true);
+			}
+		}
+	}
+
+	private boolean isOnscreen(UIGraphics g, UIItem ui, int oty, int ih) {
+		int clipY = g.getClipY();
+		int clipHeight = g.getClipHeight();
+		if (clipY + clipHeight > 0 && ih > clipY) return true;
+		else
+			return false;
+	}
+
+	/**
+	 * @param g
+	 * @param h
+	 * @return
+	 */
+	protected int getScrollbarPosition(UIGraphics g, int h, int scrollbarHeight) {
+		int scrollbarPosition = 0;
+		for (int i = 0; i < this.firstVisibleIndex; i++) {
+			UIItem uith = (UIItem) this.items.elementAt(i);
+			scrollbarPosition += uith.getHeight(g);
+		}
+		scrollbarPosition *= h;
+		scrollbarPosition /= neededHeight;
+		// #ifndef RIM
+		if (UICanvas.getInstance().hasPointerMotionEvents()) {
+			if (this.paintOffset == height - neededHeight) {
+				scrollbarPosition = (height - scrollbarHeight);
+			} else {
+				scrollbarPosition = (-paintOffset * height) / neededHeight;
+			}
+			return scrollbarPosition;
+		}
+		// #endif
+		if (this.lastVisibleIndex == this.items.size() - 1) {
+			scrollbarPosition = h - scrollbarHeight;
+		}
+		return scrollbarPosition;
+	}
+
+	protected void computeClip(UIGraphics g, int width, int height) {
+		g.setClip(0, 1, width, height);
+	}
+
+	/**
+	 * @param h
+	 * @param lastHeight
+	 * @return
+	 */
+	protected boolean lastItemReached(int h, int lastHeight) {
+		boolean res = lastHeight == h;
+		// #ifndef RIM
+		if (UICanvas.getInstance().hasPointerMotionEvents()) res = false;
+		// #endif
+		return res;
+	}
+
+	/**
+	 * @param h
+	 * @param lastHeight
+	 * @return
+	 */
+	protected boolean heightReached(int h, int lastHeight) {
+		boolean hr = lastHeight > h - borderSize;
+		// #ifndef RIM
+		if (UICanvas.getInstance().hasPointerMotionEvents()) hr = false;
+		// #endif
+		return hr;
+	}
+
+	/**
+	 * @param g
+	 * @param w
+	 * @param h
+	 * @param initialX
+	 * @param initialY
+	 * @param scrollbarHeight
+	 * @param scrollbarPosition
+	 */
+	protected void drawScrollbar(UIGraphics g, int w, int h, int initialX,
+			int initialY, int scrollbarHeight, int scrollbarPosition) {
+		g.translate(w - UIConfig.scrollbarWidth - borderSize + initialX
+				- g.getTranslateX(), initialY - g.getTranslateY() + 1);
+		g.setColor(UIConfig.scrollbar_bg);
+		g.fillRect(0, 0, UIConfig.scrollbarWidth, height - 1);
+		g.setColor(UIConfig.scrollbar_fg);
+		g.translate(0, scrollbarPosition);
+		g.fillRect(1, 0, UIConfig.scrollbarWidth - 2, scrollbarHeight);
+	}
+
+	/**
+	 * @param h
+	 * @param neededHeight
+	 * @return
+	 */
+	protected int getScrollbarHeight(int h, int neededHeight) {
+		int scrollbarHeight = (h * h) / neededHeight;
+		// to avoid a too big scrollbar;
+		if (scrollbarHeight > (2 * h) / 3) {
+			scrollbarHeight = (2 * h) / 3;
+		}
+		return scrollbarHeight;
+	}
+
+	/**
+	 * @param g
+	 * @param cr
+	 * @return
+	 */
+	protected int resizeHeight(UIGraphics g, int cr) {
+		// is it too big and it doesn't fit ?
+		if (this.height > cr) {
+			// can we move it ?
+			// use an offset from up
+			int Y = this.absoluteY;
+			int clipY = g.getClipY();
+			int translateY = g.getTranslateY();
+			if ((Y - clipY - translateY) > (this.height - cr)) {
+				this.absoluteY -= (this.height - cr);
+				// System.out.println("Translate 1: 0, " + (h - this.height));
+				g.translate(0, (cr - this.height));
+				cr = this.height;
+			} else {
+				int offset = 0;
+				// an offset is used for popup to avoid their
+				// touching the upper border
+				offset = g.getClipHeight() / 7;
+				this.absoluteY = translateY + clipY + offset;
+				this.height = g.getClipHeight() - offset;
+				g.translate(0, this.absoluteY - g.getTranslateY());
+				needScrollbar = true;
+				// recompute height only if not a screen:
+				// screens have fixed size
+				cr = this.height;
+			}
+		}
+		return cr;
+	}
+
+	protected void resetTranslation(UIGraphics g) {
+		// #ifndef RIM
+		if (UICanvas.getInstance().hasPointerMotionEvents()) {
+			g.translate(0, -paintOffset);
+		}
+		// #endif
+	}
+
+	/**
+	 * @param g
+	 * @param initialX
+	 * @param initialY
+	 */
+	protected void setTranslation(UIGraphics g, int initialX, int initialY) {
+		g.translate(1 - g.getTranslateX() + initialX, 1 - g.getTranslateY()
+				+ initialY);
+		g.translate(borderSize, borderSize);
+		// #ifndef RIM
+		if (UICanvas.getInstance().hasPointerMotionEvents()) {
+			g.translate(0, paintOffset);
+		}
+		// #endif
 	}
 
 	/**
@@ -600,18 +766,18 @@ public class UIMenu extends UIItem implements UIIContainer {
 	protected UIItem keyPressed(int key, int ga) {
 		//UIItem v = null;
 		if (openSubMenu != null) {
-			/*v = */openSubMenu.keyPressed(key, ga);
+			/* v = */openSubMenu.keyPressed(key, ga);
 			return null;
 		}
 		if (key != UICanvas.MENU_RIGHT
-				&& ga != Canvas.FIRE
+				&& ga != UICanvas.FIRE
 				&& this.selectedIndex >= 0
 				&& selectedIndex < this.items.size()
 				&& ((UIItem) this.items.elementAt(selectedIndex))
 						.keyPressed(key) == true) { return null; }
 		UIItem selItem = null;
 		switch (ga) {
-			case Canvas.UP:
+			case UICanvas.UP:
 				if (selectedIndex >= 0 && selectedIndex < this.items.size()) ((UIItem) this.items
 						.elementAt(selectedIndex)).setSelected(false);
 				if (selectedIndex == 0) {
@@ -636,7 +802,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				this.askRepaint();
 				break;
 
-			case Canvas.DOWN:
+			case UICanvas.DOWN:
 				if (selectedIndex >= 0 && selectedIndex < this.items.size()) ((UIItem) this.items
 						.elementAt(selectedIndex)).setSelected(false);
 				if (selectedIndex == this.items.size() - 1) {
@@ -660,7 +826,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 				break;
 		}
 
-		if ((key == UICanvas.MENU_RIGHT || ga == Canvas.FIRE)
+		if ((key == UICanvas.MENU_RIGHT || ga == UICanvas.FIRE)
 				&& selectedIndex >= 0 && this.items.size() > 0) {
 			UIItem selectedItem = ((UIItem) this.items.elementAt(selectedIndex))
 					.getSelectedItem();
@@ -758,7 +924,7 @@ public class UIMenu extends UIItem implements UIIContainer {
 	 * @param g
 	 *            the {@link Graphics} on which to paint into
 	 */
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		this.height = 1;
 		for (Enumeration en = items.elements(); en.hasMoreElements();) {
 			UIItem ithItem = (UIItem) en.nextElement();
@@ -790,13 +956,6 @@ public class UIMenu extends UIItem implements UIIContainer {
 			UIItem ithItem = (UIItem) en.nextElement();
 			ithItem.setDirty(dirty);
 		}
-	}
-
-	/**
-	 * @return the needScrollbar
-	 */
-	boolean getNeedScrollbar() {
-		return needScrollbar;
 	}
 
 	/**
@@ -878,5 +1037,26 @@ public class UIMenu extends UIItem implements UIIContainer {
 
 	public boolean isAutoClose() {
 		return autoClose;
+	}
+
+	/**
+	 * @return the titleLabel
+	 */
+	public UILabel getTitleLabel() {
+		return titleLabel;
+	}
+
+	/**
+	 * @param needScrollbar the needScrollbar to set
+	 */
+	public void setNeedScrollbar(boolean needScrollbar) {
+		this.needScrollbar = needScrollbar;
+	}
+
+	/**
+	 * @return the needScrollbar
+	 */
+	public boolean isNeedScrollbar() {
+		return needScrollbar;
 	}
 }

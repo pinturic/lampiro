@@ -1,8 +1,9 @@
+// #condition !RIM
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
  * $Id: SplashScreen.java 846 2008-09-11 12:20:05Z luca $
-*/
+ */
 
 package lampiro.screens;
 
@@ -13,12 +14,11 @@ import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
-import it.yup.xmpp.Config;
-
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
+import it.yup.client.Config;
 
 public class KeyScreen extends UIScreen {
 
@@ -49,8 +49,8 @@ public class KeyScreen extends UIScreen {
 		txt = new UILabel("");
 		err = new UILabel("");
 		txt.setWrappable(true, UICanvas.getInstance().getWidth() - 10);
-		Font xFont = UIConfig.font_body;
-		Font lFont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+		UIFont xFont = UIConfig.font_body;
+		UIFont lFont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
 				.getSize());
 		txt.setFont(lFont);
 	}
@@ -75,109 +75,116 @@ public class KeyScreen extends UIScreen {
 		confLabel.setSelected(false);
 		int screenHeight = UICanvas.getInstance().getClipHeight();
 		int menuHeight = this.confMenu.getHeight(getGraphics());
+		int yHeight = screenHeight - menuHeight - 2;
+		// #ifndef RIM
 		int footerHeight = this.footer.getHeight(getGraphics());
-		this.confMenu
-				.setAbsoluteY(screenHeight - menuHeight - footerHeight - 2);
+		yHeight -= footerHeight;
+		// #endif
+		this.confMenu.setAbsoluteY(yHeight);
 		this.addPopup(confMenu);
 	}
 
 	private boolean isValid(int key) {
 		int ga = UICanvas.getInstance().getGameAction(key);
 		if (ga == UICanvas.UP || ga == UICanvas.DOWN || ga == UICanvas.LEFT
-				|| ga == UICanvas.RIGHT || ga == UICanvas.FIRE) { return false; }
+				|| ga == UICanvas.RIGHT || ga == UICanvas.FIRE) {
+			return false;
+		}
 		return true;
 	}
 
 	public boolean keyPressed(int key) {
 		switch (status) {
-			case STATE_LEFT_WAIT:
-				if (isValid(key)) {
-					lkey = key;
-					txt.setText(rm.getString(ResourceIDs.STR_KEY_CONFIRM_LEFT)
-							+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
-					err.setText(" ");
-					status = STATE_LEFT_OK;
-				} else {
-					err.setText(rm
-							.getString(ResourceIDs.STR_KEY_ERROR_SELECTION));
-				}
-				this.setDirty(true);
+		case STATE_LEFT_WAIT:
+			if (isValid(key)) {
+				lkey = key;
+				txt.setText(rm.getString(ResourceIDs.STR_KEY_CONFIRM_LEFT)
+						+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
+				err.setText(" ");
+				status = STATE_LEFT_OK;
+			} else {
+				err.setText(rm.getString(ResourceIDs.STR_KEY_ERROR_SELECTION));
+			}
+			this.setDirty(true);
+			this.removePopup(confMenu);
+			this.addPopup(confMenu);
+			askRepaint();
+			break;
+		case STATE_LEFT_OK:
+			if (lkey == key) {
+				status = STATE_RIGHT_WAIT;
+				txt.setText(rm.getString(ResourceIDs.STR_KEY_SELECT_RIGHT)
+						+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
+				err.setText("");
+				UILabel confLabel = new UILabel(rm
+						.getString(ResourceIDs.STR_KEY_PRESS));
+				confLabel.setAnchorPoint(UIGraphics.RIGHT);
+				confLabel.setFlip(true);
+				this.confMenu.remove(1);
 				this.removePopup(confMenu);
+				this.confMenu.setAbsoluteX(this.getWidth()
+						- confMenu.getWidth());
 				this.addPopup(confMenu);
-				askRepaint();
-				break;
-			case STATE_LEFT_OK:
-				if (lkey == key) {
-					status = STATE_RIGHT_WAIT;
-					txt.setText(rm.getString(ResourceIDs.STR_KEY_SELECT_RIGHT)
-							+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
-					err.setText("");
-					UILabel confLabel = new UILabel(rm
-							.getString(ResourceIDs.STR_KEY_PRESS));
-					confLabel.setAnchorPoint(Graphics.RIGHT);
-					confLabel.setFlip(true);
-					this.confMenu.remove(1);
-					this.removePopup(confMenu);
-					this.confMenu.setAbsoluteX(this.getWidth()
-							- confMenu.getWidth());
-					this.addPopup(confMenu);
-					this.confMenu.append(confLabel);
-					this.setDirty(true);
-					this.askRepaint();
+				this.confMenu.append(confLabel);
+				this.setDirty(true);
+				this.askRepaint();
 
-				} else {
-					err.setText(rm.getString(ResourceIDs.STR_KEY_ERROR_KEY));
-					txt.setText(rm.getString(ResourceIDs.STR_KEY_SELECT_LEFT)
-							+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
-					this.removePopup(confMenu);
-					this.addPopup(confMenu);
-					status = STATE_LEFT_WAIT;
-				}
-				this.setDirty(true);
-				askRepaint();
-				break;
-			case STATE_RIGHT_WAIT:
-				if (isValid(key) && key != lkey) {
-					rkey = key;
-					txt.setText(rm.getString(ResourceIDs.STR_KEY_CONFIRM_RIGHT)
-							+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
-					err.setText(" ");
-					status = STATE_RIGHT_OK;
-				} else {
-					err.setText(rm
-							.getString(ResourceIDs.STR_KEY_ERROR_SELECTION));
-				}
-				this.setDirty(true);
+			} else {
+				err.setText(rm.getString(ResourceIDs.STR_KEY_ERROR_KEY));
+				txt.setText(rm.getString(ResourceIDs.STR_KEY_SELECT_LEFT) + " "
+						+ rm.getString(ResourceIDs.STR_KEY_CONFIRM));
 				this.removePopup(confMenu);
 				this.addPopup(confMenu);
-				askRepaint();
-				break;
-			case STATE_RIGHT_OK:
-				if (rkey == key) {
-					status = STATE_WAIT_DONE;
-					txt.setText(rm.getString(ResourceIDs.STR_KEY_PROCEED));
-					err.setText(" ");
-					this.removePopup(confMenu);
-				} else {
-					status = STATE_RIGHT_WAIT;
-					txt.setText(rm.getString(ResourceIDs.STR_KEY_SELECT_RIGHT)
-							+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
-					err.setText(rm.getString(ResourceIDs.STR_KEY_ERROR_KEY));
-					this.removePopup(confMenu);
-					this.addPopup(confMenu);
-				}
-				this.setDirty(true);
-				askRepaint();
-				break;
-			case STATE_WAIT_DONE:
-				String keys = lkey + "," + rkey;
-				Config.getInstance().setProperty(Config.CANVAS_KEYS, keys);
-				Config.getInstance().saveToStorage();
-				UICanvas.setMenuKeys(lkey, rkey);
-				UIConfig.menu_title = this.oldFg;
-				UICanvas.getInstance().close(KeyScreen.this);
-				break;
+				status = STATE_LEFT_WAIT;
+			}
+			this.setDirty(true);
+			askRepaint();
+			break;
+		case STATE_RIGHT_WAIT:
+			if (isValid(key) && key != lkey) {
+				rkey = key;
+				txt.setText(rm.getString(ResourceIDs.STR_KEY_CONFIRM_RIGHT)
+						+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
+				err.setText(" ");
+				status = STATE_RIGHT_OK;
+			} else {
+				err.setText(rm.getString(ResourceIDs.STR_KEY_ERROR_SELECTION));
+			}
+			this.setDirty(true);
+			this.removePopup(confMenu);
+			this.addPopup(confMenu);
+			askRepaint();
+			break;
+		case STATE_RIGHT_OK:
+			if (rkey == key) {
+				status = STATE_WAIT_DONE;
+				txt.setText(rm.getString(ResourceIDs.STR_KEY_PROCEED));
+				err.setText(" ");
+				this.removePopup(confMenu);
+			} else {
+				status = STATE_RIGHT_WAIT;
+				txt.setText(rm.getString(ResourceIDs.STR_KEY_SELECT_RIGHT)
+						+ " " + rm.getString(ResourceIDs.STR_KEY_CONFIRM));
+				err.setText(rm.getString(ResourceIDs.STR_KEY_ERROR_KEY));
+				this.removePopup(confMenu);
+				this.addPopup(confMenu);
+			}
+			this.setDirty(true);
+			askRepaint();
+			break;
+		case STATE_WAIT_DONE:
+			String keys = lkey + "," + rkey;
+			Config.getInstance().setProperty(Config.CANVAS_KEYS, keys);
+			Config.getInstance().saveToStorage();
+			UICanvas.setMenuKeys(lkey, rkey);
+			UIConfig.menu_title = this.oldFg;
+			UICanvas.getInstance().close(KeyScreen.this);
+			break;
 		}
+		return false;
+	}
+	
+	public boolean askClose() {
 		return false;
 	}
 }

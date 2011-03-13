@@ -1,13 +1,12 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Presence.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Presence.java 2325 2010-11-15 20:07:28Z luca $
 */
 
 package it.yup.xmpp.packets;
 
 import it.yup.xml.Element;
-import it.yup.xmpp.Config;
 
 /**
  * 
@@ -104,10 +103,16 @@ public class Presence extends Stanza {
 		Element el = getChildByName(NS_JABBER_CLIENT, RESOURCE);
 		if (el != null) {
 			return el.getText();
-		} else {
+		}
+		return null;
+		
+		/*
+		 XXX what is this ?
+		else {
 			Config cfg = Config.getInstance();
 			return cfg.getProperty(Config.YUP_RESOURCE, Config.CLIENT_NAME);
 		}
+		*/ 
 	}
 
 	public void setStatus(String status) {

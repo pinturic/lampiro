@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: FTScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
@@ -17,6 +17,8 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UIVLayout;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.xmpp.FTSender;
@@ -26,23 +28,20 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
-
 //#mdebug
-//@
-//@import it.yup.util.Logger;
-//@
-//#enddebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 class FTScreen extends UIScreen {
 	private static ResourceManager rm = ResourceManager.getManager();
 
 	private UILabel cmd_exit = null;
 
-	private static Image rightImage;
+	private static UIImage rightImage;
 
-	private static Image leftImage;
+	private static UIImage leftImage;
 
 	private static Vector fts = new Vector();
 
@@ -78,7 +77,8 @@ class FTScreen extends UIScreen {
 
 	public boolean keyPressed(int key) {
 		boolean rolled = RosterScreen.makeRoll(key, this);
-		if (rolled == false) return super.keyPressed(key);
+		if (rolled == false)
+			return super.keyPressed(key);
 		return true;
 	}
 
@@ -90,11 +90,11 @@ class FTScreen extends UIScreen {
 
 	static {
 		try {
-			rightImage = Image.createImage("/icons/menuarrow.png");
-			leftImage = Image.createImage("/icons/leftarrow.png");
+			rightImage = UIImage.createImage("/icons/menuarrow.png");
+			leftImage = UIImage.createImage("/icons/leftarrow.png");
 		} catch (IOException e) {
 			// #mdebug
-//@			System.out.println("In allocating menuImage" + e.getMessage());
+			System.out.println("In allocating menuImage" + e.getMessage());
 			// #enddebug
 		}
 	}
@@ -129,46 +129,46 @@ class FTScreen extends UIScreen {
 
 	public static void ftFinished(Object sender) {
 		try {
-			UICanvas.lock();
-			Enumeration en = fts.elements();
-			while (en.hasMoreElements()) {
-				FTItem ithObject = (FTItem) en.nextElement();
-				if (ithObject.transferrer == sender) {
-					ithObject.status = FTItem.STATUS_FINISHED;
-					break;
+			synchronized (UICanvas.getLock()) {
+				Enumeration en = fts.elements();
+				while (en.hasMoreElements()) {
+					FTItem ithObject = (FTItem) en.nextElement();
+					if (ithObject.transferrer == sender) {
+						ithObject.status = FTItem.STATUS_FINISHED;
+						break;
+					}
 				}
+				if (_instance != null)
+					_instance.fillScreen();
 			}
-			if (_instance != null) _instance.fillScreen();
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In ftFinished:" + e.getClass());
-//@			e.printStackTrace();
+			Logger.log("In ftFinished:" + e.getClass());
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
 	public static void ftAccept(FTSender sender, boolean accept) {
 		try {
-			UICanvas.lock();
-			Enumeration en = fts.elements();
-			while (en.hasMoreElements()) {
-				FTItem ithObject = (FTItem) en.nextElement();
-				if (ithObject.transferrer == sender) {
-					ithObject.status = (accept ? FTItem.STATUS_ONGOING
-							: FTItem.STATUS_DECLINED);
-					break;
+			synchronized (UICanvas.getLock()) {
+				Enumeration en = fts.elements();
+				while (en.hasMoreElements()) {
+					FTItem ithObject = (FTItem) en.nextElement();
+					if (ithObject.transferrer == sender) {
+						ithObject.status = (accept ? FTItem.STATUS_ONGOING
+								: FTItem.STATUS_DECLINED);
+						break;
+					}
 				}
+				if (_instance != null)
+					_instance.fillScreen();
 			}
-			if (_instance != null) _instance.fillScreen();
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In ftaccept:" + e.getClass());
-//@			e.printStackTrace();
+			Logger.log("In ftaccept:" + e.getClass());
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 
@@ -176,7 +176,8 @@ class FTScreen extends UIScreen {
 		FTItem ithObject = new FTItem(sender, FTItem.STATUS_WAITING,
 				FTItem.DIRECTION_OUT, 0, fileName);
 		fts.addElement(ithObject);
-		if (_instance != null) _instance.fillScreen();
+		if (_instance != null)
+			_instance.fillScreen();
 	}
 
 	private void fillScreen() {
@@ -210,8 +211,9 @@ class FTScreen extends UIScreen {
 					ithVLayout.setGroup(false);
 
 					String fileName = "";
-					Image dirImg = null;
-					if (ithObject.direction == FTItem.DIRECTION_OUT) dirImg = rightImage;
+					UIImage dirImg = null;
+					if (ithObject.direction == FTItem.DIRECTION_OUT)
+						dirImg = rightImage;
 					else
 						dirImg = leftImage;
 
@@ -219,32 +221,31 @@ class FTScreen extends UIScreen {
 					String status = "";
 					UILabel ithLabel = new UILabel(dirImg, status);
 					switch (bStatus) {
-						case FTItem.STATUS_ONGOING:
-							status = rm.getString(ResourceIDs.STR_ONGOING)
-									+ " - " + ithObject.percentage * 10 + "%";
-							break;
+					case FTItem.STATUS_ONGOING:
+						status = rm.getString(ResourceIDs.STR_ONGOING) + " - "
+								+ ithObject.percentage * 10 + "%";
+						break;
 
-						case FTItem.STATUS_FINISHED:
-							status = rm.getString(ResourceIDs.STR_FINISHED);
-							break;
+					case FTItem.STATUS_FINISHED:
+						status = rm.getString(ResourceIDs.STR_FINISHED);
+						break;
 
-						case FTItem.STATUS_WAITING:
-							status = rm
-									.getString(ResourceIDs.STR_WAIT_ACCEPTANCE);
-							break;
+					case FTItem.STATUS_WAITING:
+						status = rm.getString(ResourceIDs.STR_WAIT_ACCEPTANCE);
+						break;
 
-						case FTItem.STATUS_DECLINED:
-							status = rm.getString(ResourceIDs.STR_DECLINED);
-							break;
+					case FTItem.STATUS_DECLINED:
+						status = rm.getString(ResourceIDs.STR_DECLINED);
+						break;
 
-						default:
-							break;
+					default:
+						break;
 					}
 
 					ithLabel.setText(status);
-					ithLabel.setAnchorPoint(Graphics.RIGHT);
+					ithLabel.setAnchorPoint(UIGraphics.RIGHT);
 
-					Graphics g = RosterScreen.getInstance().getGraphics();
+					UIGraphics g = RosterScreen.getInstance().getGraphics();
 					ithVLayout.insert(ithLabel, 0, ithLabel.getHeight(g),
 							UILayout.CONSTRAINT_PIXELS);
 
@@ -273,8 +274,8 @@ class FTScreen extends UIScreen {
 			this.ftPanel.setSelectedIndex(oldSelectedIndex);
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In fillScreen:" + e.getClass());
-//@			e.printStackTrace();
+			Logger.log("In fillScreen:" + e.getClass());
+			e.printStackTrace();
 			// #enddebug
 		}
 
@@ -285,23 +286,23 @@ class FTScreen extends UIScreen {
 	public static void chunkTransferred(int sentBytes, int length,
 			Object ftEntity) {
 		try {
-			UICanvas.lock();
-			Enumeration en = fts.elements();
-			while (en.hasMoreElements()) {
-				FTItem ithObject = (FTItem) en.nextElement();
-				if (ithObject.transferrer == ftEntity) {
-					ithObject.percentage = (sentBytes * 10) / length;
-					break;
+			synchronized (UICanvas.getLock()) {
+				Enumeration en = fts.elements();
+				while (en.hasMoreElements()) {
+					FTItem ithObject = (FTItem) en.nextElement();
+					if (ithObject.transferrer == ftEntity) {
+						ithObject.percentage = (sentBytes * 10) / length;
+						break;
+					}
 				}
+				if (_instance != null)
+					_instance.fillScreen();
 			}
-			if (_instance != null) _instance.fillScreen();
 		} catch (Exception e) {
 			// #mdebug
-//@			Logger.log("In chunktransferred:" + e.getClass());
-//@			e.printStackTrace();
+			Logger.log("In chunktransferred:" + e.getClass());
+			e.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
 	}
 }

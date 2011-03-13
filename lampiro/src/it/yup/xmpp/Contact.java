@@ -1,12 +1,11 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Contact.java 2050 2010-04-08 10:44:26Z luca $
+ * $Id: Contact.java 2331 2010-11-16 16:46:52Z luca $
 */
 
 package it.yup.xmpp;
 
-import it.yup.util.Utils;
 import it.yup.xml.Element;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
@@ -21,7 +20,7 @@ import java.util.Vector;
 /**
  * The Xmpp Contact
  */
-public class Contact extends IQResultListener {
+public class Contact {
 
 	/* possible availability status */
 	public static final int AV_CHAT = 0;
@@ -85,9 +84,6 @@ public class Contact extends IQResultListener {
 	// XXX to array
 	/** the command list; array of String pairs (node/name) */
 	public String cmdlist[][] = null;
-
-	private String queryCapNode = null;
-	private String queryCapVer = null;
 
 	public boolean pending_tasks = false;
 
@@ -161,8 +157,8 @@ public class Contact extends IQResultListener {
 	}
 
 	public Element store() {
-		Element el = new Element(XMPPClient.NS_IQ_ROSTER, "item");
-		el.setAttributes(new String[] { "jid", "name", XMPPClient.SUBSCRIPTION },
+		Element el = new Element(XmppConstants.NS_IQ_ROSTER, "item");
+		el.setAttributes(new String[] { "jid", "name", XmppConstants.SUBSCRIPTION },
 				new String[] { jid, name, subscription });
 		for (int i = 0; i < this.groups.length; i++) {
 			if (this.groups[i].equals(Roster.unGroupedCode) == false) {
@@ -170,7 +166,7 @@ public class Contact extends IQResultListener {
 			}
 		}
 		// #mdebug
-//@		//System.out.println("Dump: " + jid);
+		//System.out.println("Dump: " + jid);
 		// #enddebug
 		return el;
 	}
@@ -205,12 +201,12 @@ public class Contact extends IQResultListener {
 		String from = msg.getAttribute(Stanza.ATT_FROM);
 		Element error = msg.getChildByName(null, Message.ERROR);
 		if (error != null) {
-			String code = error.getAttribute(XMPPClient.CODE);
+			String code = error.getAttribute(XmppConstants.CODE);
 			if (code != null) {
-				String mappedCode = XMPPClient.getErrorString(code);
+				String mappedCode = XmppConstants.getErrorString(code);
 				body = body + " - Error: " + mappedCode;
 			}
-			Element text = error.getChildByName(null, XMPPClient.TEXT);
+			Element text = error.getChildByName(null, XmppConstants.TEXT);
 			if (text != null) {
 				body = body + ". " + text.getText();
 			}
@@ -389,7 +385,7 @@ public class Contact extends IQResultListener {
 		// look for nickname
 		// many gw have wrong nickname!
 		if (p.getAttribute(Iq.ATT_FROM).indexOf("@") >= 0) {
-			Element x = p.getChildByName(XMPPClient.NS_VCARD_UPDATE, "x");
+			Element x = p.getChildByName(XmppConstants.NS_VCARD_UPDATE, "x");
 			if (x != null) {
 				Element nickname = x.getChildByName(null, "nickname");
 				if (nickname != null) {
@@ -454,28 +450,6 @@ public class Contact extends IQResultListener {
 
 		// cache the new availability
 		availability = mapAvailability(resources[0].getShow());
-		
-		// check the capabilities
-		// pass them to the roster that checks the db 
-		Element capNode = p.getChildByName(null, "c");
-		if (capNode != null) {
-			queryCapNode = capNode.getAttribute("node");
-			queryCapVer = capNode.getAttribute("ver");
-			Element cap = Config.getInstance().getCapabilities(queryCapNode,
-					queryCapVer);
-			if (cap != null) {
-				Element identity = cap.getChildByName(null, "identity");
-				if (identity != null) {
-					String type = identity.getAttribute("type");
-					if (type != null && type.indexOf("phone") >= 0) {
-						p.pType = Presence.PHONE;
-					}
-				}
-			}
-			else{
-				this.askCapabilities(p);
-			}
-		}
 	}
 
 	/**
@@ -503,29 +477,6 @@ public class Contact extends IQResultListener {
 			}
 			resources = v;
 		}
-	}
-
-	public Element getCapabilities(Presence p) {
-		if (p == null) return null;
-		Element c = p.getChildByName(XMPPClient.NS_CAPS, "c");
-		if (c == null) { return null; }
-		String node = c.getAttribute("node");
-		String ver = c.getAttribute("ver");
-		return Config.getInstance().getCapabilities(node, ver);
-	}
-
-	public void askCapabilities(Presence p) {
-		Element c = null;
-		if (p != null) {
-			c = p.getChildByName(XMPPClient.NS_CAPS, "c");
-		}
-		Iq iq = new Iq(p.getAttribute(Message.ATT_FROM), Iq.T_GET);
-		Element query = iq.addElement(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-		if (c != null) {
-			query.setAttribute("node", c.getAttribute("node") + "#"
-					+ c.getAttribute("ver"));
-		}
-		XMPPClient.getInstance().sendIQ(iq, this);
 	}
 
 	protected void updateExistingPresence(Presence p) {
@@ -582,6 +533,11 @@ public class Contact extends IQResultListener {
 		return d.getPrintableName().toLowerCase().compareTo(
 				getPrintableName().toLowerCase());
 	}
+	
+	public boolean compareToNames(Contact right) {
+		return this.getPrintableName().toLowerCase().compareTo(
+				right.getPrintableName().toLowerCase()) < 0;
+	}
 
 	private int availabilityDiff(Contact left, Contact right) {
 		if ((right.availability >= 2 && left.availability <= 1)
@@ -627,6 +583,7 @@ public class Contact extends IQResultListener {
 		}
 	}
 
+	// TODO: JID parsing in utils?
 	public static String resource(String jid) {
 		int spos = jid.indexOf('/');
 		if (spos > 0) {
@@ -668,28 +625,6 @@ public class Contact extends IQResultListener {
 			if (availability_mapping[i].equals(s)) { return i; }
 		}
 		return -1;
-	}
-
-	public void handleError(Element e) {
-		// TODO Auto-generated method stub
-
-	}
-
-	public void handleResult(Element e) {
-		Element query = e.getChildByName(XMPPClient.NS_IQ_DISCO_INFO, Iq.QUERY);
-		String fullNode = query.getAttribute("node");
-		if (fullNode == null) {
-			if (queryCapVer != null && queryCapNode != null) fullNode = queryCapNode
-					+ "#" + queryCapVer;
-		}
-		if (fullNode != null) {
-			Vector fn = Utils.tokenize(fullNode, '#');
-			String node = (String) fn.elementAt(0);
-			String ver = (String) fn.elementAt(1);
-			Config.getInstance().saveCapabilities(node, ver, query);
-			this.updatePresence(this.resources[0]);
-		}
-
 	}
 
 	/**
@@ -736,30 +671,5 @@ public class Contact extends IQResultListener {
 	 */
 	public String[] getGroups() {
 		return groups;
-	}
-
-	public boolean supportsMUC(Presence p) {
-		if (p == null) return false;
-		/*
-		 * Gmail supports only the old "deprecated" format with CAPS Extension
-		 * 
-		 */
-		Element c = p.getChildByName(XMPPClient.NS_CAPS, "c");
-		if (c != null) {
-			String ext = c.getAttribute("ext");
-			if (ext != null && ext.indexOf("pmuc-v1") >= 0) return true;
-		}
-
-		/*
-		 * While this is the suggested one
-		 */
-		Element caps = this.getCapabilities(p);
-		if (caps == null) return false;
-		Element[] features = caps.getChildrenByName(null, XMPPClient.FEATURE);
-		for (int i = 0; i < features.length; i++) {
-			Element ithFeature = features[i];
-			if (ithFeature.getAttribute("var").equals(XMPPClient.NS_MUC)) return true;
-		}
-		return false;
 	}
 }

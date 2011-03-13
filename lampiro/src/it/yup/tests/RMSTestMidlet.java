@@ -6,7 +6,8 @@
 package it.yup.tests;
 
 
-import it.yup.util.RMSIndex;
+import it.yup.util.storage.KeyStore;
+import it.yup.util.storage.KeyStoreFactory;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
@@ -21,15 +22,15 @@ import javax.microedition.midlet.MIDletStateChangeException;
 
 public class RMSTestMidlet extends MIDlet {
 
-	RMSIndex db;
-	RMSIndex db2;
-	RMSIndex db3;
+	KeyStore db;
+	KeyStore db2;
+	KeyStore db3;
 	Hashtable data = new Hashtable();
 	TestForm testForm = new TestForm("test");
 
 	public RMSTestMidlet() {
 		Display.getDisplay(this).setCurrent(testForm);
-		db = new RMSIndex("test01", 30000);
+		db =  KeyStoreFactory.getStore("test01");
 		//		db2 = new RMSIndex("test02");
 		//		db3 = new RMSIndex("test03");
 	}
@@ -56,13 +57,13 @@ public class RMSTestMidlet extends MIDlet {
 		db.close();
 	}
 	
-	private void testNull(RMSIndex db) {
+	private void testNull(KeyStore db) {
 		byte [] tempdata = db.load("gineprando2".getBytes());
 		db.load("gineprando".getBytes());
 		db.store("gineprando2".getBytes(), "".getBytes());
 	}
 
-	private void testMultiple(RMSIndex db) {
+	private void testMultiple(KeyStore db) {
 		Hashtable longHash = new Hashtable(1000);
 		for (int i = 1001; i < 10000; i++) {
 			longHash.put(i + "", i + "");
@@ -103,7 +104,7 @@ public class RMSTestMidlet extends MIDlet {
 
 	}
 
-	private void testLong(RMSIndex db) {
+	private void testLong(KeyStore db) {
 		Hashtable longHash = new Hashtable(100);
 		String myStryng = "my String";
 		for (int i = 0; i < 200; i++) {
@@ -151,7 +152,7 @@ public class RMSTestMidlet extends MIDlet {
 
 	}
 
-	private void checkCoherency(RMSIndex db, Hashtable longHash,
+	private void checkCoherency(KeyStore db, Hashtable longHash,
 			Vector shortVector) {
 		Enumeration en;
 		en = longHash.keys();
@@ -177,7 +178,7 @@ public class RMSTestMidlet extends MIDlet {
 		}
 	}
 
-	private void testJoin(RMSIndex db) {
+	private void testJoin(KeyStore db) {
 		Hashtable data = new Hashtable(571);
 		int size = 1000;
 		for (int i = 0; i < size; i++) {
@@ -219,7 +220,7 @@ public class RMSTestMidlet extends MIDlet {
 		a++;
 	}
 
-	private void testDeletion(RMSIndex db4) {
+	private void testDeletion(KeyStore db4) {
 		Hashtable data = new Hashtable(571);
 		int size = 1000;
 		for (int i = 0; i < size; i++) {
@@ -258,7 +259,7 @@ public class RMSTestMidlet extends MIDlet {
 		a++;
 	}
 
-	private void testFuncs(RMSIndex db) {
+	private void testFuncs(KeyStore db) {
 		Hashtable data = new Hashtable(571);
 		int size = 1000;
 		int total = 0;
@@ -349,7 +350,7 @@ public class RMSTestMidlet extends MIDlet {
 		}
 	}
 
-	private void testLength(RMSIndex db4) {
+	private void testLength(KeyStore db4) {
 		int size = 2048;
 		String sName = "a";
 		while (size < 50000) {
@@ -375,7 +376,7 @@ public class RMSTestMidlet extends MIDlet {
 
 	}
 
-	private void testDb(RMSIndex db) {
+	private void testDb(KeyStore db) {
 		db.store("gino".getBytes(), "gino".getBytes());
 		db.store(
 				"stringa-lunga-senza-sensostringa-lunga-senza-sensostringa-lunga-senza-senso"

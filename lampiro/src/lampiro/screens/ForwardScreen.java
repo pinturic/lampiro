@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: ForwardScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
@@ -15,25 +15,23 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.Utils;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.MUC;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
 
 import java.util.Enumeration;
 import java.util.Vector;
 
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
+//#mdebug
 
-// #mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 class ForwardScreen extends UIScreen {
@@ -110,9 +108,9 @@ class ForwardScreen extends UIScreen {
 				+ ChatScreen.rm.getString(ResourceIDs.STR_TO).toLowerCase()
 				+ ":");
 		instrLabel.setWrappable(true, UICanvas.getInstance().getWidth() - 40);
-		instrLabel.setAnchorPoint(Graphics.HCENTER);
-		Font xFont = UIConfig.font_body;
-		Font lfont = Font.getFont(xFont.getFace(), Font.STYLE_BOLD, xFont
+		instrLabel.setAnchorPoint(UIGraphics.HCENTER);
+		UIFont xFont = UIConfig.font_body;
+		UIFont lfont = UIFont.getFont(xFont.getFace(), UIFont.STYLE_BOLD, xFont
 				.getSize());
 		instrLabel.setFont(lfont);
 		sep = new UISeparator(2, UIUtils.colorize(UIConfig.bg_color, -10));
@@ -152,21 +150,21 @@ class ForwardScreen extends UIScreen {
 					}
 				}
 			} catch (Exception e) {
-				// #mdebug 
-//@								e.printStackTrace();
-//@								Logger.log(e.getClass().getName());
+				// #mdebug
+				e.printStackTrace();
+				Logger.log(e.getClass().getName());
 				// #enddebug
 			}
 		}
 		// select the first contact
-		if (this.contactPanel.getItems().size() >= 3) contactPanel
-				.setSelectedIndex(2);
+		if (this.contactPanel.getItems().size() >= 3)
+			contactPanel.setSelectedIndex(2);
 		this.setSelectedItem(contactPanel);
 	}
 
 	public boolean keyPressed(int kc) {
 		// #ifdef UI_DEBUG
-		//@		Logger.log("Roster screen keypressed :" + kc);
+		// @ Logger.log("Roster screen keypressed :" + kc);
 		// #endif
 		if (this.popupList.size() == 0
 				& this.getMenu().isOpenedState() == false) {
@@ -183,45 +181,46 @@ class ForwardScreen extends UIScreen {
 			}
 
 			switch (kc) {
-				case Canvas.KEY_NUM0:
-				case Canvas.KEY_NUM1:
-				case Canvas.KEY_NUM2:
-				case Canvas.KEY_NUM3:
-				case Canvas.KEY_NUM4:
-				case Canvas.KEY_NUM5:
-				case Canvas.KEY_NUM6:
-				case Canvas.KEY_NUM7:
-				case Canvas.KEY_NUM8:
-				case Canvas.KEY_NUM9:
-					int key_num = kc - Canvas.KEY_NUM0;
-					this.setFreezed(true);
-					long t = System.currentTimeMillis();
-					if ((key_num != sel_last_key) || t - sel_last_ts > 1000) {
-						// new key
+			case UICanvas.KEY_NUM0:
+			case UICanvas.KEY_NUM1:
+			case UICanvas.KEY_NUM2:
+			case UICanvas.KEY_NUM3:
+			case UICanvas.KEY_NUM4:
+			case UICanvas.KEY_NUM5:
+			case UICanvas.KEY_NUM6:
+			case UICanvas.KEY_NUM7:
+			case UICanvas.KEY_NUM8:
+			case UICanvas.KEY_NUM9:
+				int key_num = kc - UICanvas.KEY_NUM0;
+				this.setFreezed(true);
+				long t = System.currentTimeMillis();
+				if ((key_num != sel_last_key) || t - sel_last_ts > 1000) {
+					// new key
+					sel_key_offset = 0;
+					sel_last_key = key_num;
+					sel_pattern = sel_pattern
+							+ Utils.itu_keys[key_num][sel_key_offset];
+				} else {
+					// shifted key
+					sel_key_offset += 1;
+					if (sel_key_offset >= Utils.itu_keys[key_num].length)
 						sel_key_offset = 0;
-						sel_last_key = key_num;
-						sel_pattern = sel_pattern
-								+ Utils.itu_keys[key_num][sel_key_offset];
-					} else {
-						// shifted key
-						sel_key_offset += 1;
-						if (sel_key_offset >= Utils.itu_keys[key_num].length) sel_key_offset = 0;
-						sel_pattern = sel_pattern.substring(0, sel_pattern
-								.length() - 1)
-								+ Utils.itu_keys[key_num][sel_key_offset];
-					}
-					filterContacts();
-					sel_last_ts = t;
-					this.setFreezed(false);
-					if (this.contactPanel.getItems().size() > 0) {
-						this.contactPanel.setSelectedIndex(0);
-					}
-					this.askRepaint();
-					return true;
+					sel_pattern = sel_pattern.substring(0,
+							sel_pattern.length() - 1)
+							+ Utils.itu_keys[key_num][sel_key_offset];
+				}
+				filterContacts();
+				sel_last_ts = t;
+				this.setFreezed(false);
+				if (this.contactPanel.getItems().size() > 0) {
+					this.contactPanel.setSelectedIndex(0);
+				}
+				this.askRepaint();
+				return true;
 			}
 
 			int ga = UICanvas.getInstance().getGameAction(kc);
-			if (kc == UICanvas.MENU_CANCEL || kc == 8 || ga == Canvas.LEFT) {
+			if (kc == UICanvas.MENU_CANCEL || kc == 8 || ga == UICanvas.LEFT) {
 				if (sel_pattern.length() > 0) {
 					this.setFreezed(true);
 					sel_pattern = sel_pattern.substring(0,
@@ -256,9 +255,11 @@ class ForwardScreen extends UIScreen {
 			boolean cond = true;
 			while (en.hasMoreElements()) {
 				UILabel uil = (UILabel) en.nextElement();
-				if (sel_pattern.length() >= 1) cond = (uil.getText().indexOf(
-						sel_pattern) == 0);
-				if (cond) this.contactPanel.addItem(uil);
+				if (sel_pattern.length() >= 1)
+					cond = (uil.getText().toLowerCase().indexOf(
+							sel_pattern.toLowerCase()) == 0);
+				if (cond)
+					this.contactPanel.addItem(uil);
 			}
 			if (sel_pattern.length() == 0) {
 				this.savedContacts = null;
@@ -267,9 +268,9 @@ class ForwardScreen extends UIScreen {
 				this.setTitle(sel_pattern);
 			}
 		} catch (Exception e) {
-			// #mdebug 
-//@						e.printStackTrace();
-//@						Logger.log(e.getClass().getName());
+			// #mdebug
+			e.printStackTrace();
+			Logger.log(e.getClass().getName());
 			// #enddebug
 		}
 	}
@@ -314,11 +315,12 @@ class ForwardScreen extends UIScreen {
 				}
 				if (forwardContact != null) {
 					// i added to the message history and the remove it
-					// so that it is maintained now but the "icon" is not updated
+					// so that it is maintained now but the "icon" is not
+					// updated
 					forwardContact.addMessageToHistory(forwardResource, msg);
 					RosterScreen.getInstance()._updateContact(forwardContact,
 							Contact.CH_MESSAGE_NEW);
-					//forwardContact.resetMessageHistory(forwardResource);
+					// forwardContact.resetMessageHistory(forwardResource);
 				}
 				if (prevScreen instanceof ForwardListener) {
 					((ForwardListener) prevScreen).messageSent();

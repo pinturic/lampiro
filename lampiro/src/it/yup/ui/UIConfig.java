@@ -1,12 +1,13 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIConfig.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: UIConfig.java 2407 2011-01-20 23:38:44Z luca $
 */
 
 package it.yup.ui;
 
-import javax.microedition.lcdui.Font;
+import it.yup.ui.wrappers.UIFont;
 
 public class UIConfig {
 	
@@ -72,21 +73,26 @@ public class UIConfig {
 	// the color used for the outside menu border
 	public static boolean menu_3d = false;
 	
+	public static byte menu_padding = 5;
+	
 	/** the width of the scrollBar */
 	public static int scrollbarWidth = 7;
 
 	/** the title font */
-	public static Font font_title = Font.getFont(Font.FACE_PROPORTIONAL,
-			Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+	public static UIFont font_title = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+			UIFont.STYLE_BOLD, UIFont.SIZE_MEDIUM);
 
-	public static Font gauge_body = Font.getFont(Font.FACE_PROPORTIONAL,
-			Font.STYLE_BOLD, Font.SIZE_SMALL);
+	public static UIFont gauge_body = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+			UIFont.STYLE_BOLD, UIFont.SIZE_SMALL);
 
-	public static Font font_body = Font.getFont(Font.FACE_PROPORTIONAL,
-			Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
-
-	public static Font small_font = Font.getFont(Font.FACE_PROPORTIONAL,
-			Font.STYLE_PLAIN, Font.SIZE_SMALL);
+	public static UIFont font_body = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+			UIFont.STYLE_PLAIN, UIFont.SIZE_MEDIUM);
+	
+	public static UIFont font_menu = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+			UIFont.STYLE_PLAIN, UIFont.SIZE_MEDIUM);
+	
+	public static UIFont small_font = UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+			UIFont.STYLE_PLAIN, UIFont.SIZE_SMALL);
 	
 	// configurations strings for UIMenu and UIScreen default values
 	public static String cancelMenuString = "CANCEL";

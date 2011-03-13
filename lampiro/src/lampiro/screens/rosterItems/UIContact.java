@@ -2,7 +2,7 @@
  * See about.html for details about license.
  *
  * $Id: VCardManager.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 package lampiro.screens.rosterItems;
 
 import java.io.IOException;
@@ -18,29 +18,28 @@ import it.yup.ui.UILabel;
 import it.yup.ui.UIMenu;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 import it.yup.util.ResourceIDs;
-import it.yup.xmpp.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.MUC;
+import it.yup.xmpp.XmppConstants;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
-
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
 import lampiro.screens.AlbumScreen;
 import lampiro.screens.RosterScreen;
 
 public class UIContact extends UIRosterItem {
 
-	public static Image img_msg = UICanvas.getUIImage("/icons/message.png");
-	public static Image img_cmd = UICanvas.getUIImage("/icons/gear.png");
-	public static Image img_task = UICanvas.getUIImage("/icons/task.png");
+	public static UIImage img_msg = UICanvas.getUIImage("/icons/message.png");
+	public static UIImage img_cmd = UICanvas.getUIImage("/icons/gear.png");
+	public static UIImage img_task = UICanvas.getUIImage("/icons/task.png");
 
-	private static Image subscriptionTo = UIMenu.menuImage;
-	private static Image subscriptionFrom;
+	private static UIImage subscriptionTo = UIMenu.menuImage;
+	private static UIImage subscriptionFrom;
 
 	public static UILabel cmd_details = new UILabel(rm
 			.getString(ResourceIDs.STR_SEE_DETAILS));
@@ -80,8 +79,73 @@ public class UIContact extends UIRosterItem {
 	public static UILabel cmd_change_nick = new UILabel(rm
 			.getString(ResourceIDs.STR_CHANGE_NICK));
 
-	public static Image jabberImg = UICanvas
-			.getUIImage("/transport/jabber.png");
+	public static UIImage jabberImg = UICanvas
+			.getUIImage("/transport/xmpp.png");
+
+	private static UIImage presence_icons[];
+	private static UIImage presence_phone_icons[];
+
+	static {
+		// preload the presence icons
+		String mapping[] = Contact.availability_mapping;
+		presence_icons = new UIImage[mapping.length];
+		presence_phone_icons = new UIImage[mapping.length];
+		try {
+			presence_icons[0] = UIImage.createImage("/icons/presence_"
+					+ mapping[1] + ".png");
+			presence_phone_icons[0] = UIImage.createImage("/icons/presence_"
+					+ mapping[1] + "_phone.png");
+			presence_icons[1] = UIImage.createImage("/icons/presence_"
+					+ mapping[1] + ".png");
+			presence_phone_icons[1] = UIImage.createImage("/icons/presence_"
+					+ mapping[1] + "_phone.png");
+			presence_icons[2] = UIImage.createImage("/icons/presence_"
+					+ mapping[2] + ".png");
+			presence_phone_icons[2] = UIImage.createImage("/icons/presence_"
+					+ mapping[2] + "_phone.png");
+			presence_icons[3] = UIImage.createImage("/icons/presence_"
+					+ mapping[3] + ".png");
+			presence_phone_icons[3] = UIImage.createImage("/icons/presence_"
+					+ mapping[3] + "_phone.png");
+			presence_icons[4] = UIImage.createImage("/icons/presence_"
+					+ mapping[3] + ".png");
+			presence_phone_icons[4] = UIImage.createImage("/icons/presence_"
+					+ mapping[3] + "_phone.png");
+			presence_icons[5] = UIImage.createImage("/icons/presence_"
+					+ mapping[5] + ".png");
+			presence_phone_icons[5] = UIImage.createImage("/icons/presence_"
+					+ mapping[5] + "_phone.png");
+			presence_icons[6] = UIImage.createImage("/icons/muc.png");
+			presence_icons[7] = UIImage.createImage("/icons/muc-offline.png");
+
+		} catch (Exception e) {
+			// should not happen
+		}
+	}
+
+	public static UIImage getPresenceIcon(Contact c, String preferredResource,
+			int availability) {
+		Presence p = null;
+		if (c != null) {
+			// first check if it is a MUC
+			if (c instanceof MUC == true) {
+				if (c.getPresence(null) != null) return presence_icons[Contact.MUC_IMG];
+				else
+					return presence_icons[Contact.MUC_IMG_OFFLINE];
+			}
+			// next the usual ones
+			else if (preferredResource != null) p = c
+					.getPresence(preferredResource);
+			else
+				p = c.getPresence(null);
+		}
+		if (availability >= 0 && availability < presence_icons.length) {
+			if (p == null || p.pType == Presence.PC) {
+				return presence_icons[availability];
+			} else if (p.pType == Presence.PHONE) { return presence_phone_icons[availability]; }
+		}
+		return null; // maybe we could return an empty image
+	}
 
 	public Contact c;
 
@@ -94,13 +158,15 @@ public class UIContact extends UIRosterItem {
 			UIConfig.bg_color, -20);
 	public static int textLabelFontColor = 0x000000;
 
+	public static Vector extraCommands = new Vector();
+
 	/*
-	 * The label showing subscriptions 
+	 * The label showing subscriptions
 	 */
 	//	private UILabel subLabel = null;
 	static {
 		try {
-			subscriptionFrom = Image.createImage("/icons/menuarrow.png");
+			subscriptionFrom = UIImage.createImage("/icons/menuarrow.png");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -110,8 +176,8 @@ public class UIContact extends UIRosterItem {
 	public UIContact(Contact c) {
 		super();
 		this.c = c;
-		statusText.setFont(Font.getFont(Font.FACE_PROPORTIONAL,
-				Font.STYLE_PLAIN, Font.SIZE_SMALL));
+		statusText.setFont(UIFont.getFont(UIFont.FACE_PROPORTIONAL,
+				UIFont.STYLE_PLAIN, UIFont.SIZE_SMALL));
 		statusText.setFg_color(0xAAAAAA);
 		this.updateContactData();
 		//checkSubscription();
@@ -129,10 +195,10 @@ public class UIContact extends UIRosterItem {
 	public boolean updateContactData() {
 		boolean needRepaint = false;
 		String uname = c.getPrintableName();
-		Image pimg = null;
+		UIImage pimg = null;
 
 		pimg = getPresenceIcon();
-		if (pimg == null) pimg = xmppClient.getPresenceIcon(null, null,
+		if (pimg == null) pimg = UIContact.getPresenceIcon(null, null,
 				Contact.AV_UNAVAILABLE);
 		// setup the status text label
 		if (contactLabel.getText().equals(uname) == false) {
@@ -168,33 +234,41 @@ public class UIContact extends UIRosterItem {
 		return needRepaint;
 	}
 
-	protected Image getPresenceIcon() {
-		return xmppClient.getPresenceIcon(c, null, c.getAvailability());
+	protected UIImage getPresenceIcon() {
+		return UIContact.getPresenceIcon(c, null, c.getAvailability());
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		this.height = super.getHeight(g);
 		// a minimum width in case it is 0 (and hence not painted yet)
-		int minWidth = RosterScreen.getInstance().getWidth() - 25;
+
+		int infoHeight = 0;
+		int infoWidth = 2;
+		if ((this.isSelected() || UICanvas.getInstance().hasPointerEvents())
+				&& infoImgs.size() > 0) {
+			Enumeration en = this.infoImgs.elements();
+			while (en.hasMoreElements()) {
+				UIImage object = (UIImage) en.nextElement();
+				infoWidth += object.getWidth();
+				if (object.getHeight() > infoHeight) infoHeight = object
+						.getHeight();
+			}
+			// 4 is for the padding
+			infoHeight += 4;
+		}
+
+		int minWidth = RosterScreen.getInstance().getWidth() - 25 - infoWidth;
+		int statusHeight = 0;
 		if (this.isSelected() && minWidth > 25) this.statusText.setWrappable(
 				true, minWidth);
 		else
 			this.statusText.setWrappable(false, -1);
-		if (this.statusText.getText().length() > 0) this.height += statusText
-				.getHeight(g);
-		if (this.isSelected()) {
-			if (infoImgs.size() > 0) {
-				int infoHeight = 0;
-				Enumeration en = this.infoImgs.elements();
-				while (en.hasMoreElements()) {
-					Image object = (Image) en.nextElement();
-					if (object.getHeight() > infoHeight) infoHeight = object
-							.getHeight();
-				}
-				this.height += infoHeight;
-			}
-
+		if (this.statusText.getText().length() > 0) {
+			// 4 is for the padding
+			statusHeight = statusText.getHeight(g) + 4;
 		}
+
+		this.height += Math.max(statusHeight, infoHeight);
 		return this.height;
 	}
 
@@ -216,7 +290,7 @@ public class UIContact extends UIRosterItem {
 			String from = (String) en.nextElement();
 			if (c.jid.indexOf(from) > 0) {
 				Object[] data = (Object[]) gws.get(from);
-				infoImgs.addElement((Image) UIGateway
+				infoImgs.addElement((UIImage) UIGateway
 						.getGatewayIcons((String) data[1]));
 				found = true;
 				break;
@@ -227,8 +301,8 @@ public class UIContact extends UIRosterItem {
 		}
 
 		Presence[] aps = c.getAllPresences();
-		if (aps != null && aps.length > 0 && c.supportsMUC(aps[0])) {
-			infoImgs.addElement(xmppClient.getPresenceIcon(null, null,
+		if (aps != null && aps.length > 0 && RosterScreen.supportsMUC(aps[0])) {
+			infoImgs.addElement(UIContact.getPresenceIcon(null, null,
 					Contact.MUC_IMG));
 		}
 
@@ -239,69 +313,82 @@ public class UIContact extends UIRosterItem {
 
 	private Vector infoImgs = new Vector();
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		int yoffset = super.getHeight(g);
 		int statusLabelWidth = statusLabel.getImg().getWidth();
 		super.paint(g, w, h);
 		// an additional offset if the subscription has been painted
 		g.translate(0, yoffset);
-		int orX = g.getTranslateX();
-		int orY = g.getTranslateY();
+		//		int orX = g.getTranslateX();
+		//		int orY = g.getTranslateY();
 
 		int infoHeight = 0;
-		if (this.isSelected() && infoImgs.size() > 0) {
+		int infoWidth = 2;
+		if ((this.isSelected() || UICanvas.getInstance().hasPointerEvents())
+				&& infoImgs.size() > 0) {
 			Enumeration en = this.infoImgs.elements();
 			while (en.hasMoreElements()) {
-				Image object = (Image) en.nextElement();
+				UIImage object = (UIImage) en.nextElement();
+				infoWidth += object.getWidth();
 				if (object.getHeight() > infoHeight) infoHeight = object
 						.getHeight();
 			}
-			g.setColor(textLabelSelectedColor);
-			g.fillRect(0, 0, w, infoHeight);
-			g.translate(statusLabelWidth, 0);
-			g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
+			if (this.isSelected()) {
+				g.setColor(textLabelSelectedColor);
+			}
+			g.fillRect(0, 0, w, h - yoffset);
+			g.translate(statusLabelWidth, 2);
+			if (this.isSelected()) {
+				g.setColor(getBg_color() >= 0 ? getBg_color()
+						: UIConfig.bg_color);
+			}
 			en = infoImgs.elements();
 			while (en.hasMoreElements()) {
-				Image ithImg = (Image) en.nextElement();
+				UIImage ithImg = (UIImage) en.nextElement();
 				paintIthImage(g, ithImg);
 			}
-		}
+		} else
+			g.translate(statusLabelWidth, 2);
 
-		g.translate(orX - g.getTranslateX() + statusLabelWidth, orY
-				- g.getTranslateY() + infoHeight);
+		//		g.translate(orX - g.getTranslateX() + statusLabelWidth, orY
+		//				- g.getTranslateY() + infoHeight);
+		g.translate(2, 0);
 
 		if (this.statusText.getText().length() > 0) {
-			int statusTextHeight = statusText.getHeight(g);
+			// +4 is for the padding
+			int statusTextHeight = statusText.getHeight(g) + 2;
 			int oldStatusColor = statusText.getBg_color();
 			int oldStatusFontColor = statusText.getFg_color();
 			if (isSelected()) {
-				int oldColor = g.getColor();
-				g.setColor(textLabelSelectedColor);
-				g.fillRect(-statusLabelWidth, 0, statusLabelWidth,
-						statusTextHeight);
-				g.setColor(oldColor);
+				//				int oldColor = g.getColor();
+				//				g.setColor(textLabelSelectedColor);
+				//				g.fillRect(-statusLabelWidth, 0, statusLabelWidth,
+				//						statusTextHeight);
+				//				g.setColor(oldColor);
 				statusText.setBg_color(textLabelSelectedColor);
 				statusText.setFg_color(textLabelFontColor);
 			}
-			statusText.paint0(g, w - statusLabelWidth, statusTextHeight);
+			statusText.paint0(g, w - statusLabelWidth - infoWidth,
+					statusTextHeight);
 			statusText.setBg_color(oldStatusColor);
 			statusText.setFg_color(oldStatusFontColor);
 		}
 		//                      // Remove these elements because the pointerPressed must 
 		//                      // find the UIContact 
-                UIScreen cs = this.getScreen();
-                if (cs!=null){
-                cs.removePaintedItem(sep);
-                cs.removePaintedItem(statusText);
+		UIScreen cs = this.getScreen();
+		if (cs != null) {
+			cs.removePaintedItem(sep);
+			cs.removePaintedItem(statusText);
+		}
 	}
-        }
+
 	/**
 	 * @param g
 	 * @param ithImg
 	 */
-	private void paintIthImage(Graphics g, Image ithImg) {
+	private void paintIthImage(UIGraphics g, UIImage ithImg) {
 		if (ithImg != null) {
-			g.drawImage(ithImg, 0, 0, Graphics.TOP | Graphics.LEFT);
+			g.drawImage(ithImg, 0, 0, UIGraphics.TOP | UIGraphics.LEFT);
 			g.translate(ithImg.getWidth(), 0);
 		}
 	}
@@ -345,9 +432,164 @@ public class UIContact extends UIRosterItem {
 	}
 
 	public void openContactMenu() {
+		if (UICanvas.getInstance().hasPointerMotionEvents()) openContactMenuTouch();
+		else
+			openContactMenuKey();
+	}
+
+	private void openContactMenuTouch() {
 		Contact c = this.c;
 		RosterScreen rs = RosterScreen.getInstance();
+		extraCommands.removeAllElements();
+		if (c != null) {
+			boolean isOnline = RosterScreen.isOnline();
+			boolean isMuc = c instanceof MUC;
+			optionsMenu = UIUtils.easyMenu(c.getPrintableName(), 10, (this)
+					.getSubmenu().getAbsoluteY(), UICanvas.getInstance()
+					.getWidth() - 20, null);
+			optionsMenu.setAutoClose(false);
+			optionsAccordion = null;
+			Presence[] res = c.getAllPresences();
+			if (res != null && res.length > 1 && isMuc == false) {
+				if (isOnline) {
+					optionsMenu.append(cmd_details);
+					optionsMenu.append(cmd_change_nick);
+					optionsMenu.append(cmd_groups);
+					optionsMenu.append(cmd_resend_auth);
+					optionsMenu.append(cmd_rerequest_auth);
+					optionsMenu.append(cmd_delc);
+				}
+				for (int i = 0; i < res.length; i++) {
 
+					String resString = null;
+					resString = Contact.resource(res[i]
+							.getAttribute(Iq.ATT_FROM));
+					if (resString == null) resString = res[i]
+							.getAttribute(Iq.ATT_FROM);
+					UIImage img = UIContact.getPresenceIcon(c, res[i]
+							.getAttribute(Iq.ATT_FROM), c.getAvailability());
+					optionsLabel = new UILabel(img, resString);
+					optionsLabel.setWrappable(true, UICanvas.getInstance()
+							.getWidth() - 30);
+					String fullJid = res[i].getAttribute(Message.ATT_FROM);
+					optionsLabel.setStatus(fullJid);
+					optionsLabel.setAnchorPoint(UIGraphics.HCENTER);
+					optionsMenu.append(optionsLabel);
+					optionsLabel.setBg_color(UIConfig.header_bg);
+					optionsLabel.setFg_color(UIConfig.menu_title);
+					optionsLabel.setFocusable(false);
+					UILabel ithLabel = new UILabel(cmd_chat);
+					extraCommands.addElement(new Object[] { ithLabel, cmd_chat,
+							fullJid });
+					optionsMenu.append(ithLabel);
+					if (isOnline) {
+						ithLabel = new UILabel(cmd_send);
+						extraCommands.addElement(new Object[] { ithLabel,
+								cmd_send, fullJid });
+						optionsMenu.append(ithLabel);
+						if (AlbumScreen.getCount(XmppConstants.IMG_TYPE) > 0
+								|| AlbumScreen
+										.getCount(XmppConstants.AUDIO_TYPE) > 0) {
+							ithLabel = new UILabel(cmd_send_file);
+							extraCommands.addElement(new Object[] { ithLabel,
+									cmd_send_file, fullJid });
+							optionsMenu.append(ithLabel);
+						}
+						if (rs.cameraOn) {
+							ithLabel = new UILabel(cmd_contact_capture_img);
+							extraCommands.addElement(new Object[] { ithLabel,
+									cmd_contact_capture_img, fullJid });
+							optionsMenu.append(ithLabel);
+						}
+						if (rs.micOn) {
+							ithLabel = new UILabel(cmd_contact_capture_aud);
+							extraCommands.addElement(new Object[] { ithLabel,
+									cmd_contact_capture_aud, fullJid });
+							optionsMenu.append(ithLabel);
+						}
+						ithLabel = new UILabel(cmd_querycmd);
+						optionsMenu.append(ithLabel);
+						extraCommands.addElement(new Object[] { ithLabel,
+								cmd_querycmd, fullJid });
+						if (c.pending_tasks) {
+							ithLabel = new UILabel(cmd_tasks);
+							extraCommands.addElement(new Object[] { ithLabel,
+									cmd_tasks, fullJid });
+							optionsMenu.append(ithLabel);
+						}
+					}
+				}
+				optionsMenu.setSelectedItem(cmd_details);
+			} else {
+				openContactMenuSingleResource(c, rs, isOnline, isMuc, res);
+			}
+			rs.addPopup(optionsMenu);
+		}
+	}
+
+	private void openContactMenuSingleResource(Contact c, RosterScreen rs,
+			boolean isOnline, boolean isMuc, Presence[] res) {
+		String toRes = (res != null && res.length >= 1 ? res[0]
+				.getAttribute(Message.ATT_FROM) : c.jid);
+		optionsMenu.setStatus(toRes);
+		optionsMenu.append(UIContact.cmd_chat);
+		optionsMenu.append(UIContact.cmd_change_nick);
+		if (isOnline) {
+			optionsMenu.append(UIContact.cmd_send);
+			if (AlbumScreen.getCount(XmppConstants.IMG_TYPE) > 0
+					|| AlbumScreen.getCount(XmppConstants.AUDIO_TYPE) > 0) {
+				optionsMenu.append(UIContact.cmd_send_file);
+			}
+			if (rs.cameraOn) optionsMenu
+					.append(UIContact.cmd_contact_capture_img);
+			if (rs.micOn) optionsMenu.append(UIContact.cmd_contact_capture_aud);
+		}
+		optionsMenu.append(UIContact.cmd_details);
+		if (isOnline) {
+			optionsMenu.append(UIContact.cmd_resend_auth);
+			optionsMenu.append(UIContact.cmd_rerequest_auth);
+			optionsMenu.append(UIContact.cmd_groups);
+			optionsMenu.append(UIContact.cmd_delc);
+			optionsMenu.append(UIContact.cmd_querycmd);
+			if (c.pending_tasks) {
+				optionsMenu.append(UIContact.cmd_tasks);
+			}
+		}
+		if (isMuc) {
+			optionsMenu.remove(UIContact.cmd_delc);
+			optionsMenu.remove(UIContact.cmd_resend_auth);
+			optionsMenu.remove(UIContact.cmd_rerequest_auth);
+			optionsMenu.remove(UIContact.cmd_groups);
+			optionsMenu.remove(UIContact.cmd_querycmd);
+			optionsMenu.remove(UIContact.cmd_change_nick);
+			if (isOnline) {
+				optionsMenu.insert(optionsMenu.indexOf(UIContact.cmd_chat) + 1,
+						UIContact.cmd_manage_muc);
+				optionsMenu.insert(optionsMenu
+						.indexOf(UIContact.cmd_manage_muc) + 1,
+						UIContact.cmd_close_muc);
+
+				UIItem presenceLabel = null;
+				UIItem orderLabel = null;
+				if (c.getAllPresences() != null) {
+					presenceLabel = cmd_exit_muc;
+					orderLabel = cmd_manage_muc;
+				} else {
+					cmd_enter_muc.setStatus(c.jid);
+					presenceLabel = cmd_enter_muc;
+					orderLabel = (UIItem) optionsMenu.getItems().elementAt(0);
+					optionsMenu.remove(cmd_chat);
+				}
+				optionsMenu.insert(optionsMenu.indexOf(orderLabel) + 1,
+						presenceLabel);
+			}
+		}
+		optionsMenu.setSelectedItem(UIContact.cmd_chat);
+	}
+
+	private void openContactMenuKey() {
+		Contact c = this.c;
+		RosterScreen rs = RosterScreen.getInstance();
 		if (c != null) {
 			boolean isOnline = RosterScreen.isOnline();
 			boolean isMuc = c instanceof MUC;
@@ -361,10 +603,9 @@ public class UIContact extends UIRosterItem {
 				optionsAccordion = new UIAccordion();
 				optionsAccordion.setFocusable(true);
 				optionsAccordion.setMaxHeight(0);
+				optionsAccordion.setBg_color(UIConfig.menu_color);
 				optionsAccordion.setOneOpen(false);
 				optionsAccordion.setModal(true);
-				optionsAccordion.setBg_color(UIConfig.menu_color);
-
 				optionsAccordion.addSpareItem(cmd_details);
 				if (isOnline) {
 					optionsAccordion.addSpareItem(cmd_change_nick);
@@ -384,7 +625,7 @@ public class UIContact extends UIRosterItem {
 							.getAttribute(Iq.ATT_FROM));
 					if (resString == null) resString = res[i]
 							.getAttribute(Iq.ATT_FROM);
-					Image img = xmppClient.getPresenceIcon(c, res[i]
+					UIImage img = UIContact.getPresenceIcon(c, res[i]
 							.getAttribute(Iq.ATT_FROM), c.getAvailability());
 					optionsLabel = new UILabel(img, resString);
 					optionsLabel.setWrappable(true, UICanvas.getInstance()
@@ -394,8 +635,9 @@ public class UIContact extends UIRosterItem {
 					optionsVector.addElement(cmd_chat);
 					if (isOnline) {
 						optionsVector.addElement(cmd_send);
-						if (AlbumScreen.getCount(Config.IMG_TYPE) > 0
-								|| AlbumScreen.getCount(Config.AUDIO_TYPE) > 0) {
+						if (AlbumScreen.getCount(XmppConstants.IMG_TYPE) > 0
+								|| AlbumScreen
+										.getCount(XmppConstants.AUDIO_TYPE) > 0) {
 							optionsVector.addElement(cmd_send_file);
 						}
 						if (rs.cameraOn) optionsVector
@@ -410,74 +652,27 @@ public class UIContact extends UIRosterItem {
 					optionsAccordion.addItem(optionsLabel, optionsVector);
 				}
 				optionsMenu.append(optionsAccordion);
-				//optionsAccordion.openLabel(optionsAccordion.getItemLabels()[0]);
 				optionsAccordion.setSelectedIndex(0);
 				optionsMenu.setSelectedItem(cmd_details);
 			} else {
-
-				String toRes = (res != null && res.length >= 1 ? res[0]
-						.getAttribute(Message.ATT_FROM) : c.jid);
-				optionsMenu.setStatus(toRes);
-				optionsMenu.append(UIContact.cmd_chat);
-				optionsMenu.append(UIContact.cmd_change_nick);
-				if (isOnline) {
-					optionsMenu.append(UIContact.cmd_send);
-					if (AlbumScreen.getCount(Config.IMG_TYPE) > 0
-							|| AlbumScreen.getCount(Config.AUDIO_TYPE) > 0) {
-						optionsMenu.append(UIContact.cmd_send_file);
-					}
-					if (rs.cameraOn) optionsMenu
-							.append(UIContact.cmd_contact_capture_img);
-					if (rs.micOn) optionsMenu
-							.append(UIContact.cmd_contact_capture_aud);
-				}
-				optionsMenu.append(UIContact.cmd_details);
-				if (isOnline) {
-					optionsMenu.append(UIContact.cmd_resend_auth);
-					optionsMenu.append(UIContact.cmd_rerequest_auth);
-					optionsMenu.append(UIContact.cmd_groups);
-					optionsMenu.append(UIContact.cmd_delc);
-					optionsMenu.append(UIContact.cmd_querycmd);
-					if (c.pending_tasks) {
-						optionsMenu.append(UIContact.cmd_tasks);
-					}
-				}
-				if (isMuc) {
-					optionsMenu.remove(UIContact.cmd_delc);
-					optionsMenu.remove(UIContact.cmd_resend_auth);
-					optionsMenu.remove(UIContact.cmd_rerequest_auth);
-					optionsMenu.remove(UIContact.cmd_groups);
-					optionsMenu.remove(UIContact.cmd_querycmd);
-					optionsMenu.remove(UIContact.cmd_change_nick);
-
-					if (isOnline) {
-						optionsMenu.insert(optionsMenu
-								.indexOf(UIContact.cmd_chat) + 1,
-								UIContact.cmd_manage_muc);
-						optionsMenu.insert(optionsMenu
-								.indexOf(UIContact.cmd_manage_muc) + 1,
-								UIContact.cmd_close_muc);
-
-						UIItem presenceLabel = null;
-						UIItem orderLabel = null;
-						if (c.getAllPresences() != null) {
-							presenceLabel = cmd_exit_muc;
-							orderLabel = cmd_manage_muc;
-						} else {
-							cmd_enter_muc.setStatus(c.jid);
-							presenceLabel = cmd_enter_muc;
-							orderLabel = (UIItem) optionsMenu.getItems()
-									.elementAt(0);
-							optionsMenu.remove(cmd_chat);
-						}
-						optionsMenu.insert(optionsMenu.indexOf(orderLabel) + 1,
-								presenceLabel);
-					}
-				}
-				optionsMenu.setSelectedItem(UIContact.cmd_chat);
+				openContactMenuSingleResource(c, rs, isOnline, isMuc, res);
 			}
-
 			rs.addPopup(optionsMenu);
 		}
+	}
+
+	public static UIItem getExtraCommand(UIItem inputItem, UIMenu menu) {
+		Enumeration en = extraCommands.elements();
+		while (en.hasMoreElements()) {
+			Object[] triple = (Object[]) en.nextElement();
+			UIItem newLabel = (UIItem) triple[0];
+			UIItem orLabel = (UIItem) triple[1];
+			String fullJid = (String) triple[2];
+			if (newLabel == inputItem) {
+				menu.setStatus(fullJid);
+				return orLabel;
+			}
+		}
+		return null;
 	}
 }

@@ -12,6 +12,7 @@
 8) modify the changelog in googlecode
 								Note:
 Antenna switches
+MIDP:				uses the J2ME only classes/libraries
 UI:					uses Bluendo user interface
 COMPRESSION:		COMPRESSION switches
 TLS:				TLS switches

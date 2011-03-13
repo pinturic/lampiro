@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataFormScreen.java 2056 2010-04-13 17:51:13Z luca $
+ * $Id: DataFormScreen.java 2329 2010-11-16 14:12:50Z luca $
 */
 
 /**
@@ -11,6 +11,9 @@ package lampiro.screens;
 
 import java.util.Enumeration;
 import java.util.Vector;
+
+import it.yup.dispatch.EventDispatcher;
+import it.yup.dispatch.EventQueryRegistration;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
 import it.yup.ui.UICheckbox;
@@ -26,20 +29,20 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
-import it.yup.util.EventDispatcher;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmlstream.EventQueryRegistration;
+import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.DataFormListener;
+import it.yup.xmpp.MediaRetrieveListener;
 import it.yup.xmpp.MediaRetriever;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.DataForm;
-import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
 import it.yup.xmpp.CommandExecutor.CommandExecutorListener;
 
-import lampiro.screens.MediaRetrieveListener;
 
 
 /**
@@ -175,7 +178,7 @@ public class DataFormScreen extends UIScreen implements CommandExecutorListener 
 		// prepare zoomSubMenu
 		zoomSubmenu = UIUtils.easyMenu("", 10, 10, this.getWidth() - 30,
 				zoomLabel);
-		zoomLabel.setAnchorPoint(Graphics.HCENTER);
+		zoomLabel.setAnchorPoint(UIGraphics.HCENTER);
 		if (cmds > 0) {
 			this.setActions(cmds);
 		}
@@ -306,12 +309,14 @@ public class DataFormScreen extends UIScreen implements CommandExecutorListener 
 				if (fld.media != null) {
 					UILabel objLabel = new UILabel(UICanvas
 							.getUIImage("/icons/loading.png"));
-					objLabel.setAnchorPoint(Graphics.HCENTER);
+					objLabel.setAnchorPoint(UIGraphics.HCENTER);
 					objLabel.setFocusable(true);
 					mainPanel.addItem(objLabel);
-					MediaRetrieveListener mrl = new MediaRetrieveListener(this,
+					MediaRetrieveListener mrl = new SMediaRetrieveListener(this,
 							objLabel);
-					MediaRetriever mr = new MediaRetriever(this.dfl.getFrom(),
+					XMPPClient client = XMPPClient.getInstance();
+					BasicXmlStream stream = client.getXmlStream();
+					MediaRetriever mr = new MediaRetriever(stream,this.dfl.getFrom(),
 							fld.media, mrl);
 					mr.retrieveMedia();
 				}
@@ -373,7 +378,7 @@ public class DataFormScreen extends UIScreen implements CommandExecutorListener 
 		}
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		super.paint(g, w, h);
 
 		// longest textfield handling 
@@ -448,8 +453,7 @@ public class DataFormScreen extends UIScreen implements CommandExecutorListener 
 
 		boolean setWaiting = dfl.needWaiting(comm);
 		if (setWaiting == true) {
-			ws = new WaitScreen(this.getTitle(), this
-					.getReturnScreen());
+			ws = new WaitScreen(this.getTitle(), this.getReturnScreen());
 			eqr = EventDispatcher.addDelayedListener(ws, true);
 			UICanvas.getInstance().open(ws, true);
 			dfl.setCel(this);
@@ -457,7 +461,7 @@ public class DataFormScreen extends UIScreen implements CommandExecutorListener 
 
 		// if the dataform will have an answer, e.g. an IQ contained dataform
 		// #ifndef BLUENDO_SECURE
-				dfl.execute(comm);
+						dfl.execute(comm);
 		// #endif
 		RosterScreen.getInstance()._handleTask(dfl);
 		UICanvas.getInstance().close(this);
@@ -588,10 +592,16 @@ public class DataFormScreen extends UIScreen implements CommandExecutorListener 
 
 	public void executed(Object screen) {
 		if (eqr != null) {
-			if (ws != null) ((UIScreen) screen).setReturnScreen(ws
-					.getReturnScreen());
+			if (ws != null) {
+				UIScreen tempScreen = ws.getReturnScreen();
+				((UIScreen) screen).setReturnScreen(tempScreen);
+			}
 			EventDispatcher.dispatchDelayed(eqr, this);
 			eqr = null;
 		}
+	}
+	
+	public boolean askClose() {
+		return false;
 	}
 }

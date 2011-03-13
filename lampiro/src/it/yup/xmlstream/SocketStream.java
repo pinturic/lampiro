@@ -1,23 +1,25 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SocketStream.java 2039 2010-03-31 07:29:31Z luca $
+ * $Id: SocketStream.java 2325 2010-11-15 20:07:28Z luca $
 */
 
 package it.yup.xmlstream;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.Vector;
 
 import org.xmlpull.v1.XmlPullParserException;
 
+import it.yup.dispatch.EventDispatcher;
 import it.yup.transport.BaseChannel;
-import it.yup.transport.SocketChannel;
-import it.yup.util.EventDispatcher;
+import it.yup.transport.BaseSocketChannel;
 
-// #mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+//#mdebug
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import it.yup.util.Utils;
@@ -30,11 +32,15 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 
 	private KXmlParser parser = null;
 
-	private SocketChannel channel = null;
+	private BaseSocketChannel channel = null;
 
 	private int level;
 
-	public void initialize(String jid, String password) {
+	public SocketStream(Vector initializers) {
+		super(initializers);
+	}
+
+	public void initialize(String jid, String password,String lang) {
 
 		this.jid = jid;
 		this.password = password;
@@ -52,7 +58,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		try {
 			// parser.require(KXmlParser.START_DOCUMENT, null, null);
 			// #debug			
-//@			Logger.log("setting parser input");
+			Logger.log("setting parser input");
 			level = 0;
 			parser.setInput(this.channel.getReader());
 			parser.defineEntityReplacementText("quot", "\"");
@@ -62,7 +68,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 					.append("<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\" xmlns=\"jabber:client\" xml:lang=\"en\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\"");
 			streamStart.append((" to=\"" + Contact.domain(jid) + "\">"));
 			// #debug			
-//@			Logger.log("Sending stream start");
+			Logger.log("Sending stream start");
 
 			// channel.sendContent(streamStart.toString().getBytes("utf-8"));
 			channel.sendContent(Utils.getBytesUtf8(streamStart.toString()));
@@ -70,8 +76,8 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		} catch (XmlPullParserException e) {
 			EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR, null);
 			// #mdebug
-//@			Logger.log("[SocketStream::restart] XmlPullParserException: "
-//@					+ e.getMessage());
+			Logger.log("[SocketStream::restart] XmlPullParserException: "
+					+ e.getMessage());
 			// #enddebug
 		}
 	}
@@ -82,11 +88,21 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 			for (int i = 0; i < this.sendQueue.size(); i++) {
 				byte[] ithPacket = null;
 				try {
-					ithPacket = ((Element) this.sendQueue.elementAt(i)).toXml();
+					Object el = this.sendQueue.elementAt(i);
+					if (el instanceof Element) {
+						ithPacket = ((Element) el).toXml();
+					} else {
+						ithPacket = ((String) el).getBytes("utf-8");
+					}
 				} catch (RuntimeException e) {
 					// packet is not well formed
 					// #mdebug		
-//@					Logger.log("Connection established");
+					Logger.log("packet not well formed");
+					// #enddebug
+					continue;
+				} catch (UnsupportedEncodingException e) {
+					// #mdebug		
+					Logger.log("packet encoding problems");
 					// #enddebug
 					continue;
 				}
@@ -98,14 +114,14 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 
 	public void connectionEstablished(BaseChannel connection) {
 		// #debug		
-//@		Logger.log("Connection established");
-		this.channel = (SocketChannel) connection;
+		Logger.log("Connection established");
+		this.channel = (BaseSocketChannel) connection;
 		EventDispatcher.dispatchEvent(EventDispatcher.STREAM_CONNECTED, null);
 		// #debug		
-//@		Logger.log("restarting stream");
+		Logger.log("restarting stream");
 		restart();
 		// #debug		
-//@		Logger.log("starting reader");
+		Logger.log("starting reader");
 		new Thread(this).start();
 	}
 
@@ -142,7 +158,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 						Element stanza = KXmlProcessor.pullElement(parser);
 						level -= 1;
 						// #debug						
-//@						Logger.log("[RECV] " + new String(stanza.toXml()));
+						Logger.log("[RECV] " + new String(stanza.toXml()));
 
 						promotePacket(stanza);
 						if ("features".equals(stanza.name)) {
@@ -153,7 +169,7 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 			}
 		} catch (XmlPullParserException e) {
 			// #debug			
-//@			Logger.log(e.getMessage());
+			Logger.log(e.getMessage());
 			try {
 				this.channel.close();
 				connectionLost(this.channel);
@@ -162,8 +178,8 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 			}
 		} catch (IOException e) {
 			// #mdebug			
-//@			Logger.log(e.getMessage());
-//@			e.printStackTrace();
+			Logger.log(e.getMessage());
+			e.printStackTrace();
 			// #enddebug
 			try {
 				connectionLost(this.channel);
@@ -173,29 +189,25 @@ public class SocketStream extends BasicXmlStream implements Runnable {
 		} catch (Exception e) {
 			// catch this to avoid a problem that cannot be catched outside
 			try {
+				e.printStackTrace();
 				this.channel.close();
 				connectionLost(this.channel);
 			} catch (Exception innerE) {
 			}
 			// #mdebug			
-//@			Logger.log("Parser " + e.getClass().getName() + ":"
-//@					+ e.getMessage());
+			Logger.log("Parser " + e.getClass().getName() + ":"
+					+ e.getMessage());
 			// #enddebug
 		}
 
 	}
 
-	//	 #ifdef TLS
-//@					protected void startTLS() throws IOException {
-//@						channel.startTLS();
-//@					}
-//@					
-	//	 #endif
+	protected void startTLS() throws IOException {
+		channel.startTLS();
+	}
 
-	// #ifdef COMPRESSION
-//@	protected void startCompression() {
-//@		channel.startCompression();
-//@	}
-	// #endif
+	protected void startCompression() {
+		channel.startCompression();
+	}
 
 }

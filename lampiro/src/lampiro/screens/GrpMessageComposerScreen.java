@@ -15,7 +15,7 @@ import it.yup.ui.UIItem;
 import it.yup.ui.UIMenu;
 import it.yup.util.ResourceIDs;
 import it.yup.xmpp.Contact;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.Message;
 
 /**

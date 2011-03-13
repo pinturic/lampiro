@@ -1,11 +1,13 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: ChatScreen.java 2040 2010-03-31 10:45:55Z luca $
-*/
+ * $Id: ChatScreen.java 2447 2011-02-07 13:13:58Z luca $
+ */
 
 package lampiro.screens;
 
+import it.yup.dispatch.EventQuery;
+import it.yup.dispatch.EventQueryRegistration;
 import it.yup.ui.TokenIterator;
 import it.yup.ui.UIButton;
 import it.yup.ui.UICanvas;
@@ -22,11 +24,14 @@ import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 
-// #mdebug
-//@
-//@import it.yup.util.Logger;
-//@
+//#mdebug
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import it.yup.util.ResourceIDs;
@@ -34,14 +39,14 @@ import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
 import it.yup.xml.Element;
 import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.EventQuery;
-import it.yup.xmlstream.EventQueryRegistration;
 import it.yup.xmlstream.PacketListener;
-import it.yup.xmpp.Config;
+import it.yup.util.Alerts;
+import it.yup.client.Config;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.IQResultListener;
 import it.yup.xmpp.MUC;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 import it.yup.xmpp.packets.Presence;
@@ -52,17 +57,15 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 import javax.microedition.io.ConnectionNotFoundException;
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Displayable;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 import javax.microedition.lcdui.TextField;
 
+
+
 import lampiro.LampiroMidlet;
+import lampiro.screens.rosterItems.UIContact;
 
 public class ChatScreen extends UIScreen implements PacketListener,
 		CommandListener {
@@ -80,17 +83,16 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			if (mucContact == null) return;
 			MUC muc = (MUC) mucContact;
 			try {
-				UICanvas.lock();
-				UICanvas.getInstance().close(ChatScreen.this);
-				RosterScreen.getInstance().chatWithContact(muc, null);
+				synchronized (UICanvas.getLock()) {
+					UICanvas.getInstance().close(ChatScreen.this);
+					RosterScreen.getInstance().chatWithContact(muc, null);
+				}
 			} catch (Exception ex) {
 				// #mdebug
-//@				Logger.log("In updating mucresultlistener");
-//@				System.out.println(ex.getMessage());
-//@				ex.printStackTrace();
+								Logger.log("In updating mucresultlistener");
+								System.out.println(ex.getMessage());
+								ex.printStackTrace();
 				// #enddebug
-			} finally {
-				UICanvas.unlock();
 			}
 			MUCScreen mucScreen = (MUCScreen) RosterScreen.getChatScreenList()
 					.get(mucJid);
@@ -112,8 +114,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 				if (entry.messageType.equals(Message.CHAT)) {
 					Message m = new Message(mucJid, Message.GROUPCHAT);
 					m.setBody(entry.text);
-					Element delay = m.addElement(XMPPClient.NS_DELAY,
-							XMPPClient.DELAY);
+					Element delay = m.addElement(XmppConstants.NS_DELAY,
+							XmppConstants.DELAY);
 					String completeFrom = (entry.type == ConversationEntry.ENTRY_TO ? myJid
 							: cJid);
 					delay.setAttribute(Message.ATT_FROM, completeFrom);
@@ -128,11 +130,15 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 		private boolean needCut = false;
 
-		public UICutLabel(String text, int cutHeight) {
+		public UICutLabel(String text) {
 			super(text);
 		}
 
-		protected void computeTextLines(Font usedFont, int w) {
+		public int getHeight(UIGraphics g) {
+			return super.getHeight(g);
+		}
+
+		protected void computeTextLines(UIFont usedFont, int w) {
 			textLines = new Vector();
 			TokenIterator ti = new TokenIterator(this);
 			ti.computeLazyLines(usedFont, w);
@@ -156,11 +162,11 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			}
 		}
 
-		protected void paint(Graphics g, int w, int h) {
+		protected void paint(UIGraphics g, int w, int h) {
 			super.paint(g, w, h);
 			if (needCut) {
 				g.setColor(0x555555);
-				Font currentFont = this.getFont();
+				UIFont currentFont = this.getFont();
 				if (currentFont == null) currentFont = UIConfig.font_body;
 				String moreString = " " + rm.getString(ResourceIDs.STR_MORE)
 						+ " ";
@@ -169,7 +175,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 						currentFont.getHeight() + 1);
 				g.setColor(0xFFFFFF);
 				g.drawString(moreString, 1, h - currentFont.getHeight() - 1,
-						Graphics.TOP | Graphics.LEFT);
+						UIGraphics.TOP | UIGraphics.LEFT);
 			}
 		}
 
@@ -188,14 +194,14 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	private String oldStatus = "";
 
 	/*
-	 *  some blocking or long operation must be done when the screen has
-	 *  already been shown 
+	 * some blocking or long operation must be done when the screen has already
+	 * been shown
 	 */
 	private boolean filledScreen = false;
 
 	/*
-	 * The area in which the screen can paint (hence excluding
-	 * headers footers and title screen)
+	 * The area in which the screen can paint (hence excluding headers footers
+	 * and title screen)
 	 */
 	protected int printableHeight = -1;
 
@@ -206,7 +212,6 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	/*
 	 * The user associated to this UIscreen
-	 * 
 	 */
 	protected Contact user;
 	UILabel cmd_exit = new UILabel(rm.getString(ResourceIDs.STR_CLOSE));
@@ -240,14 +245,14 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	UILabel closeLabel;
 
 	// #mdebug
-//@	private UILabel cmd_debug = new UILabel("Debug");
+		private UILabel cmd_debug = new UILabel("Debug");
 	// #enddebug
 
-	/* Used to save the "http" addresses seen on screen*/
+	/* Used to save the "http" addresses seen on screen */
 	private Hashtable cmd_urls = new Hashtable();
 
 	// XXX add a global handler for icons
-	protected static Image img_msg;
+	protected static UIImage img_msg;
 
 	// the panel containing headers and labels
 	protected UIPanel chatPanel;
@@ -282,11 +287,15 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	String defaultText = "";
 
+// #ifndef RIM_5.0
+	private boolean bookScroolDown = false;
+	// #endif
+
 	static {
 		try {
-			img_msg = Image.createImage("/icons/message.png");
+			img_msg = UIImage.createImage("/icons/message.png");
 		} catch (IOException e) {
-			img_msg = Image.createImage(16, 16);
+			img_msg = UIImage.createImage(16, 16);
 		}
 	}
 
@@ -308,7 +317,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		super();
 
 		// lots of insertion and deletion ...
-		//this.setFreezed(true);
+		// this.setFreezed(true);
 
 		// prepare closeMenu
 		closeMenu = new UIMenu("");
@@ -332,15 +341,16 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		 * focus
 		 */
 
-		XMPPClient client = XMPPClient.getInstance();
 		chatPanel = new UIPanel();
 		chatPanel.setMaxHeight(-1);
 		chatPanel.setFocusable(true);
 		// the panel has a contextual menu that let close the the screen
 		// as well as the uilabels used to print the chat lines
-		chatPanel.setSubmenu(this.closeMenu);
+		// #ifndef RIM
+				chatPanel.setSubmenu(this.closeMenu);
+		// #endif
 		chatPanel.setModal(true);
-		Image img = client.getPresenceIcon(user, preferredResource, user
+		UIImage img = UIContact.getPresenceIcon(user, preferredResource, user
 				.getAvailability(preferredResource));
 		header = new UIHLayout(2);
 		header.setGroup(false);
@@ -362,7 +372,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		this.append(chatPanel);
 		this.setSelectedIndex(2);
 
-		// to compute the printableHeight the currently visualizd screen must be 
+		// to compute the printableHeight the currently visualized screen must
+		// be
 		// used and not this one since it may be invisible
 		getPrintableHeight(UICanvas.getInstance().getCurrentScreen()
 				.getGraphics(), this.height);
@@ -386,13 +397,13 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 		// prepare zoomSubMenu
 		zoomSubmenu.append(this.zoomLabel);
-		zoomLabel.setAnchorPoint(Graphics.HCENTER);
+		zoomLabel.setAnchorPoint(UIGraphics.HCENTER);
 		zoomSubmenu.setAbsoluteX(10);
 		zoomSubmenu.setAbsoluteY(10);
 		zoomSubmenu.setWidth(this.getWidth() - 30);
 
 		// listen for all incoming messages with bodies
-		EventQuery q = new EventQuery("message", null, null);
+		EventQuery q = new EventQuery(Message.MESSAGE, null, null);
 		q.child = new EventQuery("body", null, null);
 		if (reg == null) {
 			reg = BasicXmlStream.addPacketListener(q, this);
@@ -413,7 +424,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		UIMenu menu = getMenu();
 		menu.removeAll();
 		// #debug
-//@		menu.append(cmd_debug);
+				menu.append(cmd_debug);
 		if (RosterScreen.isOnline()) {
 			menu.append(cmd_write);
 			menu.append(cmd_forward_message);
@@ -422,7 +433,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			if (rs.isMicOn()) menu.append(this.cmd_capture_aud);
 			menu.append(this.cmd_send_file);
 			if (rs.mucJid != null
-					&& user.supportsMUC(user.getPresence(preferredResource))) menu
+					&& RosterScreen.supportsMUC(user
+							.getPresence(preferredResource))) menu
 					.append(addUser);
 		}
 		menu.append(cmd_clear);
@@ -458,8 +470,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	void updateResource() {
 		if (preferredResource == null) return;
-		Image img = XMPPClient.getInstance().getPresenceIcon(user,
-				preferredResource, user.getAvailability(preferredResource));
+		UIImage img = UIContact.getPresenceIcon(user, preferredResource, user
+				.getAvailability(preferredResource));
 		this.headerImg.setImg(img);
 		this.headerStatus.setText(getPrintableStatus());
 
@@ -482,20 +494,32 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		msg.setAttribute(Message.ATT_FROM, preferredResource);
 		msg.setBody(msgText);
 		user.addMessageToHistory(preferredResource, msg);
+		updateConversation();
 	}
 
-	protected void paint(Graphics g, int w, int h) {
-		//		if (this.updateConversation()) this.chatPanel.setDirty(true);
-		//		RosterScreen.getInstance()
-		//				._updateContact(user, Contact.CH_MESSAGE_READ);
+	protected void paint(UIGraphics g, int w, int h) {
 		super.paint(g, w, h);
+		// #ifndef RIM
+				if (bookScroolDown && UICanvas.getInstance().hasPointerMotionEvents()) {
+					bookScroolDown = false;
+					int hHeight = headerLayout.getHeight(g);
+					int fHeight = footer.getHeight(g);
+					int avHeight = UICanvas.getInstance().getClipHeight() - hHeight
+							- fHeight - 1;
+					this.setDirty(true);
+					addPaintOffset(avHeight - height - getPaintOffset());
+					askRepaint();
+				}
+		// #endif
 	}
 
-	protected void getPrintableHeight(Graphics g, int h) {
+	protected void getPrintableHeight(UIGraphics g, int h) {
 		int maxHeight = h - 10;
 		maxHeight -= this.header.getHeight(g);
 		maxHeight -= this.headerLayout.getHeight(g);
-		maxHeight -= this.footer.getHeight(g);
+		// #ifndef RIM
+				maxHeight -= this.footer.getHeight(g);
+		// #endif
 		this.printableHeight = maxHeight;
 	}
 
@@ -511,12 +535,12 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	boolean updateResConversation(String res) {
 		if (res == null) res = this.preferredResource;
 		// if the user is offline i get all the conversations
-		//		Presence[] ps = user.getAllPresences();
+		// Presence[] ps = user.getAllPresences();
 		Vector messages = null;
-		//		if (ps == null || ps.length ==0)
+		// if (ps == null || ps.length ==0)
 		messages = user.getMessageHistory(res);
-		//		else 
-		//			messages = user.getAllMessageHistory();
+		// else
+		// messages = user.getAllMessageHistory();
 		if (messages == null || messages.size() == 0) { return false; }
 		Enumeration en = messages.elements();
 		boolean updated = false;
@@ -527,10 +551,10 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			current_conversation.addElement(entry);
 			updated = true;
 		}
-		//		if (ps == null || ps.length ==0)
+		// if (ps == null || ps.length ==0)
 		user.resetMessageHistory(res);
-		//		else 
-		//			user.resetAllMessageHistory();
+		// else
+		// user.resetAllMessageHistory();
 
 		// must be done here after repaint to be sure all the panel
 		// has been updated
@@ -542,19 +566,21 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	/**
 	 * @param entry
 	 */
-	private void updateLabel(ConversationEntry entry) {
+	private UILabel updateLabel(ConversationEntry entry) {
 		String s = entry.text;
 		s = getLabelHeader(entry) + s;
-		checkUrls(cmd_urls, s, this.getMenu());
-		UICutLabel uel = new UICutLabel(s, this.printableHeight);
+		UICutLabel uel = new UICutLabel(s);
 		uel.setWrappable(true, this.width - 10);
 		uel.setFocusable(true);
+// #ifndef RIM
+				checkUrls(cmd_urls, s, this.getMenu());
+		// #endif
 
 		int newBgColor = -1;
 		if (entry.type == ConversationEntry.ENTRY_TO) {
-			uel.setAnchorPoint(Graphics.RIGHT);
+			uel.setAnchorPoint(UIGraphics.RIGHT);
 		} else {
-			uel.setAnchorPoint(Graphics.LEFT);
+			uel.setAnchorPoint(UIGraphics.LEFT);
 			newBgColor = UIUtils.colorize(UIConfig.bg_color, -10);
 			uel.setBg_color(newBgColor);
 		}
@@ -566,17 +592,30 @@ public class ChatScreen extends UIScreen implements PacketListener,
 				.setFg_color(0x00CC00);
 
 		this.chatPanel.addItem(uel);
-		uel.setSubmenu(this.closeMenu);
+		// #ifndef RIM
+				uel.setSubmenu(this.closeMenu);
+		// #endif
 		UISeparator sep = new UISeparator(1);
 		sep.setFg_color(0xCCCCCC);
 		this.chatPanel.addItem(sep);
-
 		// empty oldMessages
 		while (this.chatPanel.getItems().size() > hs) {
 			this.chatPanel.removeItemAt(this.chatLineStart);
 			this.chatPanel.removeItemAt(this.chatLineStart);
 		}
+		if (UICanvas.getInstance().hasPointerMotionEvents()) {
+			scrollDown();
+		}
+		return uel;
 	}
+
+// #ifndef RIM_5.0
+
+	private void scrollDown() {
+		this.bookScroolDown = true;
+	}
+
+	// #endif
 
 	String getLabelHeader(ConversationEntry entry) {
 		String retString = "";
@@ -589,8 +628,8 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	public void showNotify() {
 		toggleMenu();
 		// reset the status img
-		Image img = XMPPClient.getInstance().getPresenceIcon(user,
-				preferredResource, user.getAvailability());
+		UIImage img = UIContact.getPresenceIcon(user, preferredResource, user
+				.getAvailability());
 		if (img != ((UILabel) this.header.getItem(1)).getImg()) {
 			((UILabel) this.header.getItem(1)).setImg(img);
 			this.askRepaint();
@@ -600,7 +639,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		}
 	}
 
-	public static void checkUrls(Hashtable cmd_urls, String text, UIMenu menu) {
+	public static UIMenu checkUrls(Hashtable cmd_urls, String text, UIMenu menu) {
 		// parse the urls and add to the command menu
 		Enumeration en = Utils.find_urls(text).elements();
 		while (en.hasMoreElements()) {
@@ -608,9 +647,13 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			if (!cmd_urls.containsKey(url)) {
 				UILabel cmd = new UILabel(url);
 				cmd_urls.put(url, cmd);
+				if (menu == null) {
+					menu = new UIMenu("");
+				}
 				menu.append(cmd);
 			}
 		}
+		return menu;
 	}
 
 	/**
@@ -642,15 +685,25 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		return convEntry;
 	}
 
+	public void itemAction(UIItem item) {
+		UIMenu tempMenu = item.getSubmenu();
+		if (tempMenu != null && tempMenu.getItems().size() > 0) {
+			UILabel firstItem = (UILabel) tempMenu.getItems().elementAt(0);
+			if (cmd_urls.contains(firstItem) || firstItem == zoomLabel) {
+				menuAction(tempMenu, firstItem);
+			}
+		}
+	}
+
 	public void menuAction(UIMenu menu, UIItem cmd) {
 		if (cmd == cmd_exit || cmd == this.closeLabel) {
 			closeMe();
 		} else if (cmd == cmd_capture_aud) {
 			RosterScreen.getInstance().captureMedia(preferredResource,
-					Config.AUDIO_TYPE);
+					XmppConstants.AUDIO_TYPE);
 		} else if (cmd == cmd_capture_img) {
 			RosterScreen.getInstance().captureMedia(preferredResource,
-					Config.IMG_TYPE);
+					XmppConstants.IMG_TYPE);
 		} else if (cmd == cmd_send_file) {
 			AlbumScreen alb = AlbumScreen.getInstance(preferredResource);
 			UICanvas.getInstance().open(alb, true);
@@ -668,18 +721,19 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			this.setFreezed(false);
 			cmd_urls.clear();
 			this.setDirty(true);
+			this.askRepaint();
 			// #mdebug
-//@		} else if (cmd == cmd_debug) {
-//@			Logger.log(
-//@
-//@			"h:" + UICanvas.getInstance().getHeight() + "w:"
-//@					+ UICanvas.getInstance().getWidth() + "ch:");
-//@			Logger.log(this.getGraphics().getClipHeight() + "cw:"
-//@					+ this.getGraphics().getClipWidth() + "ph:"
-//@					+ this.chatPanel.getHeight(getGraphics()));
-//@			//
-//@			DebugScreen debugScreen = new DebugScreen();
-//@			UICanvas.getInstance().open(debugScreen, true);
+					} else if (cmd == cmd_debug) {
+						Logger.log(
+			
+						"h:" + UICanvas.getInstance().getHeight() + "w:"
+								+ UICanvas.getInstance().getWidth() + "ch:");
+						Logger.log(this.getGraphics().getClipHeight() + "cw:"
+								+ this.getGraphics().getClipWidth() + "ph:"
+								+ this.chatPanel.getHeight(getGraphics()));
+						//
+						DebugScreen debugScreen = new DebugScreen();
+						UICanvas.getInstance().open(debugScreen, true);
 			// #enddebug
 		} else if (cmd == this.addUser) {
 			askTopic();
@@ -691,14 +745,15 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			text = ((UILabel) selItem).getText();
 			Object status = selItem.getStatus();
 			if (status instanceof ConversationEntry == false) return;
-			//			ConversationEntry entry = (ConversationEntry) status;
+			// ConversationEntry entry = (ConversationEntry) status;
 			String fromContact = "";
 			fromContact = XMPPClient.getInstance().my_jid;
-			//			if (entry.type == ConversationEntry.ENTRY_TO) fromContact = XMPPClient
-			//					.getInstance().my_jid;
-			//			else
-			//				fromContact = (preferredResource != null ? preferredResource
-			//						: user.jid);
+			// if (entry.type == ConversationEntry.ENTRY_TO) fromContact =
+			// XMPPClient
+			// .getInstance().my_jid;
+			// else
+			// fromContact = (preferredResource != null ? preferredResource
+			// : user.jid);
 			ForwardScreen fs = new ForwardScreen(this, text, fromContact, user,
 					preferredResource);
 			UICanvas.getInstance().open(fs, true);
@@ -711,15 +766,17 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			UICutLabel selLabel = (UICutLabel) this.chatPanel.getSelectedItem();
 			final String selText = selLabel.getText();
 
-			UITextField expField = new UITextField("", selText, selText
+			final UITextField expField = new UITextField("", selText, selText
 					.length(), TextField.UNEDITABLE);
 			expField.setWrappable(true);
 			expField.setExpandable(false);
 
 			int maxHeight = UICanvas.getInstance().getClipHeight() - 10;
-			Graphics g = this.getGraphics();
+			UIGraphics g = this.getGraphics();
 			maxHeight -= this.headerLayout.getHeight(g);
-			maxHeight -= this.footer.getHeight(g);
+			// #ifndef RIM
+						maxHeight -= this.footer.getHeight(g);
+			// #endif
 
 			expField.setMaxHeight(maxHeight);
 			UIMenu expandMenu = new UIMenu("");
@@ -732,12 +789,18 @@ public class ChatScreen extends UIScreen implements PacketListener,
 						UICanvas.getInstance().show(ChatScreen.this);
 					}
 				}
+
+				public void itemAction(UIItem item) {
+					if (item == expField) {
+						menuAction(null, closeLabel);
+					}
+				}
 			};
 			UIPanel uip = new UIPanel(false, false);
 			zoomScreen.append(uip);
 			uip.addItem(expField);
 			expField.setSubmenu(expandMenu);
-			//uip.setSubmenu(expandMenu);
+			// uip.setSubmenu(expandMenu);
 			zoomScreen.setSelectedItem(uip);
 			uip.setSelectedItem(expField);
 			zoomScreen.setTitle(rm.getString(ResourceIDs.STR_EXPANDED));
@@ -749,9 +812,9 @@ public class ChatScreen extends UIScreen implements PacketListener,
 				String url = ((UILabel) cmd).getText();
 
 				try {
-					LampiroMidlet._lampiro.platformRequest(url);
+					LampiroMidlet.makePlatformRequest(url);
 				} catch (ConnectionNotFoundException e) {
-					UICanvas.showAlert(AlertType.ERROR, "URL Error",
+					UICanvas.showAlert(Alerts.ERROR, "URL Error",
 							"Can't open URL:" + e.getMessage());
 				}
 			}
@@ -760,7 +823,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	public void closeMe() {
 		// so that the user preferred resource is reset
-		//user.lastResource = null;
+		// user.lastResource = null;
 		Hashtable chatScreenList = RosterScreen.getChatScreenList();
 		// better to search me and nothing else
 		Enumeration en = chatScreenList.keys();
@@ -769,7 +832,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			Object object = chatScreenList.get(ithKey);
 			if (object == this) chatScreenList.remove(ithKey);
 		}
-		//chatScreenList.remove(this.user.jid);
+		// chatScreenList.remove(this.user.jid);
 
 		// reset the status in the roster
 		RosterScreen rs = RosterScreen.getInstance();
@@ -778,7 +841,7 @@ public class ChatScreen extends UIScreen implements PacketListener,
 			reg.remove();
 			reg = null;
 		}
-		// to reset the header from outside this screen to ;
+		// to reset the header from outside this screen too ;
 		rs.setDirty(true);
 		UICanvas.getInstance().close(this);
 	}
@@ -786,20 +849,20 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	boolean isPrintable(int key) {
 		int keyNum = -1;
 		switch (key) {
-			case Canvas.KEY_NUM0:
-			case Canvas.KEY_NUM1:
-			case Canvas.KEY_NUM2:
-			case Canvas.KEY_NUM3:
-			case Canvas.KEY_NUM4:
-			case Canvas.KEY_NUM5:
-			case Canvas.KEY_NUM6:
-			case Canvas.KEY_NUM7:
-			case Canvas.KEY_NUM8:
-			case Canvas.KEY_NUM9:
+			case UICanvas.KEY_NUM0:
+			case UICanvas.KEY_NUM1:
+			case UICanvas.KEY_NUM2:
+			case UICanvas.KEY_NUM3:
+			case UICanvas.KEY_NUM4:
+			case UICanvas.KEY_NUM5:
+			case UICanvas.KEY_NUM6:
+			case UICanvas.KEY_NUM7:
+			case UICanvas.KEY_NUM8:
+			case UICanvas.KEY_NUM9:
 				keyNum = key;
 		}
 		if (keyNum == -1
-				&& UICanvas.getInstance().getGameAction(key) != Canvas.FIRE) { return false; }
+				&& UICanvas.getInstance().getGameAction(key) != UICanvas.FIRE) { return false; }
 		return true;
 	}
 
@@ -816,23 +879,21 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 			boolean ip = isPrintable(kc);
 
-			if (ip || ga == Canvas.FIRE) {
-				if (this.chatPanel.getSelectedIndex() < 0
-						|| this.chatPanel.getItems().elementAt(
-								this.chatPanel.getSelectedIndex()) instanceof UICombobox == false) {
+			if (ip || ga == UICanvas.FIRE) {
+				if (needComposer()) {
 					if (RosterScreen.isOnline()) openComposer();
 					return true;
 				}
 			}
 
 			switch (ga) {
-				case Canvas.RIGHT: {
+				case UICanvas.RIGHT: {
 					RosterScreen roster = RosterScreen.getInstance();
 					roster._updateContact(user, Contact.CH_MESSAGE_READ);
 					RosterScreen.showNextScreen(this);
 					return true;
 				}
-				case Canvas.LEFT: {
+				case UICanvas.LEFT: {
 					RosterScreen roster = RosterScreen.getInstance();
 					roster._updateContact(user, Contact.CH_MESSAGE_READ);
 					RosterScreen.showPreviousScreen(this);
@@ -843,10 +904,25 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		return super.keyPressed(kc);
 	}
 
+	private boolean needComposer() {
+		if (this.chatPanel.getSelectedIndex() < 0) return true;
+		else {
+			UIItem selItem = (UIItem) this.chatPanel.getItems().elementAt(
+					this.chatPanel.getSelectedIndex());
+			if (selItem instanceof UICombobox == true) return false;
+			UIMenu selMenu = selItem.getSubmenu();
+			if (selMenu != null && selMenu.getItems().size() >= 0) {
+				UILabel selLabel = (UILabel) selMenu.getItems().elementAt(0);
+				if (cmd_urls.contains(selLabel) || selLabel == zoomLabel) { return false; }
+			}
+			return true;
+		}
+	}
+
 	protected void openComposer() {
 		SimpleComposerScreen cs = new SimpleComposerScreen(this, user,
 				this.preferredResource);
-		UICanvas.display(cs);
+		UICanvas.display(cs.getTextBox());
 	}
 
 	public void packetReceived(Element e) {
@@ -864,37 +940,38 @@ public class ChatScreen extends UIScreen implements PacketListener,
 		if (myPacket && needDisplay()
 				&& this == UICanvas.getInstance().getCurrentScreen()) {
 			try {
-				UICanvas.lock();
-				updated = updateConversation();
-				RosterScreen.getInstance()._updateContact(user,
-						Contact.CH_MESSAGE_READ);
-				if (updated == false) {
-					this.setFreezed(false);
-					return;
+				synchronized (UICanvas.getLock()) {
+					updated = updateConversation();
+					RosterScreen.getInstance()._updateContact(user,
+							Contact.CH_MESSAGE_READ);
+					if (updated == false) {
+						this.setFreezed(false);
+						return;
+					}
 				}
 			} finally {
-				UICanvas.unlock();
+
 			}
 		} else if (myPacket == false) {
 			((UILabel) this.header.getItem(1)).setImg(img_msg);
 			updated = true;
-			/*((UILabel) this.header.getItem(1)).setDirty(true);
-			this.askRepaint();*/
+			/*
+			 * ((UILabel) this.header.getItem(1)).setDirty(true);
+			 * this.askRepaint();
+			 */
 		}
 		try {
-			UICanvas.lock();
-			this.setFreezed(false);
-			if (updated) askRepaint();
+			synchronized (UICanvas.getLock()) {
+				this.setFreezed(false);
+				if (updated) askRepaint();
+			}
 		} catch (Exception ex) {
 			// #mdebug
-//@			Logger.log("In updating chatscreen");
-//@			System.out.println(ex.getMessage());
-//@			ex.printStackTrace();
+						Logger.log("In updating chatscreen");
+						System.out.println(ex.getMessage());
+						ex.printStackTrace();
 			// #enddebug
-		} finally {
-			UICanvas.unlock();
 		}
-
 	}
 
 	boolean needDisplay() {
@@ -937,11 +1014,16 @@ public class ChatScreen extends UIScreen implements PacketListener,
 
 	public void commandAction(Command cmd, Displayable disp) {
 		try {
-			UICanvas.lock();
+			// #ifndef RIM
+						synchronized (UICanvas.getLock()) {
+			// #endif
 			UICanvas.display(null);
 			this.dirty = true;
+			// #ifndef RIM
+						}
+			// #endif
 		} finally {
-			UICanvas.unlock();
+
 		}
 
 	}
@@ -949,4 +1031,10 @@ public class ChatScreen extends UIScreen implements PacketListener,
 	public Vector getCurrent_conversation() {
 		return current_conversation;
 	}
+
+	public boolean askClose() {
+		this.closeMe();
+		return false;
+	}
+
 }

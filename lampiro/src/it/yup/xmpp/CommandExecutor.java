@@ -1,34 +1,22 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: CommandExecutor.java 2065 2010-04-20 17:03:56Z luca $
+ * $Id: CommandExecutor.java 2432 2011-01-30 15:26:48Z luca $
 */
 
 package it.yup.xmpp;
 
 import java.util.Date;
 
-import javax.microedition.lcdui.AlertType;
-
-// #ifndef UI
-//@
-//@import javax.microedition.lcdui.Display;
-//@import javax.microedition.lcdui.Displayable;
-//@
-//#endif
-
 import it.yup.xml.Element;
-import it.yup.xmlstream.BasicXmlStream;
-import it.yup.xmlstream.EventQuery;
-import it.yup.xmlstream.PacketListener;
+import it.yup.util.Alerts;
 
-
-import it.yup.xmpp.XMPPClient.XmppListener;
 import it.yup.xmpp.packets.DataForm;
 import it.yup.xmpp.packets.Iq;
 import it.yup.xmpp.packets.Message;
 
-public class CommandExecutor implements PacketListener, DataFormListener, Task {
+public class CommandExecutor extends IQResultListener implements
+		DataFormListener, Task {
 
 	public interface CommandExecutorListener {
 		public void executed(Object screen);
@@ -38,32 +26,29 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	private static final String STATUS_COMPLETED = "completed";
 	private static final String STATUS_CANCELED = "canceled";
 
-	private static final String PREV = "prev";
-	private static final String NEXT = "next";
-	private static final String CANCEL = "cancel";
-	private static final String COMPLETE = "complete";
-	private static final String EXECUTE = "execute";
+	protected static final String PREV = "prev";
+	protected static final String NEXT = "next";
+	protected static final String CANCEL = "cancel";
+	protected static final String COMPLETE = "complete";
+	protected static final String EXECUTE = "execute";
 
 	public boolean enableDisplay = false;
 	public boolean enableNew = false;
-
-	// private static ResourceManager rm = ResourceManager.getManager("common",
-	// Config.lang);
 
 	public static final int MSG_BROKEN_DF = 1101;
 
 	/** the command information (node, label) */
 	private String[] cmd;
 	/** the sid associated with this command iteration */
-	private String sid;
+	protected String sid;
 	/** the data form associated with this command */
 	private DataForm df;
 	/** the status of this command */
-	private byte status;
+	protected byte status;
 
-	private Element current_element = null;
+	protected Element current_element = null;
 
-	private Object screen;
+	protected Object screen;
 
 	private String note = null;
 
@@ -76,16 +61,17 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	/*
 	 * The delayed registration
 	 */
-	private CommandExecutorListener cel;
-
+	protected CommandExecutorListener cel;
+	protected Roster roster;
+	
 
 	/**
 	 * @param cmd the parameters for the command execution
-	 * @param chosenResource the resource foe which to execute the command
+	 * @param chosenResource the resource for which to execute the command
 	 * @param eqr the delayed registration to execute
 	 * 
 	 */
-	public CommandExecutor(String[] cmd, String chosenResource,
+	public CommandExecutor(Roster roster,String[] cmd, String chosenResource,
 			CommandExecutorListener cel) {
 		this.cmd = cmd;
 		this.chosenResource = chosenResource;
@@ -93,7 +79,8 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		this.status = Task.CMD_EXECUTING;
 		step = 1;
 		last_modify = new Date();
-		XMPPClient.getInstance().updateTask(this);
+		this.roster= roster;
+		roster.updateTask(this);
 	}
 
 	/**
@@ -102,52 +89,50 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	 */
 	public void setupCommand() {
 		Iq iq = new Iq(chosenResource, Iq.T_SET);
-		Element commandEl = iq.addElement(XMPPClient.NS_COMMANDS,
-				XMPPClient.COMMAND);
+		Element commandEl = iq.addElement(XmppConstants.NS_COMMANDS,
+				XmppConstants.COMMAND);
 		commandEl.setAttribute("node", cmd[0]);
-		commandEl.setAttribute(XMPPClient.ACTION, EXECUTE);
+		commandEl.setAttribute(XmppConstants.ACTION, EXECUTE);
 
 		sendPacket(iq);
 	}
 
 	private void sendPacket(Iq iq) {
-		XMPPClient xmpp = XMPPClient.getInstance();
-		EventQuery eq = new EventQuery(Iq.IQ, new String[] { "id" },
-				new String[] { iq.getAttribute(Iq.ATT_ID) });
-
-		BasicXmlStream.addOnetimePacketListener(eq, this);
-		xmpp.sendPacket(iq);
+		iq.send(roster.getXmlStream(),this);
 	}
 
 	public void packetReceived(Element el) {
 		current_element = el;
-
-		XMPPClient client = XMPPClient.getInstance();
-		Element command = (Element) el.getChildByName(XMPPClient.NS_COMMANDS,
-				XMPPClient.COMMAND);
+		Element command = (Element) el.getChildByName(XmppConstants.NS_COMMANDS,
+				XmppConstants.COMMAND);
 		if (command == null) {
 			/* ? possible ? */
 			return;
 		}
-
 		/* every time this is copied, not a problem, SHOULD stay the same */
 		sid = command.getAttribute("sessionid");
+		updateFSM(el);
+	}
 
-
+	/**
+	 * @param el
+	 * @param command
+	 */
+	protected void updateFSM(Element el) {
 		/* Parse the dataform if present */
+		Element command = (Element) el.getChildByName(XmppConstants.NS_COMMANDS,
+				XmppConstants.COMMAND);
 		Element form = command.getChildByName(DataForm.NAMESPACE, DataForm.X);
 		if (form != null) {
 			df = new DataForm(form);
 		} else {
 			df = null;
 		}
-
 		/*
 		 * Some implementations seem to send the result of a completed form
 		 * using a DataForm of type "form" instead of "result", so let's check
 		 * the "status" and not the type of the form
 		 */
-
 		String el_status = command.getAttribute("status");
 		if (STATUS_CANCELED.equals(el_status)) {
 			/*
@@ -172,25 +157,28 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				this.status = Task.CMD_DESTROY;
 			}
 		}
-
-		Element note_element = command.getChildByName(XMPPClient.NS_COMMANDS,
+		Element note_element = command.getChildByName(XmppConstants.NS_COMMANDS,
 				"note");
 		if (note_element != null) {
 			this.note = note_element.getText();
 		} else {
 			this.note = null;
 		}
-
-		client.updateTask(this);
-		XmppListener xmppListener = client.getXmppListener();
-		if (xmppListener != null) {
-			xmppListener.handleTask(this);
-		}
-
-		boolean enableEvent = (this.cel != null && this.status != Task.CMD_ERROR);
+		roster.updateTask(this);
+		roster.getXmppListener().handleTask(this);
+		boolean enableEvent = isEventEnabled(el);
 		if (enableEvent) {
 			this.cel.executed(screen);
 		}
+	}
+
+	/**
+	 * @param el
+	 * @return
+	 */
+	protected boolean isEventEnabled(Element el) {
+		boolean enableEvent = (this.cel != null && this.status != Task.CMD_ERROR);
+		return enableEvent;
 	}
 
 	public void execute(int cmd) {
@@ -235,44 +223,41 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 		}
 
 		// update command status
-		XMPPClient instance = XMPPClient.getInstance();
-		instance.updateTask(this);
+		roster.updateTask(this);
 	}
 
-	void sendReply(String action, Element dfel) {
+	protected Element[] buildReply(String action, Element dfel) {
 		Iq iq = new Iq(chosenResource, Iq.T_SET);
-		Element commandEl = iq.addElement(XMPPClient.NS_COMMANDS,
-				XMPPClient.COMMAND);
+		Element commandEl = iq.addElement(XmppConstants.NS_COMMANDS,
+				XmppConstants.COMMAND);
 		commandEl.setAttribute("node", cmd[0]);
 		if (sid != null) {
 			commandEl.setAttribute("sessionid", sid);
 		}
 		if (action != null) {
-			commandEl.setAttribute(XMPPClient.ACTION, action);
+			commandEl.setAttribute(XmppConstants.ACTION, action);
 		}
 		if (dfel != null) {
 			commandEl.addElement(dfel);
 		}
+		return new Element[] { iq, commandEl };
+	}
 
-
+	protected void sendReply(String action, Element dfel) {
+		Element[] reply = buildReply(action, dfel);
+		Iq iq = (Iq) reply[0];
 		sendPacket(iq);
 	}
 
-	// #ifdef UI 
 	public void display() {
-		// #endif
-// #ifndef UI
-		//@	public void display(Display disp, Displayable next_screen) {
-		// #endif
-		final XMPPClient client = XMPPClient.getInstance();
 		switch (status) {
 			case Task.CMD_INPUT:
 				Element command = (Element) current_element.getChildByName(
-						XMPPClient.NS_COMMANDS, XMPPClient.COMMAND);
+						XmppConstants.NS_COMMANDS, XmppConstants.COMMAND);
 				Element actions = command.getChildByName(
-						XMPPClient.NS_COMMANDS, "actions");
+						XmppConstants.NS_COMMANDS, "actions");
 				if (actions == null) {
-					actions = new Element(XMPPClient.NS_COMMANDS, "actions");
+					actions = new Element(XmppConstants.NS_COMMANDS, "actions");
 					actions.addElement(null, "complete");
 				}
 				// add the available actions
@@ -292,52 +277,37 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 							cmds |= DataFormListener.CMD_SUBMIT;
 						}
 					}
-					XmppListener xmppListener = XMPPClient.getInstance()
-							.getXmppListener();
-					if (xmppListener != null) {
-						screen = xmppListener.handleDataForm(df,
+					screen = roster.getXmppListener().handleDataForm(df,
 								Task.CMD_INPUT, this, cmds);
-					}
 				}
 				break;
 			case Task.CMD_EXECUTING:
-				client.showAlert(AlertType.INFO, Config.ALERT_COMMAND_INFO,
-						Config.ALERT_WAIT_COMMAND, null);
+				roster.getXmppListener().showAlert(Alerts.INFO, XmppConstants.ALERT_COMMAND_INFO,
+						XmppConstants.ALERT_WAIT_COMMAND, null);
 				break;
 			case Task.CMD_CANCELING:
-				client.showAlert(AlertType.INFO, Config.ALERT_COMMAND_INFO,
-						Config.ALERT_CANCELING_COMMAND, null);
+				roster.getXmppListener().showAlert(Alerts.INFO, XmppConstants.ALERT_COMMAND_INFO,
+						XmppConstants.ALERT_CANCELING_COMMAND, null);
 				break;
 			case Task.CMD_CANCELED:
-				client.showAlert(AlertType.INFO, Config.ALERT_COMMAND_INFO,
-						Config.ALERT_CANCELED_COMMAND, getLabel());
+				roster.getXmppListener().showAlert(Alerts.INFO, XmppConstants.ALERT_COMMAND_INFO,
+						XmppConstants.ALERT_CANCELED_COMMAND, getLabel());
 				break;
 			case Task.CMD_FINISHED:
 				if (df != null) {
-					/*
-					screen = new DataResultScreen(df, this);
-					*/
-					XmppListener xmppListener = XMPPClient.getInstance()
-							.getXmppListener();
-					if (xmppListener != null) {
-						screen = xmppListener.handleDataForm(df,
+					screen = roster.getXmppListener().handleDataForm(df,
 								Task.CMD_FINISHED, this, -1);
-					}
 				} else {
 					// XXX handle note here, if present
 					status = Task.CMD_DESTROY;
-					client.updateTask(this);
+					roster.updateTask(this);
 
 					new Thread() {
 						public void run() {
-							XmppListener xmppListener = client
-									.getXmppListener();
-							if (xmppListener != null) {
-								xmppListener.handleTask(CommandExecutor.this);
-							}
-							client.showAlert(AlertType.INFO,
-									Config.ALERT_COMMAND_INFO,
-									Config.ALERT_FINISHED_COMMAND, null);
+							roster.getXmppListener().handleTask(CommandExecutor.this);
+							roster.getXmppListener().showAlert(Alerts.INFO,
+									XmppConstants.ALERT_COMMAND_INFO,
+									XmppConstants.ALERT_FINISHED_COMMAND, null);
 						}
 					}.start();
 				}
@@ -347,29 +317,35 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 				Element error = (Element) current_element.getChildByName(null,
 						Message.ERROR);
 				if (error != null) {
-					String code = error.getAttribute(XMPPClient.CODE);
-					if (code != null) errorText = (XMPPClient
+					String code = error.getAttribute(XmppConstants.CODE);
+					if (code != null) errorText = (XmppConstants
 							.getErrorString(code));
-					Element text = error.getChildByName(null, XMPPClient.TEXT);
+					Element text = error.getChildByName(null, XmppConstants.TEXT);
 					if (text != null) {
 						errorText += ". " + text.getText();
 					}
 				}
-				client.showAlert(AlertType.ERROR, Config.ALERT_COMMAND_INFO,
-						Config.ALERT_ERROR_COMMAND, errorText);
+				roster.getXmppListener().showAlert(Alerts.ERROR, XmppConstants.ALERT_COMMAND_INFO,
+						XmppConstants.ALERT_ERROR_COMMAND, errorText);
 				break;
 		}
 
 		if (status != Task.CMD_ERROR) {
 			if (screen != null) {
-				XmppListener xmppListener = client.getXmppListener();
-				xmppListener.showCommand(screen);
+				showScreen();
 			}
 			if (note != null) {
-				client.showAlert(AlertType.INFO, Config.ALERT_NOTE,
-						Config.ALERT_NOTE, note);
+				roster.getXmppListener().showAlert(Alerts.INFO, XmppConstants.ALERT_NOTE,
+						XmppConstants.ALERT_NOTE, note);
 			}
 		}
+	}
+
+	/**
+	 * 
+	 */
+	protected void showScreen() {
+		roster.getXmppListener().showCommand(screen);
 	}
 
 	public String getLabel() {
@@ -425,5 +401,13 @@ public class CommandExecutor implements PacketListener, DataFormListener, Task {
 	public void setCel(CommandExecutorListener cel) {
 		this.cel = cel;
 
+	}
+
+	public void handleError(Element e) {
+		packetReceived(e);
+	}
+
+	public void handleResult(Element e) {
+		packetReceived(e);
 	}
 }

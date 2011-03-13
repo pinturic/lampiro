@@ -1,8 +1,9 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UILabel.java 2033 2010-03-26 16:33:26Z luca $
-*/
+ * $Id: UILabel.java 2421 2011-01-24 17:22:13Z luca $
+ */
 
 /**
  * 
@@ -10,13 +11,12 @@
 package it.yup.ui;
 
 import it.yup.ui.TokenIterator.UIISplittableItem;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 
 import java.util.Enumeration;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
 /**
  * @author luca
@@ -25,7 +25,7 @@ import javax.microedition.lcdui.Image;
 public class UILabel extends UIItem implements UIISplittableItem {
 
 	String text;
-	Image img;
+	UIImage img;
 	boolean flip = false;
 
 	protected Vector textLines = null;
@@ -33,7 +33,7 @@ public class UILabel extends UIItem implements UIISplittableItem {
 	/**
 	 * The font used to paint the Label
 	 */
-	Font font = null;
+	UIFont font = null;
 
 	/**
 	 * The text of the label is "wrapped" it text is too long to fit a single
@@ -46,20 +46,26 @@ public class UILabel extends UIItem implements UIISplittableItem {
 
 	int vPadding = 0;
 
-	private int maxWrappedLines = -1;
+	private int maxWrappedLines = Short.MAX_VALUE;
+
+	private boolean _3d = false;
 
 	public UILabel(String text) {
 		this(null, text);
 	}
 
-	public UILabel(Image img) {
+	public UILabel(UIImage img) {
 		this(img, "");
+	}
+
+	public UILabel(UILabel label) {
+		this(label.getImg(), label.getText());
 	}
 
 	/**
 	 * @param screen
 	 */
-	public UILabel(Image img, String text) {
+	public UILabel(UIImage img, String text) {
 		this.img = img;
 		this.text = text;
 		// if an img is present it is a nonsense to have the
@@ -74,38 +80,33 @@ public class UILabel extends UIItem implements UIISplittableItem {
 	 * use them in or like: anchorPoint = Graphics.TOP | Graphics.LEFT; the
 	 * default value is Graphics.VCENTER | Graphics.LEFT.
 	 */
-	int anchorPoint = Graphics.TOP | Graphics.LEFT;
+	int anchorPoint = UIGraphics.TOP | UIGraphics.LEFT;
 
 	private int imgAnchorPoint = -1;
+	private int _3dColor = 0x888888;
 
 	/**
 	 * used to get the different components of the acnhorPoint,
 	 */
 	private int[] divideAP() {
 		int[] result = new int[2];
-		result[0] = (this.anchorPoint & Graphics.TOP) > 0 ? Graphics.TOP
-				: ((this.anchorPoint & Graphics.VCENTER) > 0 ? Graphics.VCENTER
-						: ((this.anchorPoint & Graphics.BOTTOM) > 0 ? Graphics.BOTTOM
-								: 0));
-		result[1] = (this.anchorPoint & Graphics.LEFT) > 0 ? Graphics.LEFT
-				: ((this.anchorPoint & Graphics.HCENTER) > 0 ? Graphics.HCENTER
-						: ((this.anchorPoint & Graphics.RIGHT) > 0 ? Graphics.RIGHT
-								: 0));
+		result[0] = UIGraphics.getVAnchor(anchorPoint);
+		result[1] = UIGraphics.getHAnchor(anchorPoint);
 		return result;
 
 	}
 
-	public int getTextWidth(String textLine, Font font, int startIndex,
+	public int getTextWidth(String textLine, UIFont font, int startIndex,
 			int length) {
 		return font.substringWidth(textLine, startIndex, length);
 	}
 
-	private void paintLine(Graphics g, int w, int h, Image imgLine,
+	private void paintLine(UIGraphics g, int w, int h, UIImage imgLine,
 			String textLine) {
 		int lineHeight = 0;
 		int lineWidth = 0;
 		int textHeight = 0, textWidth = 0, imgHeight = 0;
-		Font usedFont = (this.font != null ? this.font : g.getFont());
+		UIFont usedFont = (this.font != null ? this.font : g.getFont());
 		if (imgLine != null) {
 			lineHeight = imgLine.getHeight() + 2;
 			imgHeight = imgLine.getHeight();
@@ -134,13 +135,13 @@ public class UILabel extends UIItem implements UIISplittableItem {
 		}
 		int horizontalAnchor = this.divideAP()[1];
 		switch (horizontalAnchor) {
-			case Graphics.LEFT:
+			case UIGraphics.LEFT:
 				horizontalSpace = hPadding;
 				break;
-			case Graphics.HCENTER:
+			case UIGraphics.HCENTER:
 				horizontalSpace /= 2;
 				break;
-			case Graphics.RIGHT:
+			case UIGraphics.RIGHT:
 				horizontalSpace -= hPadding;
 				break;
 			default:
@@ -148,26 +149,23 @@ public class UILabel extends UIItem implements UIISplittableItem {
 		}
 		// first erase background
 		g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
-		if (this.getGradientColor() < 0) g.fillRect(0, 0, w, h);
-		else {
-			g.fillRect(0, 0, w, h / 2);
-			g.setColor(this.getGradientColor());
-			g.fillRect(0, h / 2, w, h - (h / 2));
-		}
-
-		// than paint in case it is needed
-		if (selected) {
-			int offset = 0;
-			if (imgLine != null) offset = imgVerticalOffset;
-			if (textLine != null
-					&& (textVerticalOffset < offset || imgLine == null)) offset = textVerticalOffset;
-			g.setColor(this.getSelectedColor());
-			int selHeight = java.lang.Math.max(imgHeight, textHeight) + 2;
-			if (this.getGradientSelectedColor() < 0) g.fillRect(0, 0, w, h);
+		if (getBg_color() != UIItem.TRANSPARENT_COLOR) {
+			if (this.getGradientColor() < 0) g.fillRect(0, 0, w, h);
 			else {
-				g.fillRect(0, offset, w, selHeight / 2);
-				g.setColor(this.getGradientSelectedColor());
-				g.fillRect(0, selHeight / 2, w, selHeight - (selHeight / 2));
+				g.fillRect(0, 0, w, h / 2);
+				g.setColor(this.getGradientColor());
+				g.fillRect(0, h / 2, w, h - (h / 2));
+			}
+
+			// than paint in case it is needed
+			if (selected) {
+				g.setColor(this.getSelectedColor());
+				if (this.getGradientSelectedColor() < 0) g.fillRect(0, 0, w, h);
+				else {
+					g.fillRect(0, 0, w, h / 2);
+					g.setColor(this.getGradientSelectedColor());
+					g.fillRect(0, h / 2, w, h);
+				}
 			}
 		}
 
@@ -177,9 +175,14 @@ public class UILabel extends UIItem implements UIISplittableItem {
 			if (imgLine != null) {
 				// if the imgAnchorPoint is set it means image must be overridden
 				int imgHOffset = 0;
-				if (this.imgAnchorPoint != Graphics.LEFT) imgHOffset += horizontalSpace;
+				if (UIGraphics.getHAnchor(imgAnchorPoint) != UIGraphics.LEFT) {
+					imgHOffset += horizontalSpace;
+				}
+				if (UIGraphics.getVAnchor(imgAnchorPoint) == UIGraphics.TOP) {
+					imgVerticalOffset = vPadding;
+				}
 				g.drawImage(img, imgHOffset, 1 + imgVerticalOffset,
-						Graphics.LEFT | Graphics.TOP);
+						UIGraphics.LEFT | UIGraphics.TOP);
 				paintTextLine(g, textLine, imgLine.getWidth() + 2
 						+ horizontalSpace, 1 + textVerticalOffset);
 			} else {
@@ -190,17 +193,27 @@ public class UILabel extends UIItem implements UIISplittableItem {
 			paintTextLine(g, textLine, 1 + horizontalSpace,
 					1 + textVerticalOffset);
 			if (imgLine != null) {
-				g.drawImage(imgLine, textWidth + 2 + horizontalSpace,
-						1 + imgVerticalOffset, Graphics.LEFT | Graphics.TOP);
+				g
+						.drawImage(imgLine, textWidth + 2 + horizontalSpace,
+								1 + imgVerticalOffset, UIGraphics.LEFT
+										| UIGraphics.TOP);
 			}
 		}
 	}
 
-	void paintTextLine(Graphics g, String textLine, int horizontalSpace,
+	void paintTextLine(UIGraphics g, String textLine, int horizontalSpace,
 			int verticalSpace) {
-
-		g.drawString(textLine, horizontalSpace, verticalSpace, Graphics.LEFT
-				| Graphics.TOP);
+		if (this._3d) {
+			int oldColor = g.getColor();
+			g.setColor(get_3dColor());
+			g.translate(0, -1);
+			g.drawString(textLine, horizontalSpace, verticalSpace,
+					UIGraphics.LEFT | UIGraphics.TOP);
+			g.setColor(oldColor);
+			g.translate(0, +1);
+		}
+		g.drawString(textLine, horizontalSpace, verticalSpace, UIGraphics.LEFT
+				| UIGraphics.TOP);
 	}
 
 	/*
@@ -208,8 +221,8 @@ public class UILabel extends UIItem implements UIISplittableItem {
 	 * 
 	 * @see it.yup.ui.UIItem#paint(javax.microedition.lcdui.Graphics, int, int)
 	 */
-	protected void paint(Graphics g, int w, int h) {
-		Font oldFont = g.getFont();
+	protected void paint(UIGraphics g, int w, int h) {
+		UIFont oldFont = g.getFont();
 		if (this.font != null) g.setFont(this.font);
 
 		this.height = 0;
@@ -227,16 +240,16 @@ public class UILabel extends UIItem implements UIISplittableItem {
 		// we must check that image is not wider than w
 		if (this.wrappable == false) {
 			if (this.width > w && (this.img == null || this.img.getWidth() < w)) {
-				String newText = new String("");
+				String newText = "";
 				this.width = (2 * hPadding);
 				/*
-				while (this.width < w) {
-					newText = newText + this.text.charAt(index);
-					this.width = g.getFont().stringWidth(newText + "...") + 2;
-					if (img != null) this.width += (img.getWidth() + 1);
-					index++;
-				}
-				*/
+				 * while (this.width < w) {
+				 * newText = newText + this.text.charAt(index);
+				 * this.width = g.getFont().stringWidth(newText + "...") + 2;
+				 * if (img != null) this.width += (img.getWidth() + 1);
+				 * index++;
+				 * }
+				 */
 				int min = 0, max = this.text.length(), med = 0;
 				int nl = 0;
 				while (min != max) {
@@ -261,7 +274,7 @@ public class UILabel extends UIItem implements UIISplittableItem {
 			this.width = w;
 
 			// just in case it has not been called before
-			Font usedFont = (this.font != null ? this.font : g.getFont());
+			UIFont usedFont = (this.font != null ? this.font : g.getFont());
 			int reservedWidth = this.width - (2 * hPadding);
 			reservedWidth -= (img != null ? (img.getWidth() + 3) : 0);
 			if (textLines == null) {
@@ -294,20 +307,20 @@ public class UILabel extends UIItem implements UIISplittableItem {
 		}
 
 		// #mdebug
-//@		//				System.out.println("Drawn UILabel '" + text + "' at: ("
-//@		//						+ g.getTranslateX() + ", " + g.getTranslateY() + ")"
-//@		//						+ (selected ? "S" : ""));
+				//				System.out.println("Drawn UILabel '" + text + "' at: ("
+				//						+ g.getTranslateX() + ", " + g.getTranslateY() + ")"
+				//						+ (selected ? "S" : ""));
 		// #enddebug
 
 		g.setFont(oldFont);
 	}
 
-	protected void computeTextLines(Font usedFont, int w) {
+	protected void computeTextLines(UIFont usedFont, int w) {
 		textLines = new Vector();
 		TokenIterator ti = new TokenIterator(this);
 		ti.computeLazyLines(usedFont, w);
 		int count = 0;
-		while (count < ti.getLinesNumber()) {
+		while (count < ti.getLinesNumber() && count < maxWrappedLines) {
 			String ithString = ti.elementAt(count).trim();
 			if (ithString.length() > 0) textLines.addElement(ithString);
 			count++;
@@ -395,8 +408,8 @@ public class UILabel extends UIItem implements UIISplittableItem {
 	 * {@inheritDoc}
 	 * 
 	 */
-	public int getHeight(Graphics g) {
-		Font usedFont = (this.font != null ? this.font : g.getFont());
+	public int getHeight(UIGraphics g) {
+		UIFont usedFont = (this.font != null ? this.font : g.getFont());
 		this.height = 0;
 		if (this.wrappable == false) {
 			if (img != null) this.height = img.getHeight() + 2;
@@ -405,10 +418,10 @@ public class UILabel extends UIItem implements UIISplittableItem {
 
 		} else {
 			// #mdebug
-//@			//			if (this.getContainer() == null || ((UIItem) this.getContainer()).getWidth()<=0)
-//@			//			{
-//@			//				System.out.println("+++++ wrong container width");
-//@			//			}
+						//			if (this.getContainer() == null || ((UIItem) this.getContainer()).getWidth()<=0)
+						//			{
+						//				System.out.println("+++++ wrong container width");
+						//			}
 			// #enddebug
 
 			int fontHeight = usedFont.getHeight();
@@ -482,21 +495,21 @@ public class UILabel extends UIItem implements UIISplittableItem {
 	 * @param font
 	 *            the font to set
 	 */
-	public void setFont(Font font) {
+	public void setFont(UIFont font) {
 		this.font = font;
 	}
 
 	/**
 	 * @return the font
 	 */
-	public Font getFont() {
+	public UIFont getFont() {
 		return font;
 	}
 
 	/**
 	 * @return the img
 	 */
-	public Image getImg() {
+	public UIImage getImg() {
 		return img;
 	}
 
@@ -504,7 +517,7 @@ public class UILabel extends UIItem implements UIISplittableItem {
 	 * @param img
 	 *            the img to set
 	 */
-	public void setImg(Image img) {
+	public void setImg(UIImage img) {
 		if (this.img == img) return;
 		this.dirty = true;
 		this.img = img;
@@ -534,5 +547,33 @@ public class UILabel extends UIItem implements UIISplittableItem {
 
 	public int getMaxWrappedLines() {
 		return maxWrappedLines;
+	}
+
+	/**
+	 * @param _3d the _3d to set
+	 */
+	public void set_3d(boolean _3d) {
+		this._3d = _3d;
+	}
+
+	/**
+	 * @return the _3d
+	 */
+	public boolean is_3d() {
+		return _3d;
+	}
+
+	/**
+	 * @param _3dColor the _3dColor to set
+	 */
+	public void set_3dColor(int _3dColor) {
+		this._3dColor = _3dColor;
+	}
+
+	/**
+	 * @return the _3dColor
+	 */
+	public int get_3dColor() {
+		return _3dColor;
 	}
 }

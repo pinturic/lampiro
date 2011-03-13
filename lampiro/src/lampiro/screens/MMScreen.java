@@ -2,38 +2,45 @@
  * See about.html for details about license.
  *
  * $Id: MMScreen.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package lampiro.screens;
 
-// #mdebug
-//@import it.yup.util.Logger;
-//@
+//#mdebug
+
+import it.yup.util.log.Logger;
+
 // #enddebug
 
 import java.util.Vector;
 
 import it.yup.ui.UICanvas;
+
+// #ifndef RIM
+
+import javax.microedition.lcdui.Canvas;
+
+// #endif
+
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
 import it.yup.util.Utils;
-import it.yup.xmpp.Config;
+import it.yup.util.Alerts;
+import it.yup.client.Config;
+import it.yup.xmpp.XmppConstants;
 
-import javax.microedition.lcdui.AlertType;
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Graphics;
 import javax.microedition.media.Manager;
 import javax.microedition.media.Player;
 import javax.microedition.media.control.RecordControl;
 import javax.microedition.media.control.VideoControl;
 
-import lampiro.LampiroMidlet;
-
 /*
  * MultimediaScreen 
  */
+// #ifndef RIM
 public class MMScreen extends Canvas {
+	// #endif	
 
 	private static ResourceManager rm = ResourceManager.getManager();
 
@@ -56,41 +63,71 @@ public class MMScreen extends Canvas {
 		g.drawRect(1, 1, width - 3, height - 3);
 	}
 
+	private Player getPlayer() {
+		Player mPlayer = null;
+		String platform = System.getProperty("microedition.platform");
+		String firstString = "capture://video";
+		String secondString = "capture://image";
+		if (platform.toLowerCase().indexOf("nokia") != -1) {
+			String temp = firstString;
+			firstString = secondString;
+			secondString = temp;
+		}
+		try {
+			mPlayer = Manager.createPlayer(firstString);
+		} catch (Exception ex1) {
+			//#mdebug
+			Logger.log("In setup video 1a" + ex1.getClass().getName() + "\n"
+					+ ex1.getMessage());
+			//#enddebug
+			try {
+				mPlayer = Manager.createPlayer(secondString);
+			} catch (Exception e2) {
+				//#mdebug
+				Logger.log("In setup video 1b" + e2.getClass().getName() + "\n"
+						+ e2.getMessage());
+				//#enddebug
+			}
+		}
+		return mPlayer;
+	}
+
 	public void showCamera() {
 		try {
 			Player mPlayer = null;
 			try {
 				//String camResolution= MMScreen.getVideoRes(true);
-				mPlayer = Manager.createPlayer("capture://video");
+				mPlayer = getPlayer();
 				mPlayer.realize();
 			} catch (Exception e) {
 				//#mdebug
-//@								e.printStackTrace();
-//@								Logger.log("In setup video 1" + e.getClass().getName() + "\n"
-//@										+ e.getMessage());
+				e.printStackTrace();
+				Logger.log("In setup video 1" + e.getClass().getName() + "\n"
+						+ e.getMessage());
 				//#enddebug
 			}
 			if (mPlayer == null) {
 				RosterScreen rs = RosterScreen.getInstance();
 				UICanvas.getInstance().open(rs, true);
 				UICanvas.display(null);
-				rs.showAlert(AlertType.ERROR, rm
-						.getString(ResourceIDs.STR_ERROR), rm
-						.getString(ResourceIDs.STR_CAMERA_ERROR), null);
+				rs.showAlert(Alerts.ERROR, rm.getString(ResourceIDs.STR_ERROR),
+						rm.getString(ResourceIDs.STR_CAMERA_ERROR), null);
 				return;
 			}
 			VideoControl mControl = (VideoControl) mPlayer
 					.getControl("VideoControl");
 			InnerMMScreen ics = new InnerMMScreen(mPlayer, mControl,
-					Config.IMG_TYPE, contactToSend);
-			Display.getDisplay(LampiroMidlet._lampiro).setCurrent(ics);
+					XmppConstants.IMG_TYPE, contactToSend);
+			UICanvas.display(ics);
 			mPlayer.start();
+			// #ifndef RIM
 			repaint();
+			// #endif
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						Logger.log("In starting player " + e.getClass().getName() + "\n"
-//@								+ e.getMessage());
+			e.printStackTrace();
+			Logger.log("In starting player " + e.getClass().getName() + "\n"
+					+ e.getMessage());
 			//#enddebug
 		}
 	}
@@ -120,9 +157,9 @@ public class MMScreen extends Canvas {
 			p.realize();
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						Logger.log("In allocate audio player " + e.getClass().getName()
-//@								+ "\n" + e.getMessage());
+			e.printStackTrace();
+			Logger.log("In allocate audio player " + e.getClass().getName()
+					+ "\n" + e.getMessage());
 			//#enddebug
 			RosterScreen.getInstance().setFreezed(false);
 			UICanvas.getInstance().open(RosterScreen.getInstance(), true);
@@ -133,17 +170,18 @@ public class MMScreen extends Canvas {
 			rc = (RecordControl) p.getControl("RecordControl");
 		} catch (Exception e) {
 			// #mdebug
-//@						e.printStackTrace();
-//@						Logger.log("In allocate audio player " + e.getClass().getName()
-//@								+ "\n" + e.getMessage());
+			e.printStackTrace();
+			Logger.log("In allocate audio player " + e.getClass().getName()
+					+ "\n" + e.getMessage());
 			//#enddebug
 			return;
 		}
-		InnerMMScreen ics = new InnerMMScreen(p, rc, Config.AUDIO_TYPE,
+		InnerMMScreen ics = new InnerMMScreen(p, rc, XmppConstants.AUDIO_TYPE,
 				this.contactToSend);
 		ics.setTypeIndex(typeIndex);
-		Display.getDisplay(LampiroMidlet._lampiro).setCurrent(ics);
+		UICanvas.display(ics);
+		// #ifndef RIM
 		repaint();
+		// #endif
 	}
-
 }

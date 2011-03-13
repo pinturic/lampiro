@@ -12,9 +12,12 @@ import it.yup.ui.UIMenu;
 import it.yup.util.ResourceIDs;
 
 
+import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
 import it.yup.xmpp.MUC;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xmpp.XmppConstants;
+import it.yup.xmpp.packets.Iq;
 
 import java.util.Hashtable;
 import java.util.Vector;
@@ -178,11 +181,15 @@ public class UIContactGroup extends UIGroup {
 	}
 
 	protected static UIContact createUIContact(Contact c) {
-		Object gatewayData = XMPPClient.getInstance().getRoster().registeredGateways
+		Element gatewayData = (Element) XMPPClient.getInstance().getRoster().registeredGateways
 				.get(c.jid);
 		UIContact uic = null;
 		if (gatewayData != null) {
-			String type = (String) ((Object[]) gatewayData)[0];
+			Element identity = gatewayData.getPath(new String[] {
+					XmppConstants.NS_IQ_DISCO_INFO,
+					XmppConstants.NS_IQ_DISCO_INFO }, new String[] { Iq.QUERY,
+					XmppConstants.IDENTITY });
+			String type = identity.getAttribute("type");
 			uic = new UIGateway(c, type);
 		}
 		else {

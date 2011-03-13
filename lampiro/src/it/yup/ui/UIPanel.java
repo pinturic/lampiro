@@ -1,17 +1,16 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIPanel.java 2033 2010-03-26 16:33:26Z luca $
-*/
+ * $Id: UIPanel.java 2435 2011-01-30 19:13:08Z luca $
+ */
 
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 import java.util.Enumeration;
 import java.util.Vector;
-
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
 
 /**
  * A panel that stacks vertically items vertically. If the container height is
@@ -36,7 +35,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 
 	private boolean listMode = false;
 
-	private Image pointer = UICanvas.getUIImage("/icons/menuarrow.png");
+	private UIImage pointer = UICanvas.getUIImage("/icons/menuarrow.png");
 
 	private int reverseColor = UIUtils.colorize(UIConfig.bg_color, -10);
 
@@ -57,6 +56,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 		selectedIdx = -1;
 		maxHeight = -1;
 		items = new Vector();
+		this.setFocusable(true);
 	}
 
 	public void setScreen(UIScreen _us) {
@@ -68,11 +68,11 @@ public class UIPanel extends UIItem implements UIIContainer {
 		}
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		int rh = computeRealHeight(g);
 		boolean oldNeedScrollbar = needScrollbar;
 		needScrollbar = false;
-		if (rh > h) {
+		if (isScrollbarNeeded(h, rh)) {
 			w -= UIConfig.scrollbarWidth; // + 1;
 			needScrollbar = true;
 		}
@@ -101,7 +101,19 @@ public class UIPanel extends UIItem implements UIIContainer {
 						ui.setDirty(true);
 					}
 					if (ui.isDirty()) {
-						paintIthItem(g, w, ui, ih, l);
+						if (!UICanvas.getInstance().hasPointerMotionEvents()
+								|| isOnscreen(g, ui, oty, ih)) {
+							if (this.getBgImage() != null
+									&& ui.getBg_color() == UIItem.TRANSPARENT_COLOR) {
+								int src_x = g.getTranslateX() - otx;
+								int src_y = g.getTranslateY() - oty;
+								paintBGRegion(g, getBgImage(), src_x, src_y, w,
+										ih, 0, 0);
+								// any time I draw a bg I need to invalidate the whole child;
+								ui.setDirty(true);
+							}
+							paintIthItem(g, w, ui, ih, l);
+						}
 						lastDirty = true;
 					}
 					g.translate(0, ih);
@@ -111,31 +123,27 @@ public class UIPanel extends UIItem implements UIIContainer {
 				l++;
 			}
 			g.translate(otx - g.getTranslateX(), oty - g.getTranslateY());
-			if (th > h) {
+			if (isScrollbarNeeded(h, th)) {
 				/* the last item is not fully visible */
-				lastVisible--;
-			}
-			if (th < h) {
+				fixLastVisible();
+			} else {
 				/* fill the gap */
 				int oc = g.getColor();
-				g.setColor(getBg_color() >= 0 ? getBg_color()
-						: UIConfig.bg_color);
-				g.fillRect(0, th, w, h - th);// - 1);
+				if (this.getBg_color() != UIItem.TRANSPARENT_COLOR) {
+					g.setColor(getBg_color() >= 0 ? getBg_color()
+							: UIConfig.bg_color);
+					g.fillRect(0, th, w, h - th);// - 1);
+				}
+				if (this.getBgImage() != null) {
+					paintBGRegion(g, getBgImage(), 0, th, w, h - th, 0, th);
+				}
 				g.setColor(oc);
 			}
 			/* scroll down -> need to calculate space */
 			if (selectedIdx != -1 && selectedIdx > lastVisible
 					&& this.selectedIdx > this.firstVisible
 					&& selectedIdx < items.size()) {
-				int delta = 0;
-				for (int i = lastVisible + 1; i <= selectedIdx; i++) {
-					delta += ((UIItem) items.elementAt(i)).getHeight(g);
-				}
-				do {
-					delta -= ((UIItem) items.elementAt(firstVisible))
-							.getHeight(g);
-					firstVisible++;
-				} while (delta > 0 && firstVisible < this.items.size() - 1);
+				centerPanel(g, h);
 				for (int i = firstVisible; i < this.items.size(); i++) {
 					((UIItem) items.elementAt(i)).setDirty(true);
 				}
@@ -151,7 +159,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 				needRedraw = true;
 			}
 		}
-		if (rh > h) {
+		if (isScrollbarNeeded(h, rh)) {
 			w += UIConfig.scrollbarWidth;// + 1;
 			drawScrollBar(g, w, h, rh);
 		}
@@ -159,7 +167,45 @@ public class UIPanel extends UIItem implements UIIContainer {
 		g.translate(otx - g.getTranslateX(), oty - g.getTranslateY());
 	}
 
-	protected void paintIthItem(Graphics g, int w, UIItem ui, int ih, int l) {
+	/**
+	 * 
+	 */
+	protected void fixLastVisible() {
+		lastVisible--;
+	}
+
+	/**
+	 * @param g
+	 */
+	protected void centerPanel(UIGraphics g, int h) {
+		int delta = 0;
+		for (int i = lastVisible + 1; i <= selectedIdx; i++) {
+			delta += ((UIItem) items.elementAt(i)).getHeight(g);
+		}
+		do {
+			delta -= ((UIItem) items.elementAt(firstVisible)).getHeight(g);
+			firstVisible++;
+		} while (delta > 0 && firstVisible < this.items.size() - 1);
+	}
+
+	/**
+	 * @param h
+	 * @param rh
+	 * @return
+	 */
+	protected boolean isScrollbarNeeded(int h, int rh) {
+		return rh > h;
+	}
+
+	protected boolean isOnscreen(UIGraphics g, UIItem ui, int oty, int ih) {
+		int clipY = g.getClipY();
+		int clipHeight = g.getClipHeight();
+		if (clipY + clipHeight > 0 && ih>clipY) return true;
+		else
+			return false;
+	}
+
+	protected void paintIthItem(UIGraphics g, int w, UIItem ui, int ih, int l) {
 		if (listMode == false) {
 			ui.paint0(g, w, ih);
 			return;
@@ -173,7 +219,8 @@ public class UIPanel extends UIItem implements UIIContainer {
 			g.setColor(getBg_color() >= 0 ? getBg_color() : UIConfig.bg_color);
 		g.fillRect(0, 0, xOffset, ih);
 		if (ui.isSelected()) g.drawImage(pointer, 0,
-				(ih - pointer.getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
+				(ih - pointer.getHeight()) / 2, UIGraphics.TOP
+						| UIGraphics.LEFT);
 		g.setColor(oc);
 		g.translate(xOffset, 0);
 		int oldBgColor = ui.getBg_color();
@@ -195,11 +242,11 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 * @param rh
 	 *            the real height of this panel
 	 */
-	protected void drawScrollBar(Graphics g, int w, int h, int rh) {
+	protected void drawScrollBar(UIGraphics g, int w, int h, int rh) {
 		drawScrollBarItems(g, w, h, rh, firstVisible, lastVisible, items.size());
 	}
 
-	protected void drawScrollBarItems(Graphics g, int w, int h, int rh,
+	protected void drawScrollBarItems(UIGraphics g, int w, int h, int rh,
 			int firstItem, int lastItem, int size) {
 		int oc = g.getColor();
 		g.setColor(UIConfig.scrollbar_bg);
@@ -219,15 +266,19 @@ public class UIPanel extends UIItem implements UIIContainer {
 		g.setColor(oc);
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		/* always all the available space */
-		if (maxHeight != -1) { return maxHeight; }
-		if (this.height > 0) return this.height;
+		if (maxHeight != -1) return maxHeight;
+		if (this.height > 0 && this.isDirty() == false) return this.height;
 		// if i have a clip that is my height
 		int clipY = g.getClipY();// .getClipY();
 		int clippedHeight = g.getClipHeight() + clipY;
 		// if (clippedHeight > 0)
 		this.height = clippedHeight;
+		if (UICanvas.getInstance().hasPointerMotionEvents()) {
+			int rh = computeRealHeight(g);
+			this.height = Math.max(clippedHeight, rh);
+		}
 		return this.height;
 		// otherwise my last known height
 	}
@@ -260,7 +311,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	/**
 	 * Calculates the real height of the item
 	 */
-	protected int computeRealHeight(Graphics g) {
+	protected int computeRealHeight(UIGraphics g) {
 		int realHeight = 0;
 		/*
 		 * saves the old coordinate origin, and calculates the height of each
@@ -270,7 +321,8 @@ public class UIPanel extends UIItem implements UIIContainer {
 		int oty = g.getTranslateY();
 		Enumeration en = this.getItems().elements();
 		while (en.hasMoreElements()) {
-			int ih = ((UIItem) en.nextElement()).getHeight(g);
+			Object ithEl = en.nextElement();
+			int ih = ((UIItem) ithEl).getHeight(g);
 			g.translate(0, ih);
 			realHeight += ih;
 		}
@@ -297,7 +349,6 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 * 
 	 */
 	public boolean keyPressed(int key) {
-
 		if (this.selectedIdx >= 0
 				&& selectedIdx < this.items.size()
 				&& ((UIItem) this.items.elementAt(selectedIdx)).keyPressed(key) == true) {
@@ -318,7 +369,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 		Enumeration en = null;
 
 		switch (ga) {
-			case Canvas.DOWN:
+			case UICanvas.DOWN:
 				if (selectedIdx == -1) {
 					/* XXX: nothing selected still: select first visible */
 					// selectedIdx = firstVisible - 1;
@@ -400,7 +451,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 					((UIItem) items.elementAt(i)).setDirty(true);
 				}
 				break;
-			case Canvas.UP:
+			case UICanvas.UP:
 				if (selectedIdx == -1) {
 					/* XXX: nothing selected, select last visible */
 					// selectedIdx = lastVisible + 1;
@@ -484,14 +535,14 @@ public class UIPanel extends UIItem implements UIIContainer {
 		// If I am loosing the focus reset the selection to the first index
 		if (keepFocus == false && this.getSelectedIndex() >= 0
 				&& this.getSelectedIndex() < this.getItems().size()) {
-			((UIItem) this.getItems().elementAt(this.getSelectedIndex()))
-					.setSelected(false);
-			this.setSelectedIndex(-1);
+			//			((UIItem) this.getItems().elementAt(this.getSelectedIndex()))
+			//					.setSelected(false);
+			//			this.setSelectedIndex(-1);
 			dirty = true;
 		}
 
 		if (key == UICanvas.MENU_LEFT || key == UICanvas.MENU_RIGHT
-				|| ga == Canvas.LEFT || ga == Canvas.RIGHT) {
+				|| ga == UICanvas.LEFT || ga == UICanvas.RIGHT) {
 			keepFocus = false;
 		}
 
@@ -515,8 +566,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	 * de-selected.
 	 * 
 	 * @param _selected
-	 *            {@code true} if panel becomes selected, {@code false}
-	 *            otherwise.
+	 *            {@code true} if panel becomes selected, {@code false} otherwise.
 	 */
 	public void setSelected(boolean _selected) {
 		super.setSelected(_selected);
@@ -608,7 +658,7 @@ public class UIPanel extends UIItem implements UIIContainer {
 	public UIItem removeItemAt(int idx) {
 		if (idx < 0 || idx > items.size()) { return null; }
 		if (idx < firstVisible) firstVisible--;
-		if (idx < lastVisible) lastVisible--;
+		if (idx < lastVisible) fixLastVisible();
 
 		if (selectedIdx > idx) {
 			/* clear selection */
@@ -740,7 +790,8 @@ public class UIPanel extends UIItem implements UIIContainer {
 	}
 
 	/**
-	 * @param modal the modal to set
+	 * @param modal
+	 *            the modal to set
 	 */
 	public void setModal(boolean modal) {
 		this.modal = modal;
@@ -761,8 +812,12 @@ public class UIPanel extends UIItem implements UIIContainer {
 		this.firstVisible = firstVisible;
 	}
 
-	public int getFirstVisible() {
+	public int getFirstVisibleIndex() {
 		return firstVisible;
+	}
+
+	public int getLastVisibleIndex() {
+		return lastVisible;
 	}
 
 	public void setListMode(boolean listMode) {
@@ -774,7 +829,6 @@ public class UIPanel extends UIItem implements UIIContainer {
 	}
 
 	public int indexOf(UIItem item) {
-		// TODO Auto-generated method stub
 		return this.items.indexOf(item);
 	}
 }

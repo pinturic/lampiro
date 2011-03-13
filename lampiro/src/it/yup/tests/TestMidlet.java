@@ -1,7 +1,8 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: TestMidlet.java 2025 2010-03-23 14:27:59Z luca $
+ * $Id: TestMidlet.java 2329 2010-11-16 14:12:50Z luca $
 */
 
 package it.yup.tests;
@@ -15,16 +16,23 @@ import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.midlet.MIDlet;
 
-import it.yup.ui.MetaVector; // #mdebug
-import it.yup.util.Logger;
-import it.yup.util.StderrConsumer;
-import it.yup.util.Utils;
-import it.yup.xml.BProcessor;
-import it.yup.xml.Element; // #enddebug
+import it.yup.ui.MetaVector;
+
+// #mdebug
+
+import it.yup.util.log.Logger;
+import it.yup.util.log.StderrConsumer;
+import it.yup.util.Utils; 
+
+// #enddebug
+
 import it.yup.xml.KXmlParser;
 import it.yup.xml.KXmlProcessor;
 import it.yup.xml.KXmlSerializer;
-import it.yup.xmpp.XMPPClient;
+import it.yup.client.XMPPClient;
+import it.yup.xml.Element;
+import it.yup.xml.BProcessor;
+import it.yup.xmpp.XmppConstants;
 
 /**
  * YUP Main midlet
@@ -45,7 +53,7 @@ public class TestMidlet extends MIDlet {
 	public TestMidlet() {
 
 		// #debug		
-//@				Logger.addConsumer(new StderrConsumer());
+		Logger.addConsumer(new StderrConsumer());
 
 		disp = Display.getDisplay(this);
 		//		xmpp = new XMPPTestClient();
@@ -97,63 +105,63 @@ public class TestMidlet extends MIDlet {
 		//		for (int i = 0; i < tempArray.length; i++) {
 		//			System.out.println(tempArray[i]);	
 		//		}
-//		long time0 = System.currentTimeMillis();
-//		long count = 0;
-//		for (int k = 0; k <= 20; k++) {
-//			for (int i = 0; i < 100; i++) {
-//				for (int j = 0; j < 100; j++) {
-//					count += j * i;
-//				}
-//			}
-//			for (int i = 0; i < 100; i++) {
-//				for (int j = 0; j < 100; j++) {
-//					count -= ((j + 1) / (i + 1));
-//				}
-//			}
-//		}
-//		long time1 = System.currentTimeMillis();
-//		String tempString = "aa";
-//		for (int k = 0; k <= 1; k++) {
-//			for (int i = 0; i < 100; i++) {
-//				for (char j = 'a'; j <= 'z'; j++) {
-//					tempString += j;
-//					if (j % 2 == 0) {
-//						tempString = tempString.substring(1, tempString
-//								.length());
-//					}
-//				}
-//			}
-//		}
-//		tempString = tempString.substring(0, 20);
-//		long time2 = System.currentTimeMillis();
-//		for (int k = 0; k <= 1000; k++) {
-//			byte[] data = Utils.getBytesUtf8(tempString);
-//		}
-//		long time2a = System.currentTimeMillis();
-//		for (int j = 0; j <= 20; j++) {
-//			for (int k = 0; k <= 20; k++) {
-//				for (int i = 0; i < 100; i++) {
-//					int[] tempi = new int[2];
-//					byte[] tempb = new byte[10];
-//					String s = new String("abcdefghi");
-//				}
-//			}
-//		}
+		//		long time0 = System.currentTimeMillis();
+		//		long count = 0;
+		//		for (int k = 0; k <= 20; k++) {
+		//			for (int i = 0; i < 100; i++) {
+		//				for (int j = 0; j < 100; j++) {
+		//					count += j * i;
+		//				}
+		//			}
+		//			for (int i = 0; i < 100; i++) {
+		//				for (int j = 0; j < 100; j++) {
+		//					count -= ((j + 1) / (i + 1));
+		//				}
+		//			}
+		//		}
+		//		long time1 = System.currentTimeMillis();
+		//		String tempString = "aa";
+		//		for (int k = 0; k <= 1; k++) {
+		//			for (int i = 0; i < 100; i++) {
+		//				for (char j = 'a'; j <= 'z'; j++) {
+		//					tempString += j;
+		//					if (j % 2 == 0) {
+		//						tempString = tempString.substring(1, tempString
+		//								.length());
+		//					}
+		//				}
+		//			}
+		//		}
+		//		tempString = tempString.substring(0, 20);
+		//		long time2 = System.currentTimeMillis();
+		//		for (int k = 0; k <= 1000; k++) {
+		//			byte[] data = Utils.getBytesUtf8(tempString);
+		//		}
+		//		long time2a = System.currentTimeMillis();
+		//		for (int j = 0; j <= 20; j++) {
+		//			for (int k = 0; k <= 20; k++) {
+		//				for (int i = 0; i < 100; i++) {
+		//					int[] tempi = new int[2];
+		//					byte[] tempb = new byte[10];
+		//					String s = new String("abcdefghi");
+		//				}
+		//			}
+		//		}
 		long time3 = System.currentTimeMillis();
-		Element el = new Element(XMPPClient.MIDP_PLATFORM, "element");
+		Element el = new Element(XmppConstants.MIDP_PLATFORM, "element");
 		for (int i = 0; i < 15; i++) {
-			Element el2 = new Element(XMPPClient.MIDP_PLATFORM, "elementi" + i);
+			Element el2 = new Element(XmppConstants.MIDP_PLATFORM, "elementi" + i);
 			el2.setAttribute("attr1", "val1");
 			el2.setAttribute("attr2", "val2");
 			el.addElement(el2);
 			for (int j = 0; j < 25; j++) {
-				Element el3 = new Element(XMPPClient.BLUENDO_PUBLISH,
+				Element el3 = new Element(XmppConstants.BLUENDO_PUBLISH,
 						"elementj" + i + "-" + j);
 				el3.setAttribute("attr1", "val1");
 				el3.setAttribute("attr2", "val2");
 				el3.setAttribute("attr3", "val3");
 				el2.addElement(el3);
-				String pervString = ""+((char) (i * j * 10 + i + j));
+				String pervString = "" + ((char) (i * j * 10 + i + j));
 				el3.addText(pervString);
 			}
 		}
@@ -175,12 +183,12 @@ public class TestMidlet extends MIDlet {
 		}
 		long time8 = System.currentTimeMillis();
 		String longText = "";
-//		longText += ("hasUTF8: " + Utils.has_utf8 + "\n");
-//		longText += ("time0: " + time1 + "\n");
-//		longText += ("time1: " + (time1 - time0) + "\n");
-//		longText += ("time2: " + (time2 - time1) + "\n");
-//		longText += ("time2a: " + (time2a - time2) + "\n");
-//		longText += ("time3: " + (time3 - time2a) + "\n");
+		//		longText += ("hasUTF8: " + Utils.has_utf8 + "\n");
+		//		longText += ("time0: " + time1 + "\n");
+		//		longText += ("time1: " + (time1 - time0) + "\n");
+		//		longText += ("time2: " + (time2 - time1) + "\n");
+		//		longText += ("time2a: " + (time2a - time2) + "\n");
+		//		longText += ("time3: " + (time3 - time2a) + "\n");
 		longText += ("time4: " + (time4 - time3) + "\n");
 		longText += ("time5: " + (time5 - time4) + "\n");
 		longText += ("time6: " + (time6 - time5) + "\n");

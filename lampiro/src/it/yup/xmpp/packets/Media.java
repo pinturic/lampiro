@@ -6,8 +6,7 @@
 package it.yup.xmpp.packets;
 
 import it.yup.xml.Element;
-import it.yup.xmpp.Config;
-import it.yup.xmpp.XMPPClient;
+import it.yup.xmpp.XmppConstants;
 
 /**
  * A media data type
@@ -22,7 +21,7 @@ public class Media {
 	public int height = -1;
 
 	public Media(Element f) {
-		Element[] uriEls = f.getChildrenByName(null, XMPPClient.URI);
+		Element[] uriEls = f.getChildrenByName(null, XmppConstants.URI);
 		urisTypes = new Object[uriEls.length];
 		String tempWidth = f.getAttribute("width");
 		String tempHeight = f.getAttribute("height");
@@ -35,11 +34,11 @@ public class Media {
 			String type = uriEl.getAttribute(Stanza.ATT_TYPE);
 			String uri = uriEl.getText();
 			int mediaType;
-			if (type.indexOf("audio") == 0) mediaType = Config.AUDIO_TYPE;
-			else if (type.indexOf("video") == 0) mediaType = Config.VIDEO_TYPE;
-			else if (type.indexOf("image") == 0) mediaType = Config.IMG_TYPE;
+			if (type.indexOf(XmppConstants.AUDIO) == 0) mediaType = XmppConstants.AUDIO_TYPE;
+			else if (type.indexOf(XmppConstants.VIDEO) == 0) mediaType = XmppConstants.VIDEO_TYPE;
+			else if (type.indexOf(XmppConstants.IMAGE) == 0) mediaType = XmppConstants.IMG_TYPE;
 			else
-				mediaType = Config.IMG_TYPE;
+				mediaType = XmppConstants.IMG_TYPE;
 			urisTypes[i] = new Object[] { uri, new Integer(mediaType) };
 		}
 	}

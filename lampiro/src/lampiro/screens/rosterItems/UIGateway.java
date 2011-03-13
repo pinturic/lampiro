@@ -2,19 +2,18 @@
  * See about.html for details about license.
  *
  * $Id: UIGateway.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 package lampiro.screens.rosterItems;
 
 import java.io.IOException;
 import java.util.Hashtable;
-
-import javax.microedition.lcdui.Image;
 
 import lampiro.screens.RosterScreen;
 
 import it.yup.ui.UICanvas;
 import it.yup.ui.UILabel;
 import it.yup.ui.UIUtils;
+import it.yup.ui.wrappers.UIImage;
 import it.yup.util.ResourceIDs;
 import it.yup.xmpp.Contact;
 
@@ -36,16 +35,18 @@ public class UIGateway extends UIContact {
 		// TODO Auto-generated constructor stub
 	}
 
-	public static Image getGatewayIcons(String type) {
-		if (type == null) return null;
-		Image retIcon = (Image) gatewayIcons.get(type);
-		if (retIcon != null) return retIcon;
+	public static UIImage getGatewayIcons(String type) {
+		if (type == null)
+			return null;
+		UIImage retIcon = (UIImage) gatewayIcons.get(type);
+		if (retIcon != null)
+			return retIcon;
 
 		try {
-			retIcon = Image.createImage("/transport/" + type + ".png");
+			retIcon = UIImage.createImage("/transport/" + type + ".png");
 		} catch (IOException ex) {
 			try {
-				retIcon = Image.createImage("/transport/transport.png");
+				retIcon = UIImage.createImage("/transport/transport.png");
 			} catch (IOException e1) {
 				// TODO Auto-generated
 				// catch block
@@ -56,10 +57,11 @@ public class UIGateway extends UIContact {
 		return retIcon;
 	}
 
-	protected Image getPresenceIcon() {
-		if (this.c.getAllPresences() != null) return getGatewayIcons(this.gatewayType);
+	protected UIImage getPresenceIcon() {
+		if (this.c.getAllPresences() != null)
+			return getGatewayIcons(this.gatewayType);
 		else
-			return xmppClient.getPresenceIcon(c, null, Contact.AV_UNAVAILABLE);
+			return UIContact.getPresenceIcon(c, null, Contact.AV_UNAVAILABLE);
 	}
 
 	public void openContactMenu() {
@@ -80,5 +82,4 @@ public class UIGateway extends UIContact {
 			rs.addPopup(optionsMenu);
 		}
 	}
-
 }

@@ -1,13 +1,14 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: SASLAuthenticator.java 2039 2010-03-31 07:29:31Z luca $
+ * $Id: SASLAuthenticator.java 2445 2011-02-04 11:53:30Z luca $
 */
 
 package it.yup.xmlstream;
 
-import it.yup.util.EventDispatcher;
-import it.yup.util.GoogleToken;
+import it.yup.dispatch.EventDispatcher;
+import it.yup.dispatch.EventQuery;
+import it.yup.util.Digests;
 import it.yup.util.Utils;
 import it.yup.xml.Element;
 import it.yup.xmpp.Contact;
@@ -18,23 +19,87 @@ import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.Hashtable;
 
+//#ifdef MIDP
+
 import org.bouncycastle.util.encoders.Base64;
+
+//#endif
+// #ifndef MIDP
+//@
+//@import it.yup.util.encoders.Base64;
+//@
+//#endif
 
 // XXX Note if we used a state machine with just one listener we could avoid declaring
 // on the fly stubs for calling the correct method. Each stub takes about 900 bytes, which is
 // a considerable waste of space
 /**
- * Class carrying on all the authentications steps 
- *
+ * Class carrying on all the authentications steps
+ * 
  */
 public class SASLAuthenticator extends Initializer {
 
-	private static String MECHANISM_PLAIN = "PLAIN";
-	private static String MECHANISM_DIGEST_MD5 = "DIGEST-MD5";
-	private static String MECHANISM_X_GOOGLE_TOKEN = "X-GOOGLE-TOKEN";
+	public static String MECHANISM_PLAIN = "PLAIN";
+	public static String MECHANISM_DIGEST_MD5 = "DIGEST-MD5";
+	public static String MECHANISM_X_GOOGLE_TOKEN = "X-GOOGLE-TOKEN";
+	public static String MECHANISM_ANONYMOUS = "ANONYMOUS";
 
 	private String supportedMechanisms[] = new String[] { MECHANISM_DIGEST_MD5,
-			MECHANISM_PLAIN, MECHANISM_X_GOOGLE_TOKEN };
+			MECHANISM_PLAIN, MECHANISM_X_GOOGLE_TOKEN, MECHANISM_ANONYMOUS };
+
+	public void setMechanisms(String[] mechanisms) {
+		this.supportedMechanisms = mechanisms;
+	}
+
+	private class SASLAuthenticatorListener implements PacketListener {
+
+		private String authenticatorType = null;
+
+		public SASLAuthenticatorListener(String authenticatorType) {
+			this.authenticatorType = authenticatorType;
+		}
+
+		public void packetReceived(Element e) {
+			if (this.authenticatorType.equals(MECHANISM_PLAIN)) {
+				if ("success".equals(e.name)) {
+					stream.restart();
+					EventDispatcher.dispatchEvent(
+							EventDispatcher.STREAM_AUTHENTICATED, null);
+				} else {
+					EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
+							"Cannot authenticate");
+				}
+			} else if (this.authenticatorType.equals(MECHANISM_DIGEST_MD5)) {
+				if ("challenge".equals(e.name)) {
+					gotChallenge(e);
+					EventDispatcher.dispatchEvent(
+							EventDispatcher.STREAM_AUTHENTICATED, null);
+				} else {
+					EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
+							"Cannot authenticate");
+				}
+			} else if (this.authenticatorType.equals(MECHANISM_X_GOOGLE_TOKEN)) {
+				if ("success".equals(e.name)) {
+					stream.restart();
+					EventDispatcher.dispatchEvent(
+							EventDispatcher.STREAM_AUTHENTICATED, null);
+				} else {
+					EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
+							"Cannot authenticate");
+				}
+			} else if (this.authenticatorType.equals(MECHANISM_ANONYMOUS)) {
+				if ("success".equals(e.name)) {
+					stream.restart();
+					EventDispatcher.dispatchEvent(
+							EventDispatcher.STREAM_AUTHENTICATED, null);
+				} else {
+					EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
+							"Cannot authenticate");
+				}
+			}
+
+		}
+	}
 
 	protected SASLAuthenticator() {
 		// mandatory 
@@ -42,13 +107,12 @@ public class SASLAuthenticator extends Initializer {
 	}
 
 	/**
-	 * Start the login process. The result is asynchronous, and in order to get it 
-	 * register a listener for the STREAM_CONNECTED event.
+	 * Start the login process. The result is asynchronous, and in order to get
+	 * it register a listener for the STREAM_CONNECTED event.
 	 */
 	public void start(BasicXmlStream xmlStream) {
 
 		this.stream = xmlStream;
-		// Config cfg = xmlStream.config;
 		// look for the best auth mechanism and start the auth (the first, the better)
 		Element mechanisms = (Element) stream.features.get(namespace);
 
@@ -78,28 +142,11 @@ public class SASLAuthenticator extends Initializer {
 						} catch (IOException e) {
 							// YUPMidlet.yup.reportException("IO error on SASLAutenticator", e, null);
 						}
-
 						// listen for the result 
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
-
 						BasicXmlStream.addOnetimePacketListener(pq,
-								new PacketListener() {
-									public void packetReceived(Element e) {
-										if ("success".equals(e.name)) {
-											stream.restart();
-											EventDispatcher
-													.dispatchEvent(
-															EventDispatcher.STREAM_AUTHENTICATED,
-															null);
-										} else {
-											EventDispatcher
-													.dispatchEvent(
-															EventDispatcher.STREAM_ERROR,
-															"Cannot authenticate");
-										}
-									}
-								});
+								new SASLAuthenticatorListener(MECHANISM_PLAIN));
 						stream.send(auth, -1);
 						// started auth with this method, don't try the others
 						return;
@@ -109,23 +156,8 @@ public class SASLAuthenticator extends Initializer {
 						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
 								null, null);
 						BasicXmlStream.addOnetimePacketListener(pq,
-								new PacketListener() {
-									public void packetReceived(Element e) {
-										if ("challenge".equals(e.name)) {
-											gotChallenge(e);
-											EventDispatcher
-													.dispatchEvent(
-															EventDispatcher.STREAM_AUTHENTICATED,
-															null);
-										} else {
-											EventDispatcher
-													.dispatchEvent(
-															EventDispatcher.STREAM_ERROR,
-															"Cannot authenticate");
-										}
-									}
-
-								});
+								new SASLAuthenticatorListener(
+										MECHANISM_DIGEST_MD5));
 						stream.send(auth, -1);
 						return;
 					} else if (supportedMechanisms[i]
@@ -150,7 +182,7 @@ public class SASLAuthenticator extends Initializer {
 							System.arraycopy(tokenbytes, 0, buf,
 									jidbytes.length + 2, tokenbytes.length);
 							// #mdebug
-//@																					System.out.println(new String(Base64.encode(buf)));
+							System.out.println(new String(Base64.encode(buf)));
 							// #enddebug
 							auth.addText(new String(Base64.encode(buf)));
 						} catch (Exception e1) {
@@ -162,25 +194,22 @@ public class SASLAuthenticator extends Initializer {
 								null, null);
 
 						BasicXmlStream.addOnetimePacketListener(pq,
-								new PacketListener() {
-									public void packetReceived(Element e) {
-										if ("success".equals(e.name)) {
-											stream.restart();
-											EventDispatcher
-													.dispatchEvent(
-															EventDispatcher.STREAM_AUTHENTICATED,
-															null);
-											return;
-										} else {
-											EventDispatcher
-													.dispatchEvent(
-															EventDispatcher.STREAM_ERROR,
-															"Cannot authenticate");
-										}
-									}
-								});
+								new SASLAuthenticatorListener(
+										MECHANISM_X_GOOGLE_TOKEN));
 
 						stream.send(auth, -1);
+						return;
+					} else if (supportedMechanisms[i]
+							.equals(MECHANISM_ANONYMOUS)) {
+						auth.setAttribute("mechanism", MECHANISM_ANONYMOUS);
+						// listen for the result 
+						EventQuery pq = new EventQuery(EventQuery.ANY_PACKET,
+								null, null);
+						BasicXmlStream.addOnetimePacketListener(pq,
+								new SASLAuthenticatorListener(
+										MECHANISM_ANONYMOUS));
+						stream.send(auth, -1);
+						// started auth with this method, don't try the others
 						return;
 					}
 				}
@@ -193,6 +222,7 @@ public class SASLAuthenticator extends Initializer {
 
 	/**
 	 * Proceed with the challenge reveived from the server (digest md5 auth)
+	 * 
 	 * @param packet
 	 */
 	private void gotChallenge(Element packet) {
@@ -216,14 +246,14 @@ public class SASLAuthenticator extends Initializer {
 				responseDirectives.put("nc", nc);
 
 				// XXX very unsecure, but good for now
-				String cnonce = Utils.hexDigest(
-						"" + System.currentTimeMillis(), "md5");
+				String cnonce = Digests.hexDigest(""
+						+ System.currentTimeMillis(), "md5");
 
 				responseDirectives.put("cnonce", cnonce);
 				String qop = "auth";
 				responseDirectives.put("qop", qop);
 				ByteArrayOutputStream bos = new ByteArrayOutputStream();
-				bos.write(Utils.digest(Contact.user(stream.jid) + ":"
+				bos.write(Digests.digest(Contact.user(stream.jid) + ":"
 						+ Contact.domain(stream.jid) + ":" + stream.password,
 						"md5"));
 				bos.write(Utils.getBytesUtf8(":" + nonce + ":" + cnonce));
@@ -232,11 +262,11 @@ public class SASLAuthenticator extends Initializer {
 				String digest_uri = "xmpp/" + Contact.domain(stream.jid); // XXX don't know if this is correct
 				String A2 = ("AUTHENTICATE:" + digest_uri);
 
-				String KD = Utils.bytesToHex(Utils.digest(A1, "md5"))
+				String KD = Utils.bytesToHex(Digests.digest(A1, "md5"))
 						+ ":"
-						+ (nonce + ":" + nc + ":" + cnonce + ":" + "auth" + ":" + Utils
+						+ (nonce + ":" + nc + ":" + cnonce + ":" + "auth" + ":" + Digests
 								.hexDigest(A2, "md5"));
-				String response = Utils.hexDigest(KD, "md5");
+				String response = Digests.hexDigest(KD, "md5");
 				responseDirectives.put("response", response);
 				responseDirectives.put("charset", "utf-8");
 				responseDirectives.put("digest-uri", digest_uri);
@@ -271,7 +301,8 @@ public class SASLAuthenticator extends Initializer {
 									EventDispatcher.REGISTRATION_FAILED,
 									"Cannot registrate");
 					} else {
-						EventDispatcher.dispatchEvent(EventDispatcher.STREAM_ERROR,
+						EventDispatcher.dispatchEvent(
+								EventDispatcher.STREAM_ERROR,
 								"Cannot authenticate");
 					}
 				}

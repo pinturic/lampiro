@@ -1,7 +1,8 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: UIEmoLabel.java 2033 2010-03-26 16:33:26Z luca $
+ * $Id: UIEmoLabel.java 2325 2010-11-15 20:07:28Z luca $
 */
 
 /**
@@ -9,11 +10,11 @@
  */
 package it.yup.ui;
 
-import java.util.Hashtable;
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
+import it.yup.ui.wrappers.UIImage;
 
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
-import javax.microedition.lcdui.Image;
+import java.util.Hashtable;
 
 /**
  * @author luca
@@ -62,26 +63,26 @@ public class UIEmoLabel extends UILabel {
 		emos.put(codes[emoNumber], UICanvas.getUIImage("/emo/15.png"));
 	}
 
-	void paintTextLine(Graphics g, String textLine, int horizontalSpace,
+	void paintTextLine(UIGraphics g, String textLine, int horizontalSpace,
 			int verticalSpace) {
 		Object[] emoTuple = this.findEmoTuple(textLine, 0, textLine.length());
 		if (emoTuple == null) {
 			g.drawString(textLine, horizontalSpace, verticalSpace,
-					Graphics.LEFT | Graphics.TOP);
+					UIGraphics.LEFT | UIGraphics.TOP);
 		} else {
 			int index = ((Integer) emoTuple[0]).intValue();
 			String code = (String) emoTuple[1];
-			Image img = (Image) UIEmoLabel.emos.get(code);
+			UIImage img = (UIImage) UIEmoLabel.emos.get(code);
 			String secondHalf = textLine.substring(index + code.length());
 			g.drawSubstring(textLine, 0, index, horizontalSpace, verticalSpace,
-					Graphics.LEFT | Graphics.TOP);
+					UIGraphics.LEFT | UIGraphics.TOP);
 			int additionalSpace = 0;
 			if (g.getFont().getHeight() > img.getHeight()) {
 				additionalSpace = (g.getFont().getHeight() - img.getHeight()) / 2;
 			}
 			int firstWidth = g.getFont().substringWidth(textLine, 0, index);
 			g.drawImage(img, horizontalSpace + firstWidth, verticalSpace
-					+ additionalSpace, Graphics.LEFT | Graphics.TOP);
+					+ additionalSpace, UIGraphics.LEFT | UIGraphics.TOP);
 			int originalX = g.getTranslateX();
 			g.translate(horizontalSpace + firstWidth + img.getWidth() + 1, 0);
 			paintTextLine(g, secondHalf, 0, verticalSpace);
@@ -112,7 +113,7 @@ public class UIEmoLabel extends UILabel {
 		return null;
 	}
 
-	public int getTextWidth(String textLine, Font font, int startIndex,
+	public int getTextWidth(String textLine, UIFont font, int startIndex,
 			int length) {
 		Object[] emoTuple = this.findEmoTuple(textLine, startIndex, length);
 		if (emoTuple == null) {
@@ -120,7 +121,7 @@ public class UIEmoLabel extends UILabel {
 		} else {
 			int index = ((Integer) emoTuple[0]).intValue();
 			String code = (String) emoTuple[1];
-			Image img = (Image) UIEmoLabel.emos.get(code);
+			UIImage img = (UIImage) UIEmoLabel.emos.get(code);
 			int endIndex = index + code.length();
 			// new length could be negative if an emoticon is splitted
 			int newLength = length - endIndex + startIndex;

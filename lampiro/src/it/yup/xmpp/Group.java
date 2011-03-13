@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Group.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Group.java 2328 2010-11-16 14:11:30Z luca $
 */
 
 package it.yup.xmpp;
@@ -42,10 +42,9 @@ public class Group {
 		return (Group) groups.get(name);
 	}
 
-	public Element store() {
-		Element groupEl = new Element(XMPPClient.NS_IQ_ROSTER, "group");
+	public Element store(Roster roster) {
+		Element groupEl = new Element(XmppConstants.NS_IQ_ROSTER, "group");
 		Enumeration en = this.contacts.elements();
-		Roster roster = XMPPClient.getInstance().getRoster();
 		while (en.hasMoreElements()) {
 			Contact c = roster.getContactByJid((String) en.nextElement());
 			if (c != null) {

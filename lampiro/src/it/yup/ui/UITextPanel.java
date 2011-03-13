@@ -1,20 +1,19 @@
+// #condition MIDP
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
  * $Id: UITextPanel.java 1858 2009-10-16 22:42:29Z luca $
-*/
+ */
 
 package it.yup.ui;
 
+import it.yup.ui.wrappers.UIFont;
+import it.yup.ui.wrappers.UIGraphics;
 import java.util.Enumeration;
-
-import javax.microedition.lcdui.Canvas;
-import javax.microedition.lcdui.Font;
-import javax.microedition.lcdui.Graphics;
 
 /**
  * @author luca
- *
+ * 
  */
 public class UITextPanel extends UIPanel implements
 		TokenIterator.UIISplittableItem {
@@ -27,12 +26,13 @@ public class UITextPanel extends UIPanel implements
 	private int firstLabel = 0;
 	private int lastLabel = 0;
 
-	/* The possible container for this object*/
+	/* The possible container for this object */
 	private UIItem container = null;
 
 	private boolean enableEmoticons = false;
 
 	private UITextField utf;
+	private int anchor = UIGraphics.TOP | UIGraphics.LEFT;
 
 	/**
 	 * 
@@ -56,52 +56,46 @@ public class UITextPanel extends UIPanel implements
 		super.setMaxHeight(mh);
 	}
 
-	public int getHeight(Graphics g) {
+	public int getHeight(UIGraphics g) {
 		/* always all the available space */
-		if (maxHeight != -1) { return maxHeight; }
+		if (maxHeight != -1) return maxHeight;
 		if (this.height > 0) return this.height;
 		// if i have a clip that is my height
 		int clipY = g.getClipY();
 		int clippedHeight = g.getClipHeight() + clipY;
-		// if (clippedHeight > 0)
-		this.height = clippedHeight;
-		// a magic number due to the space between items
-		height -= 7;
+		clippedHeight -= 7;
 		if (this.utf.getLabel().getText().length() > 0) {
 			int labelHeight = utf.getLabel().getHeight(g);
-			height -= labelHeight;
+			clippedHeight -= labelHeight;
+		}
+		this.height = clippedHeight;
+		// a magic number due to the space between items
+		if (UICanvas.getInstance().hasPointerMotionEvents()) {
+			if (tokenIterator.isComputed() == false) {
+				int w = this.width - 14;
+				if (w < 0) w = UICanvas.getInstance().getWidth() - 14
+						- UIConfig.scrollbarWidth;
+				tokenIterator.computeLazyLines(UIConfig.font_body, w);
+				for (int i = 0; i < tokenIterator.getLinesNumber(); i++) {
+					tokenIterator.elementAt(i);
+				}
+				fillItems(g, Integer.MAX_VALUE);
+			}
+			int rh = computeRealHeight(g);
+			this.height = Math.max(clippedHeight, rh);
 		}
 		return this.height;
 		// otherwise my last known height
 	}
 
-	protected void paint(Graphics g, int w, int h) {
+	protected void paint(UIGraphics g, int w, int h) {
 		int availableWidth = w - 1;
 		if (utf.isWrappable()) availableWidth -= UIConfig.scrollbarWidth;
 		if (tokenIterator.isComputed() == false) {
 			this.removeAllItems();
 			// -2 is for the borders"
 			tokenIterator.computeLazyLines(g.getFont(), availableWidth - 2);
-			int labelsHeight = 0;
-			UILabel ithLabel = null;
-			int count = 0;
-			do {
-				if (this.enableEmoticons) ithLabel = new UIEmoLabel("");
-				else
-					ithLabel = new UILabel("");
-				ithLabel.setBg_color(UIConfig.input_color);
-				ithLabel.setFg_color(UIConfig.fg_color);
-				ithLabel.setSelectedColor(UIConfig.input_color);
-				ithLabel.setFocusable(true);
-				ithLabel.setSelected(this.selected);
-				ithLabel.setText(tokenIterator.elementAt(count));
-				this.addItem(ithLabel);
-				labelsHeight += ithLabel.getHeight(g);
-				count++;
-			} while (labelsHeight < (h - ithLabel.getHeight(g))
-					&& count < tokenIterator.getLinesNumber());
-			firstLabel = 0;
-			lastLabel = this.getItems().size() - 1;
+			fillItems(g, h);
 		}
 		int paintedHeight = 0;
 		Enumeration en = this.getItems().elements();
@@ -110,7 +104,17 @@ public class UITextPanel extends UIPanel implements
 			paintedHeight += ithLabel.getHeight(g);
 		}
 		this.needScrollbar = false;
+		int paintOffset = 0;
+		if (UIGraphics.getVAnchor(anchor) == UIGraphics.VCENTER) {
+			paintOffset = (h - paintedHeight) / 2;
+			h -= 2 * paintOffset;
+		} else if (UIGraphics.getVAnchor(anchor) == UIGraphics.BOTTOM) {
+			paintOffset = (h - paintedHeight);
+			h -= paintOffset;
+		}
+		g.translate(0, paintOffset);
 		super.paint(g, w, h);
+		g.translate(0, -paintOffset);
 		// i don't want my labels to be "clicked"
 		en = this.getItems().elements();
 		while (en.hasMoreElements()) {
@@ -120,11 +124,41 @@ public class UITextPanel extends UIPanel implements
 		// fill the gap
 		g.setColor(getBg_color());
 		if (needScrollbar) w -= UIConfig.scrollbarWidth;
-		g.fillRect(0, paintedHeight, w, h - paintedHeight);
+		if (this.getBg_color() != UIItem.TRANSPARENT_COLOR) g.fillRect(0,
+				paintedHeight, w, h - paintedHeight);
 
 	}
 
-	protected int computeRealHeight(Graphics g) {
+	private void fillItems(UIGraphics g, int h) {
+		int labelsHeight = 0;
+		UILabel ithLabel = null;
+		int count = 0;
+		do {
+			if (this.enableEmoticons) ithLabel = new UIEmoLabel("");
+			else
+				ithLabel = new UILabel("");
+			if (this.getBg_color() != UIItem.TRANSPARENT_COLOR) ithLabel
+					.setBg_color(UIConfig.input_color);
+			else
+				ithLabel.setBg_color(UIItem.TRANSPARENT_COLOR);
+			if (this.fg_color >= 0) ithLabel.setFg_color(fg_color);
+			else
+				ithLabel.setFg_color(UIConfig.fg_color);
+			ithLabel.setSelectedColor(UIConfig.input_color);
+			ithLabel.setAnchorPoint(anchor);
+			ithLabel.setFocusable(true);
+			ithLabel.setSelected(this.selected);
+			ithLabel.setText(tokenIterator.elementAt(count));
+			this.addItem(ithLabel);
+			labelsHeight += ithLabel.getHeight(g);
+			count++;
+		} while (labelsHeight < (h - ithLabel.getHeight(g))
+				&& count < tokenIterator.getLinesNumber());
+		firstLabel = 0;
+		lastLabel = this.getItems().size() - 1;
+	}
+
+	protected int computeRealHeight(UIGraphics g) {
 		if (this.getItems().size() == 0) return 0;
 
 		// my real height is the the number of textLines
@@ -140,11 +174,11 @@ public class UITextPanel extends UIPanel implements
 	public boolean keyPressed(int key) {
 
 		int ga = UICanvas.getInstance().getGameAction(key);
-		if (ga != Canvas.DOWN && ga != Canvas.UP) { return super
+		if (ga != UICanvas.DOWN && ga != UICanvas.UP) { return super
 				.keyPressed(key); }
 		if (tokenIterator.isComputed()) {
 			switch (ga) {
-				case Canvas.DOWN:
+				case UICanvas.DOWN:
 					if (lastLabel < this.tokenIterator.getLinesNumber() - 1) {
 						this.firstLabel++;
 						this.lastLabel++;
@@ -160,7 +194,7 @@ public class UITextPanel extends UIPanel implements
 							&& (needScrollbar == false)) { return false; }
 					return true;
 
-				case Canvas.UP: {
+				case UICanvas.UP: {
 					if (firstLabel > 0) {
 						this.firstLabel--;
 						this.lastLabel--;
@@ -181,10 +215,10 @@ public class UITextPanel extends UIPanel implements
 		return false;
 	}
 
-	protected void drawScrollBar(Graphics g, int w, int h, int rh) {
+	protected void drawScrollBar(UIGraphics g, int w, int h, int rh) {
 		this.needScrollbar = true;
-		drawScrollBarItems(g, w, h, rh, firstLabel, lastLabel, tokenIterator
-				.getLinesNumber());
+		drawScrollBarItems(g, w, h, rh, firstLabel, lastLabel,
+				tokenIterator.getLinesNumber());
 	}
 
 	public UIItem getSelectedItem() {
@@ -198,13 +232,6 @@ public class UITextPanel extends UIPanel implements
 
 	public String getText() {
 		return this.text;
-	}
-
-	public void setFont(Font tfont) {
-		Enumeration en = this.getItems().elements();
-		while (en.hasMoreElements()) {
-			((UILabel) en.nextElement()).setFont(tfont);
-		}
 	}
 
 	public void setSelected(boolean _selected) {
@@ -236,8 +263,12 @@ public class UITextPanel extends UIPanel implements
 		this.enableEmoticons = enableEmoticons;
 	}
 
-	public int getTextWidth(String textLine, Font font, int startIndex,
+	public int getTextWidth(String textLine, UIFont font, int startIndex,
 			int endIndex) {
 		return font.substringWidth(text, startIndex, endIndex);
+	}
+
+	public void setAnchor(int anchor) {
+		this.anchor = anchor;
 	}
 }

@@ -27,9 +27,11 @@ import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.StringItem;
 import javax.microedition.midlet.MIDlet;
 
-// #mdebug
-//@import it.yup.util.Logger;
-//@import it.yup.util.StderrConsumer;
+//#mdebug
+
+import it.yup.util.log.Logger;
+import it.yup.util.log.StderrConsumer;
+
 // #enddebug
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -51,7 +53,7 @@ public class XMLTestMidlet extends MIDlet {
 	public XMLTestMidlet() {
 
 		// #debug		
-//@				Logger.addConsumer(new StderrConsumer());
+		Logger.addConsumer(new StderrConsumer());
 
 		disp = Display.getDisplay(this);
 		form.append(log);
@@ -67,15 +69,15 @@ public class XMLTestMidlet extends MIDlet {
 	}
 
 	private void testEnDecode() {
-//		String inputPacket = "<doc xmlns=\"jabber:client\">\n";
-//		inputPacket += "<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\" xmlns=\"jabber:client\" to=\"jabber.bluendo.com\" xml:lang=\"en\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" />\n";
-//		inputPacket += "</doc>";
+		//		String inputPacket = "<doc xmlns=\"jabber:client\">\n";
+		//		inputPacket += "<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\" xmlns=\"jabber:client\" to=\"jabber.bluendo.com\" xml:lang=\"en\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" />\n";
+		//		inputPacket += "</doc>";
 
 		//String inputPacket = "";
 		//inputPacket += "<stream:stream xmlns:stream=\"http://etherx.jabber.org/streams\" version=\"1.0\" xmlns=\"jabber:client\" to=\"jabber.bluendo.com\" xml:lang=\"en\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" />\n";
 
 		String inputPacket = "<cap xmlns='http://jabber.org/protocol/disco#info'><feature var='http://jabber.org/protocol/bytestreams'></feature><feature var='http://jabber.org/protocol/si'></feature><feature var='http://jabber.org/protocol/si/profile/file-transfer'></feature><feature var='http://jabber.org/protocol/disco#info'></feature><feature var='http://jabber.org/protocol/commands'></feature><feature var='http://jabber.org/protocol/rosterx'></feature><feature var='http://jabber.org/protocol/muc'></feature><feature var='jabber:x:data'></feature></cap>";
-		
+
 		Element packet = null;
 		KXmlParser parser = new KXmlParser();
 		try {

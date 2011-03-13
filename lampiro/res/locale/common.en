@@ -25,7 +25,7 @@
 25	Next
 26	Register
 27	A required field must be filled in before continuing
-28	Jabber ID
+28	Autoreconnect
 29	About
 30	Warning
 31	Hide
@@ -87,6 +87,8 @@
 87	from
 88	unknown
 89	none
+90	Do you want to login again?
+91	Enable
 100	Write message
 101	Chat with
 102	Clear chat
@@ -104,7 +106,8 @@
 114	Manual
 115	OK
 200	Jabber ID
-202	Email address (optional)
+201	optional
+202	Email address
 203	Register new account
 204	Lampiro login
 205	Registration Failed
@@ -226,11 +229,13 @@
 753	Your album screen is empty. First you need to capture audio or images.
 754	Manage group chat
 755	Deleting a group chat will definitely remove it and all users will be disconnected; this operation cannot be undone.
-756	IM Networks
+756	IM Accounts
 757	Log on / Log off
 758	Unregister network
 759	Active sessions
 760	Change group name
+761	New version
+762	This Lampiro release is not up-todate. Please upgrade from the download site.
 800	Set status
 801	Choose status
 802	Status message
@@ -280,6 +285,7 @@
 1226	High <640x480>
 1227	Huge <1024x768>
 1228	Error accessing phone camera
+1229	Menu font size
 1300	news updates
 1301	Saved news count
 1302	Mark as unread

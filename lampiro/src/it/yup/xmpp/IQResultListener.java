@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: IQResultListener.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: IQResultListener.java 2325 2010-11-15 20:07:28Z luca $
 */
 
 package it.yup.xmpp;

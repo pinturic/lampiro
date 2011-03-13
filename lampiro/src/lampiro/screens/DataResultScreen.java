@@ -1,7 +1,7 @@
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: DataResultScreen.java 2056 2010-04-13 17:51:13Z luca $
+ * $Id: DataResultScreen.java 2329 2010-11-16 14:12:50Z luca $
 */
 
 /**
@@ -19,18 +19,20 @@ import it.yup.ui.UIPanel;
 import it.yup.ui.UIScreen;
 import it.yup.ui.UISeparator;
 import it.yup.ui.UITextField;
+import it.yup.ui.wrappers.UIGraphics;
 import it.yup.util.ResourceIDs;
 import it.yup.util.ResourceManager;
+import it.yup.xmlstream.BasicXmlStream;
 import it.yup.xmpp.DataFormListener;
+import it.yup.xmpp.MediaRetrieveListener;
 import it.yup.xmpp.MediaRetriever;
+import it.yup.client.XMPPClient;
 import it.yup.xmpp.packets.DataForm;
 
 import java.util.Hashtable;
 
-import javax.microedition.lcdui.Graphics;
 import javax.microedition.lcdui.TextField;
 
-import lampiro.screens.MediaRetrieveListener;
 
 /**
  * Class that shows the results in a data form.
@@ -143,12 +145,14 @@ public class DataResultScreen extends UIScreen {
 				if (fld.media != null) {
 					UILabel objLabel = new UILabel(UICanvas
 							.getUIImage("/icons/loading.png"));
-					objLabel.setAnchorPoint(Graphics.HCENTER);
+					objLabel.setAnchorPoint(UIGraphics.HCENTER);
 					objLabel.setFocusable(true);
 					mainPanel.addItem(objLabel);
-					MediaRetrieveListener mrl = new MediaRetrieveListener(this,
+					MediaRetrieveListener mrl = new SMediaRetrieveListener(this,
 							objLabel);
-					MediaRetriever mr = new MediaRetriever(this.listener
+					XMPPClient client = XMPPClient.getInstance();
+					BasicXmlStream stream = client.getXmlStream();
+					MediaRetriever mr = new MediaRetriever(stream,this.listener
 							.getFrom(), fld.media, mrl);
 					mr.retrieveMedia();
 				}
@@ -207,5 +211,4 @@ public class DataResultScreen extends UIScreen {
 
 		showCurrent();
 	}
-
 }

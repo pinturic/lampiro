@@ -1,9 +1,13 @@
 package it.yup.xml;
 
-// #debug
-//@import it.yup.util.Logger;
+//#mdebug
+
+import it.yup.util.log.Logger;
+
+// #enddebug
 
 import it.yup.util.Utils;
+import it.yup.util.encoders.Base64BufferedEncoder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -23,9 +27,9 @@ public class Element {
 	public String name;
 	public String uri;
 
-	// inserting time
-	public long queueTime;
-	public int maxWait;
+	// inserting time XXX no more used (change strategy for sending packets)
+	// public long queueTime;
+	// public int maxWait;
 
 	private static int _internal_id_counter; //unique id
 
@@ -42,10 +46,11 @@ public class Element {
 			String attributes[][]) {
 		this.uri = uri;
 		this.name = name;
-		this.children = children;
-		this.nchildren = children.length;
-		this.attributes = attributes;
-		this.nattributes = attributes.length;
+		this.children = (children != null) ? children : (new Element[] {});
+		this.nchildren = this.children.length;
+		this.attributes = (attributes != null) ? attributes
+				: (new String[][] {});
+		this.nattributes = this.attributes.length;
 	}
 
 	public Element(String uri, String name) {
@@ -381,9 +386,24 @@ public class Element {
 			if (e.getClass() == String.class) {
 				buf.append((String) e);
 			}
-
 		}
 		return buf.toString();
+	}
+
+	public byte[] getBase64Text(boolean delete) {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Base64BufferedEncoder encoder = new Base64BufferedEncoder(baos);
+		// count the matching children
+		for (int i = 0; i < nchildren; i++) {
+			Object e = children[i];
+			if (e.getClass() == String.class) {
+				encoder.decode((String) e);
+				// XXX better implement deletion 
+			}
+		}
+		encoder.endDecode();
+		if (delete) resetText();
+		return baos.toByteArray();
 	}
 
 	public void resetText() {
@@ -412,7 +432,7 @@ public class Element {
 			writeXml(this, null, baos);
 		} catch (IOException e) {
 			// #debug 
-//@			Logger.log("[Element:toXml] IOException" + e.getMessage());
+						Logger.log("[Element:toXml] IOException" + e.getMessage());
 		}
 		return baos.toByteArray();
 	}
@@ -586,13 +606,13 @@ public class Element {
 /* Copyright (c) 2008-2009-2010 Bluendo S.r.L.
  * See about.html for details about license.
  *
- * $Id: Element.java 2002 2010-03-06 19:02:12Z luca $
+ * $Id: Element.java 2325 2010-11-15 20:07:28Z luca $
 */
 //
 //package it.yup.xml;
 //
 //// #debug
-////@import it.yup.util.Logger;
+// import it.yup.util.log.Logger;
 //
 //
 //import java.io.ByteArrayOutputStream;
