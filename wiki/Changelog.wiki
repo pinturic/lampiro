@@ -8,7 +8,7 @@ Lampiro 11.3:
 
 
  * *Improved*:  Improved UI and touchscreen management
- * *Added*:     French and Czeck translations
+ * *Added*:     French and Czech translations
  * *Improved*:  Fixed build script folder
  * *Improved*:  Reorganized project packages
  * *Added*:     Added wrappers to native elements (Image,fonts,graphics, customfonts and textbox)
